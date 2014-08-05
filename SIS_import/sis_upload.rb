@@ -77,7 +77,7 @@ end ## end of method definition
 # get the current working directory and the archive folder inside
 currentDirectory=Dir.pwd
 archiveDirectory=Dir.pwd + "/archive/"
-outputDirectory=Dir.pwd + "/output/"
+outputDirectory=Dir.pwd + "/logs/"
 
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name>
