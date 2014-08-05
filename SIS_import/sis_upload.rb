@@ -1,47 +1,137 @@
 #!/usr/bin/env ruby
 
 require "json"
+require "fileutils"
 
-token="<token>"
 
-# Web Service call
-json_data=`curl -H "Content-Type: application/zip" --data-binary @mpathway.zip -H "Authorization: Bearer #{token}" https://umich.beta.instructure.com/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
-#json_data=`curl -H "Content-Type: application/zip" --data-binary @mpathway.zip -H "Authorization: Bearer #{token}" https://umich.beta.instructure.com/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv&batch_mode=1`
+def upload_to_canvas(fileName, token, server, outputDirectory)
+  # get file names
+  currentFileBaseName = File.basename(fileName)
+  currentFileBaseNameWithoutExtension = File.basename(fileName, ".zip")
 
-#print "#{json_data}\n"
-parsed = JSON.parse(json_data)
+  #open the output file
+  begin
+    outputFile = File.open(outputDirectory + currentFileBaseNameWithoutExtension + ".txt", "w")
 
-job_id=parsed["id"]
+    # Web Service call
+    p fileName
+    p token
+    p server
 
-if (parsed["errors"])
-	print "ERROR: #{parsed["errors"]}\n"
-else
-	print "the job id is: #{job_id}\n"
+    json_data=`curl -H "Content-Type: application/zip" --data-binary @#{fileName} -H "Authorization: Bearer #{token}" #{server}/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
 
-	print "here is the job #{job_id} status: \n"
+    outputFile.write("#{json_data}\n")
+    parsed = JSON.parse(json_data)
 
-	begin
-		#sleep every 10 sec, before checking the status again
-		sleep(10);
+    job_id=parsed["id"]
 
-		json_result=`curl 'https://umich.beta.instructure.com/api/v1/accounts/1/sis_imports/#{job_id}' -H "Authorization: Bearer #{token}"`
+    outputFile.write("the job id is: #{job_id}\n")
+    outputFile.write("here is the job #{job_id} status: \n")
 
-		#print out the whole json result
-		print "#{json_result}\n"
+    #set the error flag, default to be false
+    upload_error = false
 
-		#parse the status percentage
-		parsed_result=JSON.parse(json_result)
-		job_progress=parsed_result["progress"]
+    begin
+      #sleep every 10 sec, before checking the status again
+      sleep(10);
 
-		print "processed #{job_progress}\n"
-	end until job_progress == 100
+      json_result=`curl '#{server}/api/v1/accounts/1/sis_imports/#{job_id}' -H "Authorization: Bearer #{token}"`
 
-	# print out the process warning, if any
-	if (parsed_result["processing_errors"])
-		print "upload process errors: #{parsed_result["processing_errors"]}\n"
-	elsif (parsed_result["processing_warnings"])
-        	print "upload process warning: #{parsed_result["processing_warnings"]}\n"	
-	else
-		print "upload process finished successfully\n"
-	end
+      #print out the whole json result
+      outputFile.write("#{json_result}\n")
+
+      #parse the status percentage
+      parsed_result=JSON.parse(json_result)
+      if (parsed_result["errors"])
+        ## break and print error
+        error_array=parsed_result["errors"]
+        outputFile.write(error_array[0])
+        outputFile.write("\n")
+
+        ##set the error flag to be true
+        upload_error = true;
+
+        break;
+      else
+        job_progress=parsed_result["progress"]
+        outputFile.write("processed #{job_progress}\n")
+      end
+    end until job_progress == 100
+
+    if (!upload_error)
+      # print out the process warning, if any
+      if (parsed_result["processing_errors"])
+        outputFile.write("upload process errors: #{parsed_result["processing_errors"]}\n")
+      elsif (parsed_result["processing_warnings"])
+        outputFile.write("upload process warning: #{parsed_result["processing_warnings"]}\n")
+      else
+        outputFile.write("upload process finished successfully\n")
+      end
+    end
+  # close output file
+  ensure
+    outputFile.close unless outputFile == nil
+  end
+end ## end of method definition
+
+# get the current working directory and the archive folder inside
+currentDirectory=Dir.pwd
+archiveDirectory=Dir.pwd + "/archive/"
+outputDirectory=Dir.pwd + "/output/"
+
+# there should be two command line argument when invoking this Ruby script
+# like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name>
+
+# the access token
+token = ""
+# the Canvas server name
+server = ""
+
+# the command line argument count
+count=1
+# iterate through the inline arguments
+ARGV.each do|a|
+  if (count==1)
+    File.open(a, 'r') do |tokenFile|
+      while line = tokenFile.gets
+        p line
+        # only read the first line, which is the token value
+        token=line.strip
+        break
+      end
+    end
+  elsif (count==2)
+    # the second argument should be the server name
+    server=a
+  else
+   # break
+  end
+
+  #increase count
+  count=count+1
 end
+
+p "token=" + token
+p "server=" + server
+p "current directory: " + currentDirectory
+p "archive directory: " + archiveDirectory
+p "output directory: " + outputDirectory
+
+# search for the canvas import zip file
+fileNameSearch=Dir.pwd + "/Canvas_Extract_*.zip"
+fileNames = Dir[fileNameSearch];
+if (fileNames.length == 1)
+  ## get the name of file to process
+  fileName=fileNames[0]
+  currentFileBaseName = File.basename(fileName)
+
+  # upload the file to canvas server
+  upload_to_canvas(fileName, token, server, outputDirectory)
+
+  # move file to archive directory after processing
+  FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
+  abort("SIS upload finished with " + fileName)
+else
+  abort("Cannot find file")
+end
+
