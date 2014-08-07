@@ -122,7 +122,7 @@ p "archive directory: " + archiveDirectory
 p "output directory: " + outputDirectory
 
 # search for the canvas import zip file
-fileNameSearch=Dir.pwd + "/Canvas_Extract_*.zip"
+fileNameSearch=currentDirectory+ "/Canvas_Extract_*.zip"
 fileNames = Dir[fileNameSearch];
 if (fileNames.length == 1)
   ## get the name of file to process
