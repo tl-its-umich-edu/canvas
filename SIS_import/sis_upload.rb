@@ -74,13 +74,8 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
   end
 end ## end of method definition
 
-# get the current working directory and the archive folder inside
-currentDirectory=Dir.pwd
-archiveDirectory=Dir.pwd + "/archive/"
-outputDirectory=Dir.pwd + "/logs/"
-
 # there should be two command line argument when invoking this Ruby script
-# like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name>
+# like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
 
 # the access token
 token = ""
@@ -90,9 +85,9 @@ server = ""
 # the command line argument count
 count=1
 # iterate through the inline arguments
-ARGV.each do|a|
+ARGV.each do|arg|
   if (count==1)
-    File.open(a, 'r') do |tokenFile|
+    File.open(arg, 'r') do |tokenFile|
       while line = tokenFile.gets
         p line
         # only read the first line, which is the token value
@@ -102,7 +97,10 @@ ARGV.each do|a|
     end
   elsif (count==2)
     # the second argument should be the server name
-    server=a
+    server=arg
+  elsif (count==3)
+    # the third path should be the workspace path
+    currentDirectory=arg
   else
    # break
   end
@@ -110,6 +108,10 @@ ARGV.each do|a|
   #increase count
   count=count+1
 end
+
+# get the current working directory and the archive folder inside
+archiveDirectory=currentDirectory + "archive/"
+outputDirectory=currentDirectory + "logs/"
 
 p "token=" + token
 p "server=" + server
