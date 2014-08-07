@@ -81,6 +81,8 @@ end ## end of method definition
 token = ""
 # the Canvas server name
 server = ""
+# the current working directory
+currentDirectory=""
 
 # the command line argument count
 count=1
