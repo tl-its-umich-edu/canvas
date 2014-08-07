@@ -115,7 +115,6 @@ end
 archiveDirectory=currentDirectory + "archive/"
 outputDirectory=currentDirectory + "logs/"
 
-p "token=" + token
 p "server=" + server
 p "current directory: " + currentDirectory
 p "archive directory: " + archiveDirectory
