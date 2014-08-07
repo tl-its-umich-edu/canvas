@@ -15,7 +15,6 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 
     # Web Service call
     p fileName
-    p token
     p server
 
     json_data=`curl -H "Content-Type: application/zip" --data-binary @#{fileName} -H "Authorization: Bearer #{token}" #{server}/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
@@ -91,7 +90,6 @@ ARGV.each do|arg|
   if (count==1)
     File.open(arg, 'r') do |tokenFile|
       while line = tokenFile.gets
-        p line
         # only read the first line, which is the token value
         token=line.strip
         break
