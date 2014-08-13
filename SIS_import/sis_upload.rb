@@ -5,6 +5,9 @@ require "fileutils"
 
 
 def upload_to_canvas(fileName, token, server, outputDirectory)
+  # upload start time
+  p "upload start time : " + Time.new.inspect
+
   # get file names
   currentFileBaseName = File.basename(fileName)
   currentFileBaseNameWithoutExtension = File.basename(fileName, ".zip")
@@ -71,6 +74,10 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
   ensure
     outputFile.close unless outputFile == nil
   end
+
+  # upload stop time
+  p "upload stop time : " + Time.new.inspect
+
 end ## end of method definition
 
 # there should be two command line argument when invoking this Ruby script
@@ -119,7 +126,7 @@ p "archive directory: " + archiveDirectory
 p "output directory: " + outputDirectory
 
 # search for the canvas import zip file
-fileNameSearch=currentDirectory+ "/Canvas_Extract_*.zip"
+fileNameSearch=currentDirectory+ "Canvas_Extract_*.zip"
 fileNames = Dir[fileNameSearch];
 if (fileNames.length == 1)
   ## get the name of file to process
