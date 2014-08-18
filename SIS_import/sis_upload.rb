@@ -21,9 +21,23 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
     p server
 
     json_data=`curl -H "Content-Type: application/zip" --data-binary @#{fileName} -H "Authorization: Bearer #{token}" #{server}/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
-
+    
     outputFile.write("#{json_data}\n")
     parsed = JSON.parse(json_data)
+    
+    if (parsed["errors"])
+        ## break and print error
+        error_array=parsed["errors"]
+        ## hashmap ["message"=>"error_message"
+        p "upload error: " + error_array[0]["message"]
+        outputFile.write("upload error: " + error_array[0]["message"])
+        outputFile.write("\n")
+        
+        ##set the error flag to be true
+        upload_error = true
+        
+        return upload_error
+    end
 
     job_id=parsed["id"]
 
@@ -47,13 +61,15 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
       if (parsed_result["errors"])
         ## break and print error
         error_array=parsed_result["errors"]
-        outputFile.write(error_array[0])
+        ## hashmap ["message"=>"error_message"
+        p "upload error: " + error_array[0]["message"]
+        outputFile.write("upload error: " + error_array[0]["message"])
         outputFile.write("\n")
 
         ##set the error flag to be true
-        upload_error = true;
-
-        break;
+        upload_error = true
+        
+        break
       else
         job_progress=parsed_result["progress"]
         outputFile.write("processed #{job_progress}\n")
@@ -77,6 +93,8 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 
   # upload stop time
   p "upload stop time : " + Time.new.inspect
+  
+  return upload_error
 
 end ## end of method definition
 
@@ -134,11 +152,15 @@ if (fileNames.length == 1)
   currentFileBaseName = File.basename(fileName)
 
   # upload the file to canvas server
-  upload_to_canvas(fileName, token, server, outputDirectory)
+  uploadError = upload_to_canvas(fileName, token, server, outputDirectory)
 
-  # move file to archive directory after processing
-  FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
-  abort("SIS upload finished with " + fileName)
+  if (!uploadError)
+      ## if there is no upload error
+      # move file to archive directory after processing
+      FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
+      p "SIS upload finished with " + fileName
+      exit
+  end
 else
   abort("Cannot find file")
 end
