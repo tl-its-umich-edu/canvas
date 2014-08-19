@@ -12,7 +12,7 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 
 
 	#set the error flag, default to be false
-	upload_error = ""
+	upload_error = false
 
 	#open the output file
 	begin
