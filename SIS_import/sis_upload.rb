@@ -101,7 +101,7 @@ def parseJson(data)
 		#	</p>
 		#</div>
 		# try html parser, and print out the error message
-		page = Nokogiri::HTML(open("/Users/zqian/dev_git/SIS_import/error.html"))
+		page = Nokogiri::HTML(data)
 		error_text = page.xpath('//body/div[@class="text"]/p').text
 		error_text = error_text.gsub(/^\s+/,'')
 		error_text = error_text.gsub(/\n/,'')
