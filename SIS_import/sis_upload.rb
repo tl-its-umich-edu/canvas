@@ -2,6 +2,7 @@
 
 require "json"
 require "fileutils"
+require "nokogiri"
 
 
 def upload_to_canvas(fileName, token, server, outputDirectory)
@@ -25,7 +26,7 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 		json_data=`curl -H "Content-Type: application/zip" --data-binary @#{fileName} -H "Authorization: Bearer #{token}" #{server}/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
 
 		outputFile.write("#{json_data}\n")
-		parsed = JSON.parse(json_data)
+		parsed = parseJson(json_data)
 
 		if (parsed["errors"])
 			## break and print error
@@ -53,8 +54,9 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 			outputFile.write("#{json_result}\n")
 
 			#parse the status percentage
-			parsed_result=JSON.parse(json_result)
-			if (parsed_result["errors"])
+			parsed_result=parseJson(json_result)
+
+		if (parsed_result["errors"])
 				## break and print error
 				uploadError=parsed_result["errors"]
 				## hashmap ["message"=>"error_message"
@@ -87,6 +89,28 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 	return upload_error
 
 end ## end of method definition
+
+def parseJson(data)
+	begin
+		parsedJson = JSON.parse(data)
+	rescue JSON::ParserError => e
+		# sometimes a html document is returned, containing the following secion
+		#<div class="text">
+		#<p>
+		#<img src="https://s3.amazonaws.com/canvas-maintenance/logo.png" /> &nbsp; Instructure Canvas is currently down for maintenance.
+		#	</p>
+		#</div>
+		# try html parser, and print out the error message
+		page = Nokogiri::HTML(open("/Users/zqian/dev_git/SIS_import/error.html"))
+		error_text = page.xpath('//body/div[@class="text"]/p').text
+		error_text = error_text.gsub(/^\s+/,'')
+		error_text = error_text.gsub(/\n/,'')
+		parsedJson={"errors"=>[{"message"=>error_text}]}
+	end
+
+	# return JSON
+	return parsedJson
+end
 
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
@@ -149,9 +173,12 @@ elsif (Dir[outputDirectory].length != 1)
 else
 	# the canvas import zip file
 	fileNames = Dir[currentDirectory+ "Canvas_Extract_*.zip"];
-	if (fileNames.length != 1)
+	if (fileNames.length == 0)
 		## cannot find zip file to upload
 		abort("Cannot find SIS zip file")
+	elsif (fileNames.length > 1)
+                ## there are more than one zip file
+                abort("There are more than one SIS zip files to be uploaded.")
 	elsif
 		## get the name of file to process
 		fileName=fileNames[0]
