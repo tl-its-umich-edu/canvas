@@ -2,6 +2,7 @@
 
 require "json"
 require "fileutils"
+require "rubygems"
 require "nokogiri"
 
 
