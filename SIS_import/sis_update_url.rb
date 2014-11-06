@@ -10,6 +10,7 @@ require "net/http"
 require "net/https"
 require "rest-client"
 require "uri"
+require "time"
 
 ## refresh token for ESB API call
 def refreshESBToken()
@@ -178,7 +179,7 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 
 	#open the output file
 	begin
-		outputFile = File.open(outputDirectory + "url_update.txt", "w")
+		outputFile = File.open(outputDirectory + "url_update_#{Time.now}.txt", "w")
 
 		# get the MPathway term set
 		mPathwayTermSet = getMPathwayTerms(esbToken)
