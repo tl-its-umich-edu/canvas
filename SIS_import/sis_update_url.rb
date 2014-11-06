@@ -11,6 +11,7 @@ require "net/https"
 require "rest-client"
 require "uri"
 require "time"
+require "rubygems" ## needed for ruby 1.8.7 
 
 ## refresh token for ESB API call
 def refreshESBToken()
