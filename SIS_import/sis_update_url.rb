@@ -12,10 +12,14 @@ require "rest-client"
 require "uri"
 
 ## refresh token for ESB API call
-def refreshESBToken(esbKey, esbSecret, esbTokenUrl)
-	encoded_string = Base64.strict_encode64 (esbKey + ":" + esbSecret)
+def refreshESBToken()
+	encoded_string = Base64.strict_encode64 ($esbKey + ":" + $esbSecret)
 	param_hash={"grant_type"=>"client_credentials","scope"=> "PRODUCTION"}
-	json = ESBAPICall(esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION", "Basic " + encoded_string, "application/x-www-form-urlencoded", "POST", param_hash)
+	json = ESBAPICall($esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
+	                  "Basic " + encoded_string,
+	                  "application/x-www-form-urlencoded",
+	                  "POST",
+	                  param_hash)
 	return json["access_token"]
 end
 
@@ -58,8 +62,8 @@ def ESBAPICall(url, authorization_string, content_type, request_type, param_hash
 	sock.use_ssl=true
 
 	store = OpenSSL::X509::Store.new
-	store.add_cert(OpenSSL::X509::Certificate.new(File.read("/System/Library/OpenSSL/certs/AddTrustExternalCARoot.txt")))
-	store.add_cert(OpenSSL::X509::Certificate.new(File.read("/System/Library/OpenSSL/certs/InCommonServerCA.txt")))
+	store.add_cert(OpenSSL::X509::Certificate.new(File.read($caRootFilePath)))
+	store.add_cert(OpenSSL::X509::Certificate.new(File.read($inCommonFilePath)))
 	sock.cert_store = store
 	#sock.set_debug_output $stdout #useful to see the raw messages going over the wire
 	sock.read_timeout = 10
@@ -85,10 +89,10 @@ def setMPathwayUrl(canvasUrl, esbUrl, esbToken, termId, sectionId, courseId)
 end
 
 ## get the current term info from MPathway
-def getMPathwayTerms(esbUrl, esbToken)
+def getMPathwayTerms(esbToken)
 	rv = Set.new()
 	#get term information
-	call_url = esbUrl + "/Curriculum/SOC/v1/Terms";
+	call_url = $esbUrl + "/Curriculum/SOC/v1/Terms";
 	result= ESBAPICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
 	JSON.parse(result.to_json)["getSOCTermsResponse"]["Term"].each { |term|
 		termId = term["TermCode"]
@@ -101,9 +105,9 @@ end
 ## 2. compare the term list with MPathway term list, take the terms which are in both sets
 ## 3. iterate through all courses in each term,
 ## 4. if the course is open/available, find sections/classes in each course, set the class url in MPathway
-def processTermCourses(mPathwayTermSet, canvasUrl, canvasToken,esbUrl,esbToken, outputFile)
+def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 
-	json_term_data=`curl -H "Authorization: Bearer #{canvasToken}" #{canvasUrl}/api/v1/accounts/1/terms`
+	json_term_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/accounts/1/terms`
 	parseJson(json_term_data)["enrollment_terms"].each {|term|
 		if(mPathwayTermSet.include?(term["sis_term_id"]))
 			#SIS term ID
@@ -115,7 +119,7 @@ def processTermCourses(mPathwayTermSet, canvasUrl, canvasToken,esbUrl,esbToken, 
 			outputFile.write("for term SIS_ID=#{term["sis_term_id"]} and Canvas term id=#{termId}\n")
 
 			# Web Service call
-			json_data=`curl -H "Authorization: Bearer #{canvasToken}" #{canvasUrl}/api/v1/accounts/1/courses?enrollment_term_id=#{termId}&published=true&with_enrollments=true`
+			json_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/accounts/1/courses?enrollment_term_id=#{termId}&published=true&with_enrollments=true`
 			p json_data
 			outputFile.write("#{json_data}\n")
 			parsed = parseJson(json_data)
@@ -127,14 +131,14 @@ def processTermCourses(mPathwayTermSet, canvasUrl, canvasToken,esbUrl,esbToken, 
 					course.each do |key, value|
 						if (key=="id")
 							courseId = value
-							sections_data=`curl -H "Authorization: Bearer #{canvasToken}" #{canvasUrl}/api/v1/courses/#{courseId}/sections`
+							sections_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/courses/#{courseId}/sections`
 							outputFile.write("#{sections_data}\n")
 							sectionsParsed = parseJson(sections_data)
 							sectionsParsed.each { |section|
 								# section is a hash
 								section.each do |sectionKey, sectionValue|
 									if (sectionKey=="id")
-										section_data=`curl -H "Authorization: Bearer #{canvasToken}" #{canvasUrl}/api/v1/sections/#{sectionValue}`
+										section_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/sections/#{sectionValue}`
 										sectionParsed = parseJson(section_data)
 										if (sectionParsed.has_key?("sis_section_id"))
 											sectionParsedSISID=sectionParsed["sis_section_id"]
@@ -142,7 +146,7 @@ def processTermCourses(mPathwayTermSet, canvasUrl, canvasToken,esbUrl,esbToken, 
 												## for now we will use just the last 5-digit of the section id
 												sectionParsedSISID = sectionParsedSISID[4,8]
 
-												result_json = setMPathwayUrl(canvasUrl, esbUrl, esbToken, sisTermId, sectionParsedSISID, courseId)
+												result_json = setMPathwayUrl($canvasUrl, $esbUrl, esbToken, sisTermId, sectionParsedSISID, courseId)
 												message = "set url result for course id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: status=#{result_json["setLMSURLResponse"]["Resultcode"]} and message=#{result_json["setLMSURLResponse"]["ResultMessage"]}\n\n"
 												p message
 
@@ -164,7 +168,7 @@ def processTermCourses(mPathwayTermSet, canvasUrl, canvasToken,esbUrl,esbToken, 
 end
 
 ## the main function
-def update_MPathway_with_Canvas_url(canvasUrl, esbUrl, canvasToken, esbToken, outputDirectory)
+def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 
 	upload_error = false
 	parsed_result = false
@@ -177,10 +181,10 @@ def update_MPathway_with_Canvas_url(canvasUrl, esbUrl, canvasToken, esbToken, ou
 		outputFile = File.open(outputDirectory + "url_update.txt", "w")
 
 		# get the MPathway term set
-		mPathwayTermSet = getMPathwayTerms(esbUrl, esbToken)
+		mPathwayTermSet = getMPathwayTerms(esbToken)
 
 		#call Canvas API to get course url
-		processTermCourses(mPathwayTermSet, canvasUrl, canvasToken, esbUrl, esbToken, outputFile)
+		processTermCourses(mPathwayTermSet, esbToken, outputFile)
 	# close output file
 	ensure
 	outputFile.close unless outputFile == nil
@@ -213,22 +217,25 @@ def parseJson(data)
 end
 
 # to invoke this script, use the following format
-# ruby ./SIS_update_url.rb <the_token_file_path> <the_server_name> <the_workspace_path> <the_esb_token_file_path>
+# ruby ./SIS_update_url.rb <the_token_file_path> <the_server_name> <the_workspace_path> <the_esb_file_path>
 
 # the current working directory
 currentDirectory=""
 
 # the Canvas parameters
-canvasUrl = ""
+$canvasUrl = ""
 # the Canvas access token
-canvasToken=""
+$canvasToken=""
 
 # ESB parameters
 esbTokenFile=""
-esbKey=""
-esbSecret=""
-esbUrl=""
-esbTokenUrl=""
+$esbKey=""
+$esbSecret=""
+$esbUrl=""
+$esbTokenUrl=""
+# those two cert files are needed for ESB calls
+$caRootFilePath=""
+$inCommonFilePath=""
 
 # the command line argument count
 count=1
@@ -242,13 +249,13 @@ ARGV.each do|arg|
 		File.open(arg, 'r') do |tokenFile|
 			while line = tokenFile.gets
 				# only read the first line, which is the token value
-				canvasToken=line.strip
+				$canvasToken=line.strip
 				break
 			end
 		end
 	elsif (count==2)
 		# the second argument should be the server name
-		canvasUrl=arg
+		$canvasUrl=arg
 	elsif (count==3)
 		# the third path should be the workspace path
 		currentDirectory=arg
@@ -262,13 +269,17 @@ ARGV.each do|arg|
 				# format: key=KEY,secret=secret
 				env_array = line.strip.split(',')
 				key_array=env_array[0].split('=')
-				esbKey=key_array[1]
+				$esbKey=key_array[1]
 				secret_array=env_array[1].split('=')
-				esbSecret=secret_array[1]
+				$esbSecret=secret_array[1]
 				url_array=env_array[2].split('=')
-				esbUrl=url_array[1]
+				$esbUrl=url_array[1]
 				token_url_array=env_array[3].split('=')
-				esbTokenUrl=token_url_array[1]
+				$esbTokenUrl=token_url_array[1]
+				caRootFilePath_array=env_array[4].split('=')
+				$caRootFilePath=caRootFilePath_array[1]
+				inCommonFilePath_array=env_array[5].split('=')
+				$inCommonFilePath=inCommonFilePath_array[1]
 				break
 			end
 		end
@@ -283,7 +294,7 @@ end
 # get then log output directory
 outputDirectory=currentDirectory + "logs/"
 
-p "canvasUrl=" + canvasUrl
+p "canvasUrl=" + $canvasUrl
 p "current directory: " + currentDirectory
 p "output directory: " + outputDirectory
 
@@ -297,10 +308,10 @@ else
 	# URL update start time
 	p "URL update start time : " + Time.new.inspect
 
-	esbToken=refreshESBToken(esbKey, esbSecret, esbTokenUrl)
+	esbToken=refreshESBToken()
 
 	# update MPathway with Canvas urls
-	updateError = update_MPathway_with_Canvas_url(canvasUrl, esbUrl, canvasToken, esbToken, outputDirectory)
+	updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 
 
 	# upload stop time
