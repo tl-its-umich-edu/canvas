@@ -164,22 +164,22 @@ p "output directory: " + outputDirectory
 
 if (Dir[currentDirectory].length != 1)
 	## working directory
-	abort("Cannot find current working directory " + currentDirectory)
+	uploadError = "Cannot find current working directory " + currentDirectory
 elsif (Dir[archiveDirectory].length != 1)
 	## archive directory
-	abort("Cannot find archive directory " + archiveDirectory)
+	uploadError = "Cannot find archive directory " + archiveDirectory
 elsif (Dir[outputDirectory].length != 1)
 	## logs directory
-	abort("Cannot find logs directory " + outputDirectory)
+	uploadError = "Cannot find logs directory " + outputDirectory
 else
 	# the canvas import zip file
 	fileNames = Dir[currentDirectory+ "Canvas_Extract_*.zip"];
 	if (fileNames.length == 0)
 		## cannot find zip file to upload
-		abort("Cannot find SIS zip file")
+		uploadError = "Cannot find SIS zip file"
 	elsif (fileNames.length > 1)
-                ## there are more than one zip file
-                abort("There are more than one SIS zip files to be uploaded.")
+		## there are more than one zip file
+		uploadError = "There are more than one SIS zip files to be uploaded."
 	elsif
 		## get the name of file to process
 		fileName=fileNames[0]
@@ -194,16 +194,18 @@ else
 
 		# upload stop time
 		p "upload stop time : " + Time.new.inspect
-
-		if (!uploadError)
-			## if there is no upload error
-			# move file to archive directory after processing
-			FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
-			p "SIS upload finished with " + fileName
-			exit
-		else
-			abort(uploadError)
-		end
 	end
+end
+
+if (!uploadError)
+	## if there is no upload error
+	# move file to archive directory after processing
+	FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
+	p "SIS upload finished with " + fileName
+	exit
+else
+	## send email to support team with the error message
+	`echo #{uploadError} | mail -s "#{server} Upload Error" zqian@umich.edu`
+	abort(uploadError)
 end
 
