@@ -126,6 +126,9 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 			outputFile.write("#{json_data}\n")
 			parsed = parseJson(json_data)
 			parsed.each { |course|
+				p course["name"]
+				p course["id"]
+=begin
 				p course["workflow_state"]
 				if (course.has_key?("workflow_state") && course["workflow_state"] == "available")
 					# only set url for those published sections
@@ -164,6 +167,7 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 				else
 					outputFile.write("Course #{course["course_code"]} with SIS Course ID #{course["sis_course_id"]} is of status #{course["workflow_state"]}, will not set url for its classes. \n")
 				end
+=end
 			}
 		end
 	}
