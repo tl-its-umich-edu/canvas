@@ -116,6 +116,8 @@ end
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
 
+# token file name
+tokenFile = ""
 # the access token
 token = ""
 # the Canvas server name
@@ -128,17 +130,7 @@ count=1
 # iterate through the inline arguments
 ARGV.each do|arg|
 	if (count==1)
-		if (Dir[arg].length != 1)
-			## token file
-			abort("Cannot find token file " + arg)
-		end
-		File.open(arg, 'r') do |tokenFile|
-			while line = tokenFile.gets
-				# only read the first line, which is the token value
-				token=line.strip
-				break
-			end
-		end
+		tokenFile = arg
 	elsif (count==2)
 		# the second argument should be the server name
 		server=arg
@@ -162,7 +154,24 @@ p "current directory: " + currentDirectory
 p "archive directory: " + archiveDirectory
 p "output directory: " + outputDirectory
 
-if (Dir[currentDirectory].length != 1)
+if (Dir[tokenFile].length != 1)
+	## token file
+        uploadError = "Cannot find token file #{tokenFile}."
+else
+        File.open(tokenFile, 'r') do |tFile|
+	        while line = tFile.gets
+	          # only read the first line, which is the token value
+	                token=line.strip
+	                break
+	        end
+        end
+	if (token=="")
+		uploadError="Empty token for Canvas upload."
+	end
+end
+
+if (uploadError)
+elsif (Dir[currentDirectory].length != 1)
 	## working directory
 	uploadError = "Cannot find current working directory " + currentDirectory
 elsif (Dir[archiveDirectory].length != 1)
