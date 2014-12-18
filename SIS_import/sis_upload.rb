@@ -204,8 +204,10 @@ if (!uploadError)
 	p "SIS upload finished with " + fileName
 	exit
 else
+	## check first about the environment variable setting for MAILTO '
+	p " use the environment variable for sending out error messages #{ENV['MAILTO']}"
 	## send email to support team with the error message
-	`echo #{uploadError} | mail -s "#{server} Upload Error" zqian@umich.edu`
+	`echo #{uploadError} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
 	abort(uploadError)
 end
 
