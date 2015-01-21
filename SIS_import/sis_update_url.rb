@@ -103,12 +103,6 @@ def getMPathwayTerms(esbToken)
 	call_url = $esbUrl + "/Curriculum/SOC/v1/Terms";
 	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
 	# TODO: we are expecting an array here eventually. But for single item return, it is not in array form now
-=begin
-	result["getSOCTermsResponse"]["Term"].each { |term|
-		termId = term["TermCode"]
-		rv.add(termId)
-	}
-=end
 	termId=result["getSOCTermsResponse"]["Term"]["TermCode"]
 	rv.add(termId)
 	return rv
