@@ -7,7 +7,6 @@ require "nokogiri"
 require "uglifier"
 require "base64"
 require "net/http"
-require "net/https"
 require "rest-client"
 require "uri"
 require "time"
@@ -17,7 +16,7 @@ require "rubygems" ## needed for ruby 1.8.7
 def refreshESBToken()
 	encoded_string = Base64.strict_encode64 ($esbKey + ":" + $esbSecret)
 	param_hash={"grant_type"=>"client_credentials","scope"=> "PRODUCTION"}
-	json = ESBAPICall($esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
+	json = ESB_APICall($esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
 	                  "Basic " + encoded_string,
 	                  "application/x-www-form-urlencoded",
 	                  "POST",
@@ -25,10 +24,19 @@ def refreshESBToken()
 	return json["access_token"]
 end
 
-## make ESB call
-def ESBAPICall(url, authorization_string, content_type, request_type, param_hash)
-	p url
+## make Canvas API call
+def Canvas_APICall(url, authorization_string, content_type, request_type, param_hash)
+	response = RestClient.get url, {:Authorization => "Bearer #{authorization_string}",
+	                                :accept => content_type,
+	                                :verify_ssl => true}
+return JSON.parse(response)
+end
+
+## make ESB API call
+def ESB_APICall(url, authorization_string, content_type, request_type, param_hash)
 	url = URI.parse(url)
+
+	response = ""
 	case request_type
 		when "POST"
 			request = Net::HTTP::Post.new(url.path)
@@ -57,24 +65,22 @@ def ESBAPICall(url, authorization_string, content_type, request_type, param_hash
 			# if parameter hash is not null, attach them to form
 			request.set_form_data(param_hash)
 		end
-		p param_hash
 	end
 
 	sock = Net::HTTP.new(url.host, url.port)
 	sock.use_ssl=true
-
 	store = OpenSSL::X509::Store.new
 	store.add_cert(OpenSSL::X509::Certificate.new(File.read($caRootFilePath)))
 	store.add_cert(OpenSSL::X509::Certificate.new(File.read($inCommonFilePath)))
 	sock.cert_store = store
-	#sock.set_debug_output $stdout #useful to see the raw messages going over the wire
-	sock.read_timeout = 10
-	sock.open_timeout = 10
 
+	#sock.set_debug_output $stdout #useful to see the raw messages going over the wire
+	sock.read_timeout = 30
+	sock.open_timeout = 30
 	sock.start do |http|
 		response = http.request(request)
-		return JSON.parse(response.body)
 	end
+	return JSON.parse(response.body)
 end
 
 ## the ESB PUT call to set class URL in MPathway
@@ -84,7 +90,7 @@ def setMPathwayUrl(canvasUrl, esbUrl, esbToken, termId, sectionId, courseId)
 	lmsUrl=URI.escape(lmsUrl)
 	#get course information
 	call_url = esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
-	result= ESBAPICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" =>lmsUrl})
+	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" =>lmsUrl})
 	# result hash format
 	# {"setLMSURLResponse"=>{"Resultcode"=>"Success", "ResultMessage"=>""}}
 	return JSON.parse(result.to_json)
@@ -95,11 +101,10 @@ def getMPathwayTerms(esbToken)
 	rv = Set.new()
 	#get term information
 	call_url = $esbUrl + "/Curriculum/SOC/v1/Terms";
-	result= ESBAPICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
-	JSON.parse(result.to_json)["getSOCTermsResponse"]["Term"].each { |term|
-		termId = term["TermCode"]
-		rv.add(termId)
-	}
+	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
+	# TODO: we are expecting an array here eventually. But for single item return, it is not in array form now
+	termId=result["getSOCTermsResponse"]["Term"]["TermCode"]
+	rv.add(termId)
 	return rv
 end
 
@@ -109,8 +114,12 @@ end
 ## 4. if the course is open/available, find sections/classes in each course, set the class url in MPathway
 def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 
-	json_term_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/accounts/1/terms`
-	parseJson(json_term_data)["enrollment_terms"].each {|term|
+	term_data = Canvas_APICall("#{$canvasUrl}/api/v1/accounts/1/terms",
+	                           "Bearer #{$canvasToken}",
+	                           "application/json",
+	                           "GET",
+	                           nil)
+	term_data["enrollment_terms"].each {|term|
 		if(mPathwayTermSet.include?(term["sis_term_id"]))
 			#SIS term ID
 			sisTermId = term["sis_term_id"]
@@ -121,40 +130,44 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 			outputFile.write("for term SIS_ID=#{term["sis_term_id"]} and Canvas term id=#{termId}\n")
 
 			# Web Service call
-			json_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/accounts/1/courses?enrollment_term_id=#{termId}&published=true&with_enrollments=true`
-			p json_data
-			outputFile.write("#{json_data}\n")
-			parsed = parseJson(json_data)
-			parsed.each { |course|
-				p course["name"]
-				p course["id"]
-=begin
-				p course["workflow_state"]
-				if (course.has_key?("workflow_state") && course["workflow_state"] == "available")
+			json_data = Canvas_APICall("#{$canvasUrl}/api/v1/accounts/1/courses?per_page=100&enrollment_term_id=#{termId}&published=true&with_enrollments=true",
+			                  "Bearer #{$canvasToken}",
+			                  "application/json",
+			                  "GET",
+			                  nil)
+			#outputFile.write("#{json_data}\n")
+			count = 1
+			json_data.each { |course|
+				if (course.has_key?("workflow_state") && course["workflow_state"] == "available" )
 					# only set url for those published sections
 					# course is a hash
 					course.each do |key, value|
 						if (key=="id")
 							courseId = value
-							sections_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/courses/#{courseId}/sections`
-							outputFile.write("#{sections_data}\n")
-							sectionsParsed = parseJson(sections_data)
-							sectionsParsed.each { |section|
+							sections_data = Canvas_APICall("#{$canvasUrl}/api/v1/courses/#{courseId}/sections",
+							                           "Bearer #{$canvasToken}",
+							                           "application/json",
+							                           "GET",
+							                           nil)
+							#outputFile.write("#{sections_data}\n")
+							sections_data.each { |section|
 								# section is a hash
 								section.each do |sectionKey, sectionValue|
 									if (sectionKey=="id")
-										section_data=`curl -H "Authorization: Bearer #{$canvasToken}" #{$canvasUrl}/api/v1/sections/#{sectionValue}`
-										sectionParsed = parseJson(section_data)
-										if (sectionParsed.has_key?("sis_section_id"))
-											sectionParsedSISID=sectionParsed["sis_section_id"]
+										section_data = Canvas_APICall("#{$canvasUrl}/api/v1/sections/#{sectionValue}",
+										                               "Bearer #{$canvasToken}",
+										                               "application/json",
+										                               "GET",
+										                               nil)
+										if (section_data.has_key?("sis_section_id"))
+											sectionParsedSISID=section_data["sis_section_id"]
 											if (sectionParsedSISID != nil)
 												## for now we will use just the last 5-digit of the section id
 												sectionParsedSISID = sectionParsedSISID[4,8]
 
 												result_json = setMPathwayUrl($canvasUrl, $esbUrl, esbToken, sisTermId, sectionParsedSISID, courseId)
-												message = "set url result for course id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: status=#{result_json["setLMSURLResponse"]["Resultcode"]} and message=#{result_json["setLMSURLResponse"]["ResultMessage"]}\n\n"
+												message = "set url result for course id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}\n\n"
 												p message
-
 												# write into output file
 												outputFile.write(message)
 											end
@@ -166,8 +179,8 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 					end
 				else
 					outputFile.write("Course #{course["course_code"]} with SIS Course ID #{course["sis_course_id"]} is of status #{course["workflow_state"]}, will not set url for its classes. \n")
-				end
-=end
+			end
+			p count
 			}
 		end
 	}
@@ -184,7 +197,9 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 
 	#open the output file
 	begin
-		outputFile = File.open(outputDirectory + "url_update_#{Time.now}.txt", "w")
+		time = Time.now
+		time_formatted = time.strftime("%Y_%m_%d_%H%M%S")
+		outputFile = File.open(outputDirectory + "url_update_#{time_formatted}.txt", "w")
 
 		# get the MPathway term set
 		mPathwayTermSet = getMPathwayTerms(esbToken)
