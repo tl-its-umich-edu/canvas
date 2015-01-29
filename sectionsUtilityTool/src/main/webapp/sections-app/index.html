@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="sectionsApp">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
+        <link rel="stylesheet" href="assets/css/custom_style.css">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Sections Manager</title>
+    </head>
+    <body>
+
+      <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header mastHead">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <h1 class="navbar-brand collapse-nav">Sections Manager</h1>
+                </div>
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" class="collapse-nav" data-toggle="modal" data-target="#serverInfoModal">About</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /.navbar-collapse -->
+            </div>
+            <!-- /.container-fluid -->
+        </nav>
+
+        <div class="container-fluid contentWrapper"  ng-controller="coursesController">
+            <div class="form-inline">
+              <div class="form-group">
+                <input type="text"  id="uniqname" class="form-control"  placeholder="uniqname">
+              </div>
+              <button type="button"  ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses</button>
+              <span ng-show="error" class="alert" role="alert">{{errorMessage}} Lookup in the <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
+              <span ng-show="success" class="alert" role="alert">{{successMessage}}</span>
+            </div>
+            <div class="coursePanel well" ng-show="success">
+                <ul class="container-fluid courseList">
+                    <li ng-repeat="item in courses" class="row">
+                        <div class="col-md-2">
+                            <a href="#">{{item.course_code}}</a>
+                        </div>
+                        <div class="col-md-3">
+                            {{item.name}}
+                        </div>
+                        <div class="col-md-1">
+                            {{item.id}}
+                        </div>
+                        <div class="col-md-2">
+                            {{item.sis_course_id}} 
+                        </div>
+                        <div class="col-md-2">
+                            {{item.enrollment_term_id}}
+                        </div>
+                        <div class="col-md-2">
+                            <a href="#" ng-click="getSections()">Get sections</a>
+                        </div>
+
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+        <script src="assets/vendor/jquery/jquery-1.11.0.min.js">
+        </script>
+        <script src="assets/vendor/bootstrap/bootstrap.min.js">
+        </script>
+        <script src="assets/vendor/moment/moment.min.js">
+        </script>
+		<script src="assets/vendor/underscore/underscore-min.js">
+        </script>
+        <script src="assets/js/utils.js">
+        </script>
+        <script src="assets/vendor/angular/angular.min.js">
+        </script>
+        <script src="assets/js/controllers/controllers.js">
+        </script>
+        <script src="assets/js/factories/factories.js">
+        </script>
+        <script src="assets/js/filters/filters.js">
+        </script>
+
+        <!-- Modal -->
+        <div class="modal fade" id="serverInfoModal" tabindex="-1" role="dialog" aria-labelledby="serverInfoLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="serverInfoLabel">Section Management!</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p>Version, revision, etc</p>
+                        <p>Contact info, bug reporting</p>
+                        <p>
+                            <strong>Available test users:</strong> amanjo, csev, jxiaapl, pbogart, pfbodary, raquelng, sileo, trohlck
+                        </p>
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
