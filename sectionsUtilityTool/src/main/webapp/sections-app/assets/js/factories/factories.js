@@ -15,16 +15,14 @@ sectionsApp.factory('Courses', function ($http) {
   };
 });
 
-sectionsApp.factory('someFactory', function ($http) {
+sectionsApp.factory('Sections', function ($http) {
   return {
-    someMethod: function (building) {
-      var url = 'data/buildings/' + _.last(building.split(' ')).toLowerCase() + '.json';
+    getSectionsForCourseId: function (courseId, uniqname) {
+      var url = '../../../section_data/sections-' + uniqname + '-' + courseId + '.json';
+      console.log(url)
       return $http.get(url, {cache: true}).then(
         function success(result) {
-          var coords = {};
-          coords.latitude = result.data.Buildings.Building.Latitude;
-          coords.longitude = result.data.Buildings.Building.Longitude;
-          return coords;
+          return result;
         },
         function error() {
           //do something in case of error
@@ -36,20 +34,3 @@ sectionsApp.factory('someFactory', function ($http) {
   };
 });
 
-
-sectionsApp.factory('pageDay', function () {
-  return {
-      getDay: function (wdayintnew) {
-        //wdayintnew=4; // for testing
-        var weekday=new Array(7);
-        weekday[1]=['Mo', 'Monday'];
-        weekday[2]=['Tu', 'Tuesday'];
-        weekday[3]=['We', 'Wednesday'];
-        weekday[4]=['Th', 'Thursday'];
-        weekday[5]=['Fr', 'Friday'];
-        weekday[6]=['Sa', 'Saturday'];
-        weekday[7]=['Su', 'Sunday'];
-        return  weekday[wdayintnew];
-      }
-  };
-});

@@ -8,7 +8,7 @@ sectionsApp.run(function ($rootScope) {
   $rootScope.user = $.trim($('#uniqname').val());
 });
 
-sectionsApp.controller('coursesController', ['Courses', '$rootScope', '$scope', function (Courses, $rootScope, $scope) {
+sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
   $scope.courses = [];
   $scope.loading = true;
 
@@ -34,15 +34,17 @@ sectionsApp.controller('coursesController', ['Courses', '$rootScope', '$scope', 
       }
     });
   };
-      $scope.getSections = function (courseId) {
-        //var cid = courseId;
-        //invove a section factory as above, and on success:
-        //need to find what node is the one to add things to
-        var pos = 0;
-        $scope.courses[pos].push();
-
+      $scope.getSections = function (courseId, uniqname) {
+        Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
+          if (data) {
+            //need to find what node of the scope is the one to add things to (underscore)
+            //var pos = 0;
+            //$scope.courses[pos].push();
+          } else {
+            //deal with this
+          }
+        });
     };
-
 }]);
 
 
