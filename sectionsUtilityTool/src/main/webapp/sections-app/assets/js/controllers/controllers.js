@@ -30,20 +30,20 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $scope.courses = data.data;
         $scope.error = false;
         $scope.success = true;
-        $scope.successMessage = 'Found ' + data.data.length + ' courses for ' + uniqname;
+        $scope.successMessage = 'Found ' + data.data.length + ' courses for ';
       }
     });
   };
-      $scope.getSections = function (courseId, uniqname) {
-        Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
-          if (data) {
-            var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
-            $scope.courses[coursePos].sections = data.data;
-          } else {
-            //deal with this
-          }
-        });
-    };
+  $scope.getSections = function (courseId, uniqname) {
+    Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
+      if (data) {
+        var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
+        $scope.courses[coursePos].sections = data.data;
+      } else {
+        //deal with this
+      }
+    });
+};
 }]);
 
 

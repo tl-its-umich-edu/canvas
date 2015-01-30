@@ -5,3 +5,7 @@ https://umich.instructure.com/api/v1/courses?as_user_id=sis_login_id:<uniqname>&
 Get sections
 
 https://umich.instructure.com/api/v1/courses/<course-id>/sections?per_page=100&access_token=<acccess-token>
+
+Get terms
+
+https://umich.instructure.com/api/v1/accounts/1/terms

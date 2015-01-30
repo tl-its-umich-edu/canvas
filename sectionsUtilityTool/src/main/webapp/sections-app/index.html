@@ -41,14 +41,14 @@
               </div>
               <button type="button"  ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses</button>
               <span ng-show="error" class="alert" role="alert">{{errorMessage}} Lookup in the <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
-              <span ng-show="success" class="alert" role="alert">{{successMessage}}</span>
+              <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a></span>
             </div>
             <div class="coursePanel well" ng-show="success">
                 <ul class="container-fluid courseList">
                     <li ng-repeat="item in courses">
                         <div class="row">
                             <div class="col-md-2">
-                                <a href="#">{{item.course_code}}</a>
+                                <a href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a>
                             </div>
                             <div class="col-md-3">
                                 {{item.name}}

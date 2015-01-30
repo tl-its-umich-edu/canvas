@@ -1,0 +1,68 @@
+{
+    "enrollment_terms": [
+        {
+            "end_at": "2014-08-12T12:16:00Z",
+            "id": 36,
+            "name": "Spring/Summer 2014",
+            "start_at": "2014-05-06T12:10:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "1990"
+        },
+        {
+            "end_at": "2014-08-12T12:16:00Z",
+            "id": 37,
+            "name": "Summer 2014",
+            "start_at": "2014-06-26T12:12:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "2000"
+        },
+        {
+            "end_at": "2015-01-04T05:00:00Z",
+            "id": 38,
+            "name": "Fall 2014",
+            "start_at": "2014-09-02T04:00:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "2010"
+        },
+        {
+            "end_at": "2015-06-20T04:00:00Z",
+            "id": 39,
+            "name": "Winter 2015",
+            "start_at": "2015-01-05T05:00:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "2020"
+        },
+        {
+            "end_at": "2015-08-21T04:00:00Z",
+            "id": 40,
+            "name": "Spring 2015",
+            "start_at": "2015-05-05T04:00:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "2030"
+        },
+        {
+            "end_at": "2015-10-17T04:00:00Z",
+            "id": 41,
+            "name": "Spring/Summer 2015",
+            "start_at": "2015-05-05T04:00:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "2040"
+        },
+        {
+            "end_at": "2015-10-17T04:00:00Z",
+            "id": 42,
+            "name": "Summer 2015",
+            "start_at": "2015-07-01T04:00:00Z",
+            "workflow_state": "active",
+            "sis_term_id": "2050"
+        },
+        {
+            "end_at": null,
+            "id": 1,
+            "name": "Default Term",
+            "start_at": null,
+            "workflow_state": "active",
+            "sis_term_id": null
+        }
+    ]
+}
