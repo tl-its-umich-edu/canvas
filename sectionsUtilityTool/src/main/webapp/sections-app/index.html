@@ -45,26 +45,48 @@
             </div>
             <div class="coursePanel well" ng-show="success">
                 <ul class="container-fluid courseList">
-                    <li ng-repeat="item in courses" class="row">
-                        <div class="col-md-2">
-                            <a href="#">{{item.course_code}}</a>
+                    <li ng-repeat="item in courses">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <a href="#">{{item.course_code}}</a>
+                            </div>
+                            <div class="col-md-3">
+                                {{item.name}}
+                            </div>
+                            <div class="col-md-1">
+                                {{item.id}}
+                            </div>
+                            <div class="col-md-2">
+                                {{item.sis_course_id}} 
+                            </div>
+                            <div class="col-md-2">
+                                {{item.enrollment_term_id}}
+                            </div>
+                            <div class="col-md-2">
+                                <a href="#" ng-click="getSections(item.id, uniqname); $event.stopPropagation()">Get sections</a>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            {{item.name}}
-                        </div>
-                        <div class="col-md-1">
-                            {{item.id}}
-                        </div>
-                        <div class="col-md-2">
-                            {{item.sis_course_id}} 
-                        </div>
-                        <div class="col-md-2">
-                            {{item.enrollment_term_id}}
-                        </div>
-                        <div class="col-md-2">
-                            <a href="#" ng-click="getSections(item.id, uniqname)">Get sections</a>
-                        </div>
+                        <ul>
+                            <li  ng-repeat="section in item.sections" class="row">
+                                <div class="col-md-4">
+                                    {{section.name}}
+                                </div>
+                                <div class="col-md-2">
+                                    {{section.id}}
+                                </div>        
+                                <div class="col-md-2">
+                                    {{section.course_id}}
+                                </div>        
 
+                                <div class="col-md-2">
+                                    {{section.sis_section_id}}
+                                </div>        
+                                <div class="col-md-2">
+                                    {{section.sis_course_id}}
+                                </div>        
+
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>

@@ -38,16 +38,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
           if (data) {
             var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
-            //need to find what node of the scope is the one to add things to (underscore)
-            //var pos = 0;
-            //console.log(coursePos);
-            //console.log(data);
-            //console.log($scope.courses[coursePos]);
-            //$scope.services.push.apply($scope.services, data.services);
-            //$scope.data.splice(0, 0, item);
-            //$scope.courses[0].push({
-              //sections: data
-            //}); 
+            $scope.courses[coursePos].sections = data.data;
           } else {
             //deal with this
           }
