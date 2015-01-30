@@ -35,6 +35,18 @@
         </nav>
 
         <div class="container-fluid contentWrapper"  ng-controller="coursesController">
+
+            <div class="btn-group pull-right">
+                <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
+                    Terms <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak>
+                    <li ng-repeat="term in terms | orderBy : id"><a href='' ng-click="getTerm(term.id, term.name)">{{term.name}}</a></li>
+                </ul>
+            </div>
+            <div class="spinner pull-right" ng-show="loading"></div>
+
+
             <div class="form-inline">
               <div class="form-group">
                 <input type="text"  id="uniqname" class="form-control"  placeholder="uniqname">

@@ -8,6 +8,42 @@ sectionsApp.run(function ($rootScope) {
   $rootScope.user = $.trim($('#uniqname').val());
 });
 
+
+
+sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$http', function (Courses, $rootScope, $scope, $http) {
+  $scope.selectedTerm = null;
+  //$scope.terms = [];
+  var termsUrl = '../../../section_data/terms.json';
+  //var termsUrl = 'terms';
+
+  $http.get(termsUrl).success(function (data) {
+    $scope.terms = data.enrollment_terms;
+  });
+
+  $scope.getTerm = function (termId, termName) {
+    $scope.$parent.loading = true;
+    //$scope.$parent.courses = [];
+    
+    //var url = 'courses/' + $rootScope.user + '.json'+ '?TERMID='+termId;
+    var uniqname = $.trim($('#uniqname').val());
+    var url = '/api/v1/courses?as_user_id=sis_login_id:' + uniqname + '&per_page=100&enrollment_term_id=sis_term_id:' +  termId + '&published=true&with_enrollments=true&enrollment_type=teacher&access_token=<acccess-token>';
+    console.log('term request: ' + url)
+    /*
+    Courses.getCourses(url).then(function (data) {
+      if (data.failure) {
+        $scope.$parent.courses.errors = data;
+        $scope.$parent.loading = false;
+      } else {
+          $scope.$parent.courses = data;
+          $scope.$parent.loading = false;
+      }
+    });
+    */
+  };
+
+}]);
+
+
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
   $scope.courses = [];
   $scope.loading = true;
@@ -47,35 +83,3 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
 }]);
 
 
-sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$http', function (Courses, $rootScope, $scope, $http) {
-  $scope.selectedTerm = null;
-  $scope.terms = [];
- 
-  var termsUrl = 'terms';
-
-  $http.get(termsUrl).success(function (data) {
-    $scope.terms = data;
-    $scope.$parent.term = data[0].term;
-    $scope.$parent.year = data[0].year;
-  });
-
-  $scope.getTerm = function (termId, term, year) {
-    $scope.$parent.loading = true;
-    $scope.$parent.courses = [];
-    $scope.$parent.term = term;
-    $scope.$parent.year = year;
-    var url = 'courses/' + $rootScope.user + '.json'+ '?TERMID='+termId;
-
-    Courses.getCourses(url).then(function (data) {
-      if (data.failure) {
-        $scope.$parent.courses.errors = data;
-        $scope.$parent.loading = false;
-      } else {
-          $scope.$parent.courses = data;
-          $scope.$parent.loading = false;
-      }
-    });
-
-  };
-
-}]);
