@@ -1,6 +1,6 @@
 'use strict';
 /* jshint  strict: true*/
-/* global $, angular */
+/* global $, _, angular */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters']);
 
@@ -37,9 +37,17 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       $scope.getSections = function (courseId, uniqname) {
         Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
           if (data) {
+            var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
             //need to find what node of the scope is the one to add things to (underscore)
             //var pos = 0;
-            //$scope.courses[pos].push();
+            //console.log(coursePos);
+            //console.log(data);
+            //console.log($scope.courses[coursePos]);
+            //$scope.services.push.apply($scope.services, data.services);
+            //$scope.data.splice(0, 0, item);
+            //$scope.courses[0].push({
+              //sections: data
+            //}); 
           } else {
             //deal with this
           }
