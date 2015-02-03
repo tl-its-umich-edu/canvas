@@ -5,14 +5,12 @@
         <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
         <link rel="stylesheet" href="assets/css/custom_style.css">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
-  <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
-  <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
-  <link rel="stylesheet" href="/resources/demos/style.css">
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+        <link rel="stylesheet" href="/resources/demos/style.css">
        
         <title>Sections Manager</title>
     </head>
-    <body>
+    <body  ngCloak>
       <div class="alert alert-danger debugPanel" id="debugPanel"></div>
       <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
             <div class="container-fluid">
@@ -62,7 +60,7 @@
             </div>
             <div class="coursePanel well" ng-show="success">
                 <ul class="container-fluid courseList">
-                    <li ng-repeat="item in courses">
+                    <li ng-repeat="item in courses" class="course">
                         <div class="row">
                             <div class="col-md-2">
                                 <strong><a href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong>
@@ -112,6 +110,8 @@
                 </ul>
             </div>
         </div>
+        <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+        <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
         <script src="assets/vendor/bootstrap/bootstrap.min.js">
         </script>
         <script src="assets/vendor/moment/moment.min.js">

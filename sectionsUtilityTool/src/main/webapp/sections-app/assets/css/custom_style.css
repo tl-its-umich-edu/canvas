@@ -43,6 +43,9 @@ ul {
     -moz-box-shadow: 1px 1px 2px 0px rgba(150, 150, 150, 0.15);
     box-shadow: 1px 1px 2px 0px rgba(150, 150, 150, 0.15);
 }
+.coursePanel  li.course {
+    background:#ffe;
+}
 .sectionList {
     min-height: 25px;
 }
