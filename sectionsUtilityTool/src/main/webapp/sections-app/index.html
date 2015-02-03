@@ -5,6 +5,11 @@
         <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
         <link rel="stylesheet" href="assets/css/custom_style.css">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+  <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+  <link rel="stylesheet" href="/resources/demos/style.css">
+       
         <title>Sections Manager</title>
     </head>
     <body>
@@ -80,8 +85,8 @@
                                 <a href="#" ng-click="getSections(item.id, uniqname); $event.stopPropagation()">Get sections</a> <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Set Sections</button>
                             </div>
                         </div>
-                        <ul>
-                            <li  ng-repeat="section in item.sections" class="row" data-sectionid="{{section.id}}">
+                        <ul class="sectionList" id="course{{item.id}}">
+                            <li ng-repeat="section in item.sections" class="row section ui-state-default" data-sectionid="{{section.id}}">
                                 <div class="col-md-4">
                                     {{section.name}}
                                 </div>
@@ -107,8 +112,6 @@
                 </ul>
             </div>
         </div>
-        <script src="assets/vendor/jquery/jquery-1.11.0.min.js">
-        </script>
         <script src="assets/vendor/bootstrap/bootstrap.min.js">
         </script>
         <script src="assets/vendor/moment/moment.min.js">

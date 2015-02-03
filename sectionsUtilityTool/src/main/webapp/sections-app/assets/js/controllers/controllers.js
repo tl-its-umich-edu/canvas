@@ -75,6 +75,9 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       if (data) {
         var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
         $scope.courses[coursePos].sections = data.data;
+        $('.sectionList').sortable({
+          connectWith: '.sectionList'
+        }).disableSelection();
       } else {
         //deal with this
       }

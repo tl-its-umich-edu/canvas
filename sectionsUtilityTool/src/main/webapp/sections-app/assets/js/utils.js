@@ -37,11 +37,10 @@ var errorHandler = function (url, result) {
 $(document).on('click', '.setSections', function (e) {
   e.preventDefault();
   $('#debugPanel').empty();
-  var thisCourse = $(this).attr("data-courseid");
-  var thisCourseSections = [];
+  var thisCourse = $(this).attr('data-courseid');
   var $sections = $(this).closest('li').find('ul').find('li');
   $sections.each(function( ) {
-    $('#debugPanel').append( '<p>POST /api/v1/sections/<strong>' + $(this).attr("data-sectionid") + '</strong>/crosslist/<strong>' + thisCourse + '</strong></p>');
+    $('#debugPanel').append( '<p>POST /api/v1/sections/<strong>' + $(this).attr('data-sectionid') + '</strong>/crosslist/<strong>' + thisCourse + '</strong></p>');
   });
   $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
   return null;
