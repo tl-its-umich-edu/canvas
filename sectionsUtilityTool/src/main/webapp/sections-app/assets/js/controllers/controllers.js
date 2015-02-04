@@ -1,6 +1,6 @@
 'use strict';
 /* jshint  strict: true*/
-/* global $, _, angular */
+/* global $, _, angular, console */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters']);
 
@@ -27,7 +27,11 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
     //var url = 'courses/' + $rootScope.user + '.json'+ '?TERMID='+termId;
     var uniqname = $.trim($('#uniqname').val());
     var url = '/api/v1/courses?as_user_id=sis_login_id:' + uniqname + '&per_page=100&enrollment_term_id=sis_term_id:' +  termId + '&published=true&with_enrollments=true&enrollment_type=teacher&access_token=<acccess-token>';
-    console.log('term request: ' + url)
+    //console.log('GET ' + url)
+    $('#debugPanel').empty();
+    $('#debugPanel').append( '<p>GET ' + url + '</p>');
+    $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
+
     /*
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
@@ -67,6 +71,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $scope.error = false;
         $scope.success = true;
         $scope.successMessage = 'Found ' + data.data.length + ' courses for ';
+        $scope.instructions = true;
       }
     });
   };
@@ -76,7 +81,12 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
         $scope.courses[coursePos].sections = data.data;
         $('.sectionList').sortable({
-          connectWith: '.sectionList'
+          connectWith: '.sectionList',
+          stop: function( event, ui ) {
+            //ui.item.fadeOut('fast').delay(3000).fadeIn('slow');
+            ui.item.css('background-color', '#FFFF9C')
+              .animate({ backgroundColor: '#FFFFFF'}, 1500);
+          }
         }).disableSelection();
       } else {
         //deal with this
