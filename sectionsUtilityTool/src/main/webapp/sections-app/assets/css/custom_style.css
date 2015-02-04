@@ -65,6 +65,9 @@ li.activeCourse button.setSections {
     right:25%;
 }
 
+[ng-cloak] {
+  display: none !important;
+}
 @media (max-width: 480px) {
     .col1, .col2, .col3 {
         padding:0

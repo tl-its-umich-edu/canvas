@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
         <title>Sections Manager</title>
     </head>
-    <body  ngCloak>
+    <body>
       <div class="alert alert-danger debugPanel" id="debugPanel"></div>
       <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
             <div class="container-fluid">
@@ -35,7 +35,7 @@
             <!-- /.container-fluid -->
         </nav>
 
-        <div class="container-fluid contentWrapper"  ng-controller="coursesController">
+        <div class="container-fluid contentWrapper"  ng-controller="coursesController" ng-cloak>
 
             <div class="btn-group pull-right">
                 <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
@@ -110,6 +110,8 @@
         </div>
         <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
         <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+        <script src="assets/vendor/angular/angular.min.js">
+        </script>
         <script src="assets/vendor/bootstrap/bootstrap.min.js">
         </script>
         <script src="assets/vendor/moment/moment.min.js">
@@ -117,8 +119,6 @@
 		<script src="assets/vendor/underscore/underscore-min.js">
         </script>
         <script src="assets/js/utils.js">
-        </script>
-        <script src="assets/vendor/angular/angular.min.js">
         </script>
         <script src="assets/js/controllers/controllers.js">
         </script>
