@@ -55,7 +55,9 @@
               <button type="button"  ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses</button>
               <span ng-show="error" class="alert" role="alert">{{errorMessage}} Lookup in the <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
               <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
+
             </div>
+            <h3> {{termName}}</h3>
             <div class="coursePanel well" ng-show="success">
                 <ul class="container-fluid courseList">
                     <li ng-repeat="item in courses" class="course">

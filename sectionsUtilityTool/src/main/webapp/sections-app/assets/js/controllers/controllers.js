@@ -8,10 +8,14 @@ sectionsApp.run(function ($rootScope) {
 });
 
 
-
+/* TERMS CONTROLLER */
 sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$http', function (Courses, $rootScope, $scope, $http) {
+  //void the currently selected term
   $scope.selectedTerm = null;
-  //$scope.terms = [];
+  //reset term scope
+  $scope.terms = [];
+  //term url - below from sample data
+  //TODO: needs changing to the servlet endpoint
   var termsUrl = '../../section_data/terms.json';
   //var termsUrl = 'terms';
 
@@ -19,18 +23,26 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
     $scope.terms = data.enrollment_terms;
   });
 
+  //user selects a term from the dropdown that has been 
+  //populated by $scope.terms 
   $scope.getTerm = function (termId, termName) {
+    $scope.$parent.termName = termName;
     $scope.$parent.loading = true;
+    /*reset $scope.$parent.courses
+    commented out here */
     //$scope.$parent.courses = [];
-    
-    //var url = 'courses/' + $rootScope.user + '.json'+ '?TERMID='+termId;
+
     var uniqname = $.trim($('#uniqname').val());
+    //TODO: needs changing to the servlet endpoint
     var url = '/api/v1/courses?as_user_id=sis_login_id:' + uniqname + '&per_page=100&enrollment_term_id=sis_term_id:' +  termId + '&published=true&with_enrollments=true&enrollment_type=teacher&access_token=<acccess-token>';
-    //console.log('GET ' + url)
+
+    //put request in UI as a placeholder - remove when feed works
     $('#debugPanel').empty();
     $('#debugPanel').append( '<p>GET ' + url + '</p>');
     $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
 
+
+    //TODO: uncomment  below when servlet has an endpoint
     /*
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
@@ -46,7 +58,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
 
 }]);
 
-
+//COURSES CONTROLLER
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
   $scope.courses = [];
   $scope.loading = true;
@@ -54,6 +66,8 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
+
+    //TODO: needs to be a servlet URL
     var url = '../../section_data/courses-' + uniqname + '.json';
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
@@ -74,18 +88,27 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       }
     });
   };
+  /*User clicks on Get Sections and the sections for that course
+  gets added to the course scope*/
   $scope.getSections = function (courseId, uniqname) {
     Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
       if (data) {
+        //find the course object
         var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
+        //append a section object to the course scope
         $scope.courses[coursePos].sections = data.data;
+        //sectionsShown = true hides the Get Sections link
         $scope.courses[coursePos].sectionsShown = true;
+        
+        //setting up the jQuery sortable
         $('.sectionList').sortable({
           connectWith: '.sectionList',
           receive: function(event, ui) {
+            //on drop, append the name of the source course
             ui.item.find('.status').text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
           },
           stop: function( event, ui ) {
+            //add some animation feedback to the move
             $('li.course').removeClass('activeCourse');
             ui.item.closest('li.course').addClass('activeCourse');
             ui.item.css('background-color', '#FFFF9C')
