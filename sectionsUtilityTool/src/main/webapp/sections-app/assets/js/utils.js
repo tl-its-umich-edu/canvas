@@ -13,6 +13,23 @@ $.ajaxSetup({
   cache: false
 });
 
+
+     
+var errorHandler = function (url, result) {    
+  var errorResponse = {};    
+  if (!result) {   
+    errorResponse.message = 'Something happened!';   
+    errorResponse.requestUrl = url;    
+    errorResponse.details = result.status;   
+   
+  } else {   
+    errorResponse.message = 'Something happened with a service we depend on!';   
+    errorResponse.requestUrl = url;    
+    errorResponse.details = result.status;   
+  }    
+  return errorResponse;       
+};
+
 /**
  *
  * event watchers

@@ -10,7 +10,9 @@ sectionsApp.factory('Courses', function ($http) {
             return result;
         },
         function error(result) {
-          //do something
+          result.errors = errorHandler(url, result);
+          result.errors.failure = true;    
+          return result.errors;
         }
       );
     }
