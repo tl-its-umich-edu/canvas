@@ -1,5 +1,4 @@
 'use strict';
-/* jshint  strict: true*/
 /* global $, _, angular, console */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters']);
@@ -13,7 +12,7 @@ sectionsApp.run(function ($rootScope) {
 sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$http', function (Courses, $rootScope, $scope, $http) {
   $scope.selectedTerm = null;
   //$scope.terms = [];
-  var termsUrl = '../../../section_data/terms.json';
+  var termsUrl = '../../section_data/terms.json';
   //var termsUrl = 'terms';
 
   $http.get(termsUrl).success(function (data) {
@@ -55,7 +54,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-    var url = '../../../section_data/courses-' + uniqname + '.json';
+    var url = '../../section_data/courses-' + uniqname + '.json';
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
         if(uniqname) {
@@ -83,7 +82,8 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $('.sectionList').sortable({
           connectWith: '.sectionList',
           stop: function( event, ui ) {
-            //ui.item.fadeOut('fast').delay(3000).fadeIn('slow');
+            $('li.course').removeClass('activeCourse');
+            ui.item.closest('li.course').addClass('activeCourse');
             ui.item.css('background-color', '#FFFF9C')
               .animate({ backgroundColor: '#FFFFFF'}, 1500);
           }

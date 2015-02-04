@@ -18,7 +18,7 @@ sectionsApp.factory('Courses', function ($http) {
 sectionsApp.factory('Sections', function ($http) {
   return {
     getSectionsForCourseId: function (courseId, uniqname) {
-      var url = '../../../section_data/sections-' + uniqname + '-' + courseId + '.json';
+      var url = '../../section_data/sections-' + uniqname + '-' + courseId + '.json';
       return $http.get(url, {cache: true}).then(
         function success(result) {
           return result;
