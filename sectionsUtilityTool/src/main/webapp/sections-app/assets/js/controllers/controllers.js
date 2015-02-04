@@ -1,5 +1,5 @@
 'use strict';
-/* global $, _, angular, console */
+/* global $, _, angular */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters']);
 
@@ -79,8 +79,12 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       if (data) {
         var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
         $scope.courses[coursePos].sections = data.data;
+        $scope.courses[coursePos].sectionsShown = true;
         $('.sectionList').sortable({
           connectWith: '.sectionList',
+          receive: function(event, ui) {
+            ui.item.find('.status').text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
+          },
           stop: function( event, ui ) {
             $('li.course').removeClass('activeCourse');
             ui.item.closest('li.course').addClass('activeCourse');

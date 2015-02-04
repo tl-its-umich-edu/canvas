@@ -45,3 +45,7 @@ $(document).on('click', '.setSections', function (e) {
   $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
   return null;
 });
+
+$(document).ready(function(){
+  $('#uniqname').focus()
+});
