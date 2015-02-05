@@ -1,0 +1,79 @@
+.mastHead {
+    color:#fff;
+}
+.mastHead h1{
+    color:#aaa;
+    margin-top:10px;
+    margin:0;
+    padding:15px 5px 15px 15px;
+    font-size:24px;
+}
+
+.contentWrapper {
+    margin-top: 55px;
+    padding:10px;
+}
+
+#content {
+    background: #eee;
+    border-width:0 1px;
+    border-style: solid;
+    border-color: #ccc;
+ }
+
+ul {
+    padding: 1px 0 0 0;
+    list-style: none;
+}
+
+.coursePanel {
+    margin-top:10px;
+    padding:5px 0;
+}
+.coursePanel li {
+    position:relative;
+    margin: 5px 0;
+    padding: 10px;
+    background: #fff;
+    border:1px solid #ddd;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    -webkit-box-shadow: 1px 1px 2px 0px rgba(150, 150, 150, 0.15);
+    -moz-box-shadow: 1px 1px 2px 0px rgba(150, 150, 150, 0.15);
+    box-shadow: 1px 1px 2px 0px rgba(150, 150, 150, 0.15);
+}
+
+.coursePanel  li.course {
+    background:#ffe;
+}
+.coursePanel  li.course button.setSections {
+    display:none;
+}
+li.activeCourse button.setSections {
+    display:inline !important;
+}
+.sectionList {
+    min-height: 25px;
+}
+.debugPanel {
+    display:none;
+    position:absolute;
+    top:100px;
+    z-index:200;
+    left:25%;
+    right:25%;
+}
+
+[ng-cloak] {
+  display: none !important;
+}
+@media (max-width: 480px) {
+    .col1, .col2, .col3 {
+        padding:0
+    }
+    .colHeader {
+        padding:0 10px;
+        font-size:150%;
+    }
+}
