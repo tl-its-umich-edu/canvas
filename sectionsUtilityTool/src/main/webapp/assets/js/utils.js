@@ -36,6 +36,8 @@ var errorHandler = function (url, result) {
  */
 
 //handler for the Update Course button
+
+// turn this into a service, triggered via ng-click
 $(document).on('click', '.setSections', function (e) {
   e.preventDefault();
   $('#debugPanel').empty();
@@ -44,7 +46,6 @@ $(document).on('click', '.setSections', function (e) {
   $sections.each(function( ) {
     //TODO: this needs to be the servlet endpoint
     // right now just showing it in the UI
-
     $('#debugPanel').append( '<p>POST /api/v1/sections/<strong>' + $(this).attr('data-sectionid') + '</strong>/crosslist/<strong>' + thisCourse + '</strong></p>');
   });
   $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
