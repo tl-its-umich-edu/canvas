@@ -79,7 +79,9 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         }
         $scope.success = false;
         $scope.error = true;
-      } else {
+        $scope.instructions = false;
+      }
+      else {
         $scope.courses = data.data;
         $scope.error = false;
         $scope.success = true;
@@ -105,7 +107,11 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
           connectWith: '.sectionList',
           receive: function(event, ui) {
             //on drop, append the name of the source course
-            ui.item.find('.status').text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
+            var prevMovEl = ui.item.find('.status');
+            if(prevMovEl.text() !==''){
+              prevMovEl.next('span').show();
+            }
+            prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
           },
           stop: function( event, ui ) {
             //add some animation feedback to the move

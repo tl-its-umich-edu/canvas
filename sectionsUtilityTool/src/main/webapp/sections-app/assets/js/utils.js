@@ -51,6 +51,8 @@ $(document).on('click', '.setSections', function (e) {
   return null;
 });
 
-$(document).ready(function(){
-  $('#uniqname').focus();
+$('body').on('keydown','#uniqname', function(event) {
+  if (event.keyCode == 13) {
+    $('#uniqnameTrigger').click();
+  }
 });

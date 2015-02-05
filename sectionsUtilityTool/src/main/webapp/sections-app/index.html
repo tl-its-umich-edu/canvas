@@ -50,9 +50,10 @@
 
             <div class="form-inline">
               <div class="form-group">
-                <input type="text"  id="uniqname" class="form-control"  placeholder="uniqname">
+                <label for="uniqname" class="sr-only">Enter uniqname</label>
+                <input type="text"  id="uniqname" class="form-control"  placeholder="uniqname" autofocus>
               </div>
-              <button type="button"  ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses</button>
+              <button id="uniqnameTrigger" type="button"  ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses</button>
               <span ng-show="error" class="alert" role="alert">{{errorMessage}} Lookup in the <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
               <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
 
@@ -86,7 +87,7 @@
                         </div>
                         <ul class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
                             <li ng-repeat="section in item.sections" class="row section ui-state-default" data-sectionid="{{section.id}}">
-                                <div class="col-md-8 sectionName">
+                                <div class="col-md-5 sectionName">
                                     {{section.name}}
                                 </div>
                                 <!--    
@@ -94,8 +95,8 @@
                                     Section ID: {{section.id}}
                                 </div>        
                                 -->
-                                <div class="col-md-4">
-                                    <span class="status"></span>
+                                <div class="col-md-5">
+                                    <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span>
                                     
                                 </div>        
 

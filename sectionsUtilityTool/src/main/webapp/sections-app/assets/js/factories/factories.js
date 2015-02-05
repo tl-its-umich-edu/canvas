@@ -1,5 +1,5 @@
 'use strict';
-/* global  sectionsApp */
+/* global  sectionsApp, errorHandler  */
 
 //COURSES FACTORY - does the request for the courses controller
 sectionsApp.factory('Courses', function ($http) {
