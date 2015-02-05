@@ -3,18 +3,19 @@
 	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
 	version="2.4">
   <display-name>SectionsUtilityTool</display-name>
-	
+  
 	<servlet>
 		<servlet-name>SectionsServlet</servlet-name>
 		<servlet-class>edu.umich.ctools.sectionsUtilityTool.SectionsUtilityToolServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>SectionsServlet</servlet-name>
-		<url-pattern>/</url-pattern>
+		<url-pattern>/manager/*</url-pattern>
 	</servlet-mapping>
-	<servlet-mapping>
-		<servlet-name>default</servlet-name>
-		<url-pattern>/js/*</url-pattern>
-	</servlet-mapping>
+	
+	
+	
+	
+	
 	
 </web-app>
