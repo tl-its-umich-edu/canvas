@@ -72,10 +72,13 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
         if(uniqname) {
-          $scope.errorMessage = 'Could not get data for uniqname \"' + uniqname + '\"';
+          $scope.errorMessage = 'Could not get data for uniqname \"' + uniqname + '.\"';
+          $scope.errorLookup = true;
         }
         else {
-          $scope.errorMessage = 'Please supply a uniqname at left';
+          $scope.errorMessage = 'Please supply a uniqname at left.';
+          $scope.instructions = false;
+          $scope.errorLookup = false;
         }
         $scope.success = false;
         $scope.error = true;
@@ -87,6 +90,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $scope.success = true;
         $scope.successMessage = 'Found ' + data.data.length + ' courses for ';
         $scope.instructions = true;
+        $scope.errorLookup = false;
       }
     });
   };

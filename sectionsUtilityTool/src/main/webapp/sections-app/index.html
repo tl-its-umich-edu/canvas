@@ -51,12 +51,13 @@
             <div class="form-inline">
               <div class="form-group">
                 <label for="uniqname" class="sr-only">Enter uniqname</label>
-                <input type="text"  id="uniqname" class="form-control"  placeholder="uniqname" autofocus>
+                <input type="text"  ng-model="uniqname" id="uniqname" class="form-control"  placeholder="uniqname" autofocus>
               </div>
-              <button id="uniqnameTrigger" type="button"  ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses</button>
-              <span ng-show="error" class="alert" role="alert">{{errorMessage}} Lookup in the <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
+              <button id="uniqnameTrigger" type="button" ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses <span ng-show="uniqname">for</span> {{uniqname}}</button>
+              <span ng-show="error" class="alert" role="alert">{{errorMessage}} </span>
+              <span ng-show="errorLookup"> Lookup in the 
+              <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
               <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
-
             </div>
             <h4> {{termName}}</h4>
             <div class="coursePanel well" ng-show="success">
@@ -95,7 +96,7 @@
                                     Section ID: {{section.id}}
                                 </div>        
                                 -->
-                                <div class="col-md-5">
+                                <div class="col-md-7">
                                     <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span>
                                     
                                 </div>        
