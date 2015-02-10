@@ -42,7 +42,7 @@
                     Terms <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak>
-                    <li ng-repeat="term in terms | orderBy : id"><a href='' ng-click="getTerm(term.id, term.name)">{{term.name}}</a></li>
+                    <li ng-repeat="term in terms | orderBy : sis_term_id"><a href='' ng-click="getTerm(term.sis_term_id, term.name)">{{term.name}} -- <strong>{{term.sis_term_id}}</strong></a></li>
                 </ul>
             </div>
             <div class="spinner pull-right" ng-show="loading"></div>
@@ -59,8 +59,9 @@
               <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
               <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
             </div>
-            <h4> {{termName}}</h4>
-            <div class="coursePanel well" ng-show="success">
+            <h4> {{currentTerm.currentTermName}} <span ng-show="currentTerm.currentTermId">- Term Id: </span> {{currentTerm.currentTermId}}</h4>
+            <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
+            <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
                     <li ng-repeat="item in courses" class="course">
                         <div class="row">
