@@ -59,7 +59,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&per_page=100&enrollment_term_id=sis_term_id:2020published=true&with_enrollments=true&enrollment_type=teacher';
+    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&per_page=100&enrollment_term_id=sis_term_id:' + $scope.currentTerm.currentTermId + 'published=true&with_enrollments=true&enrollment_type=teacher';
     var url = '/sectionsUtilityTool'+mini;
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
