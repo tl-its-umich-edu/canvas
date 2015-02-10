@@ -36,15 +36,17 @@
         </nav>
 
         <div class="container-fluid contentWrapper"  ng-controller="coursesController" ng-cloak>
-
             <div class="btn-group pull-right">
                 <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
                     Terms <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak>
-                    <li ng-repeat="term in terms | orderBy : sis_term_id"><a href='' ng-click="getTerm(term.sis_term_id, term.name)">{{term.name}} -- <strong>{{term.sis_term_id}}</strong></a></li>
+                <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak> <!--| filterMedSchool-->
+                    <li ng-repeat="term in terms | orderBy : sis_term_id" ng-show="(term.sis_term_id.slice(-1) ==='0' || term.sis_term_id.slice(-1) !=='0' && filterMedSchool)">
+                        <a href='' ng-click="getTerm(term.sis_term_id, term.name)">{{term.name}}</a>
+                    </li>
                 </ul>
             </div>
+
             <div class="spinner pull-right" ng-show="loading"></div>
 
 
@@ -59,7 +61,10 @@
               <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
               <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
             </div>
-            <h4> {{currentTerm.currentTermName}} <span ng-show="currentTerm.currentTermId">- Term Id: </span> {{currentTerm.currentTermId}}</h4>
+            <h4> {{currentTerm.currentTermName}} <span ng-show="currentTerm.currentTermId">- Term Id: </span> {{currentTerm.currentTermId}}
+                <small class="pull-right"><input type="checkbox" ng-model="filterMedSchool" id="includeMedSchool"/> <label for="includeMedSchool">Include Med School</label></small>
+            </h4>
+
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
