@@ -14,11 +14,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $scope.selectedTerm = null;
   //reset term scope
   $scope.terms = [];
-  //term url - below from sample data
-  //TODO: needs changing to the servlet endpoint
-  var termsUrl = '/sectionsUtilityTool/section_data/terms.json';
-  //var termsUrl = 'terms';
-
+  var termsUrl ="manager/api/v1/accounts/1/terms"
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
   });
