@@ -1,6 +1,6 @@
 'use strict';
 /* jshint  strict: true*/
-/* global $*/
+/* global $, moment*/
 
 
 
@@ -29,6 +29,24 @@ var errorHandler = function (url, result) {
   }    
   return errorResponse;       
 };
+
+var getCurrentTerm = function(termData) {
+  var now = moment();
+  var currentTerm = [];
+  $.each(termData, function() {
+    //horrifying
+    //TODO: deal with Med School terms later - as this is filtering anyth8ing that does not end in '0'
+    if(moment(this.start_at).isBefore(now) && moment(this.end_at).isAfter(now)) {
+      if (this.sis_term_id !== null && this.sis_term_id !== undefined  && this.sis_term_id.slice(-1) ==='0'){
+        currentTerm.currentTermId =  this.sis_term_id;
+        currentTerm.currentTermName =  this.name;
+      }
+    }
+  });
+  return currentTerm;  
+};
+
+
 
 /**
  *
