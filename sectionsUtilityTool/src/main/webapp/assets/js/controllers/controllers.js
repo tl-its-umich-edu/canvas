@@ -88,7 +88,8 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
   };
   /*User clicks on Get Sections and the sections for that course
   gets added to the course scope*/
-  $scope.getSections = function (courseId, uniqname) {
+  $scope.getSections = function (event, courseId, uniqname) {
+    event.preventDefault();
     Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
       if (data) {
         //find the course object
