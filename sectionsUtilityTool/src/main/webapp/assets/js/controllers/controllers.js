@@ -1,5 +1,5 @@
 'use strict';
-/* global $, _, angular */
+/* global $, _, angular, getCurrentTerm */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters']);
 
@@ -14,65 +14,53 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $scope.selectedTerm = null;
   //reset term scope
   $scope.terms = [];
-  //term url - below from sample data
-  //TODO: needs changing to the servlet endpoint
-  var termsUrl = '../../section_data/terms.json';
-  //var termsUrl = 'terms';
-
+  var termsUrl ='manager/api/v1/accounts/1/terms';
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
+    $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
   });
 
   //user selects a term from the dropdown that has been 
   //populated by $scope.terms 
   $scope.getTerm = function (termId, termName) {
-    $scope.$parent.termName = termName;
+    $scope.$parent.currentTerm.currentTermName = termName;
+    $scope.$parent.currentTerm.currentTermId = termId;
     $scope.$parent.loading = true;
     /*reset $scope.$parent.courses
     commented out here */
-    //$scope.$parent.courses = [];
+    $scope.$parent.courses = [];
 
     var uniqname = $.trim($('#uniqname').val());
-    //TODO: needs changing to the servlet endpoint
-    var url = '/api/v1/courses?as_user_id=sis_login_id:' + uniqname + '&per_page=100&enrollment_term_id=sis_term_id:' +  termId + '&published=true&with_enrollments=true&enrollment_type=teacher&access_token=<acccess-token>';
+    var url = 'manager/api/v1/courses?as_user_id=sis_login_id:' + uniqname + '&per_page=100&enrollment_term_id=sis_term_id:' +  termId + '&published=true&with_enrollments=true&enrollment_type=teacher';
 
-    //put request in UI as a placeholder - remove when feed works
-    $('#debugPanel').empty();
-    $('#debugPanel').append( '<p>GET ' + url + '</p>');
-    $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
-
-
-    //TODO: uncomment  below when servlet has an endpoint
-    /*
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
         $scope.$parent.courses.errors = data;
         $scope.$parent.loading = false;
       } else {
-          $scope.$parent.courses = data;
+          $scope.$parent.courses = data.data;
+          $scope.$parent.success = true;
+          $scope.$parent.successMessage = 'Found ' + data.data.length + ' courses for ';
+          $scope.$parent.instructions = true;
+          $scope.$parent.errorLookup = false;
           $scope.$parent.loading = false;
       }
     });
-    */
+    /**/
   };
 
 }]);
 
 //COURSES CONTROLLER
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
-  $scope.courses = [];
+  //$scope.courses = [];
   $scope.loading = true;
 
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-
-    //TODO: needs to be a servlet URL
-    var mini="/manager/api/v1/courses?as_user_id=sis_login_id:"+uniqname+"&per_page=100&enrollment_term_id=sis_term_id:2020published=true&with_enrollments=true&enrollment_type=teacher";
-    //var mini="/manager/api/v1/courses/656/sections?per_page=100";
-    //var mini="/manager/api/v1/accounts/1/terms";
+    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&per_page=100&enrollment_term_id=sis_term_id:' + $scope.currentTerm.currentTermId + 'published=true&with_enrollments=true&enrollment_type=teacher';
     var url = '/sectionsUtilityTool'+mini;
-   // var url = '../../section_data/courses-' + uniqname + '.json';
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
         if(uniqname) {
@@ -100,7 +88,8 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
   };
   /*User clicks on Get Sections and the sections for that course
   gets added to the course scope*/
-  $scope.getSections = function (courseId, uniqname) {
+  $scope.getSections = function (event, courseId, uniqname) {
+    event.preventDefault();
     Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
       if (data) {
         //find the course object

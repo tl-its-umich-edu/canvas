@@ -36,15 +36,17 @@
         </nav>
 
         <div class="container-fluid contentWrapper"  ng-controller="coursesController" ng-cloak>
-
             <div class="btn-group pull-right">
                 <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
                     Terms <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak>
-                    <li ng-repeat="term in terms | orderBy : id"><a href='' ng-click="getTerm(term.id, term.name)">{{term.name}}</a></li>
+                <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak> <!--| filterMedSchool-->
+                    <li ng-repeat="term in terms | orderBy : sis_term_id" ng-show="(term.sis_term_id.slice(-1) ==='0' || term.sis_term_id.slice(-1) !=='0' && filterMedSchool)">
+                        <a href='' ng-click="getTerm(term.sis_term_id, term.name)">{{term.name}}</a>
+                    </li>
                 </ul>
             </div>
+
             <div class="spinner pull-right" ng-show="loading"></div>
 
 
@@ -59,8 +61,13 @@
               <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
               <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
             </div>
-            <h4> {{termName}}</h4>
-            <div class="coursePanel well" ng-show="success">
+            <h4> {{currentTerm.currentTermName}} <span ng-show="currentTerm.currentTermId">- Term Id: </span> {{currentTerm.currentTermId}}
+
+                <small class="pull-right"><input type="checkbox" ng-model="filterMedSchool" id="includeMedSchool"/> <label style="font-weight:normal" for="includeMedSchool">Include Med School Terms</label></small>
+            </h4>
+
+            <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
+            <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
                     <li ng-repeat="item in courses" class="course">
                         <div class="row">
@@ -83,7 +90,7 @@
                             </div>
                             -->
                             <div class="col-md-2">
-                                <a ng-hide="item.sectionsShown" href="#" ng-click="getSections(item.id, uniqname); $event.stopPropagation()">Get sections</a> <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
+                                <a ng-hide="item.sectionsShown" href="#" ng-click="getSections($event, item.id, uniqname); $event.stopPropagation()">Get sections</a> <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
                             </div>
                         </div>
                         <ul class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
