@@ -42,6 +42,15 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 
 		job_id=parsed["id"]
 
+		begin
+			#open a separate file to log the job id
+			outputIdFile = File.open(outputDirectory + currentFileBaseNameWithoutExtension + "_id.txt", "w")
+			# write the job id into the id file
+			outputIdFile.write(job_id);
+		ensure
+			outputIdFile.close unless outputIdFile == nil
+		end
+
 		outputFile.write("the job id is: #{job_id}\n")
 		outputFile.write("here is the job #{job_id} status: \n")
 
