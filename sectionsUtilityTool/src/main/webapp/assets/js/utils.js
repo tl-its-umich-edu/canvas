@@ -40,6 +40,7 @@ var getCurrentTerm = function(termData) {
       if (this.sis_term_id !== null && this.sis_term_id !== undefined  && this.sis_term_id.slice(-1) ==='0'){
         currentTerm.currentTermId =  this.sis_term_id;
         currentTerm.currentTermName =  this.name;
+        currentTerm.currentTermCanvasId =  this.id;
       }
     }
   });

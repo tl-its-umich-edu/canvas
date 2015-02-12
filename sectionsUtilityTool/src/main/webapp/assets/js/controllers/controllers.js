@@ -22,12 +22,12 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
 
   //user selects a term from the dropdown that has been 
   //populated by $scope.terms 
-  $scope.getTerm = function (termId, termName) {
+  $scope.getTerm = function (termId, termName, termCanvasId) {
     $scope.$parent.currentTerm.currentTermName = termName;
     $scope.$parent.currentTerm.currentTermId = termId;
+    $scope.$parent.currentTerm.currentTermCanvasId = termCanvasId;
     $scope.$parent.loading = true;
-    /*reset $scope.$parent.courses
-    commented out here */
+    /*
     $scope.$parent.courses = [];
 
     var uniqname = $.trim($('#uniqname').val());
@@ -46,7 +46,8 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
           $scope.$parent.loading = false;
       }
     });
-    /**/
+
+    */
   };
 
 }]);
@@ -59,7 +60,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&per_page=100&enrollment_term_id=sis_term_id:' + $scope.currentTerm.currentTermId + 'published=true&with_enrollments=true&enrollment_type=teacher';
+    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=100&published=true&with_enrollments=true&enrollment_type=teacher';
     var url = '/sectionsUtilityTool'+mini;
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
@@ -88,19 +89,9 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
   };
   /*User clicks on Get Sections and the sections for that course
   gets added to the course scope*/
-  $scope.getSections = function (event, courseId, uniqname) {
-    event.preventDefault();
-    Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
-      if (data) {
-        //find the course object
-        var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
-        //append a section object to the course scope
-        $scope.courses[coursePos].sections = data.data;
-        //sectionsShown = true hides the Get Sections link
-        $scope.courses[coursePos].sectionsShown = true;
-        
-        //setting up the jQuery sortable
-        $('.sectionList').sortable({
+  $scope.getSections = function () {
+
+    $('.sectionList').sortable({
           connectWith: '.sectionList',
           receive: function(event, ui) {
             //on drop, append the name of the source course
@@ -118,11 +109,26 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
               .animate({ backgroundColor: '#FFFFFF'}, 1500);
           }
         }).disableSelection();
+    
+    /*
+    event.preventDefault();
+    Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
+      if (data) {
+        //find the course object
+        var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
+        //append a section object to the course scope
+        $scope.courses[coursePos].sections = data.data;
+        //sectionsShown = true hides the Get Sections link
+        $scope.courses[coursePos].sectionsShown = true;
+        
+        //setting up the jQuery sortable
+    
       } else {
         //deal with this
       }
     });
-};
+  */
+  };
 }]);
 
 
