@@ -8,13 +8,23 @@ require "nokogiri"
 
 def upload_to_canvas(fileName, token, server, outputDirectory)
 
+
+	# set the error flag, default to be false
+	upload_error = false
+
+	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
+	if (prior_upload_error(server, token))
+		## check first about the environment variable setting for MAILTO '
+		return "Previous upload job has not finished yet."
+	end
+
+	# upload start time
+	p "upload start time : " + Time.new.inspect
+
+	# continue the current upload process
 	# get file names
 	currentFileBaseName = File.basename(fileName)
 	currentFileBaseNameWithoutExtension = File.basename(fileName, ".zip")
-
-
-	#set the error flag, default to be false
-	upload_error = false
 
 	#open the output file
 	begin
@@ -95,10 +105,50 @@ def upload_to_canvas(fileName, token, server, outputDirectory)
 	ensure
 	outputFile.close unless outputFile == nil
 	end
-  
+
+	# upload stop time
+	p "upload stop time : " + Time.new.inspect
+
 	return upload_error
 
 end ## end of method definition
+
+# get the prior upload process id and make Canvas API calls to see the current process status
+# return true if the process is 100% finished; false otherwise
+def prior_upload_error(server, token)
+	# find all the process id files, and sort in descending order based on last modified time
+	files = Dir.glob("#{Dir.pwd}/logs/*_id.txt")
+	files = files.sort_by { |file| File.mtime(file) }.reverse
+	if (files.size == 0)
+		## first run, no prior cases
+		return false
+	else
+		## get the first and most recent id file
+		id_file = files[0]
+		process_id = ''
+		File.open(id_file, 'r') do |idFile|
+			while line = idFile.gets
+				# only read the first line, which is the token value
+				process_id=line.strip
+				break
+			end
+		end
+		process_result=`curl '#{server}/api/v1/accounts/1/sis_imports/#{process_id}' -H "Authorization: Bearer #{token}"`
+
+		#parse the status percentage
+		progress_status = parseJson(process_result)["progress"]
+		if (progress_status != 100)
+			# the prior job has not been processed 100%
+			p "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
+			return true
+		else
+			# prior job finished, ready for new upload
+			return false
+		end
+
+		return true
+	end
+end
 
 def parseJson(data)
 	begin
@@ -203,15 +253,9 @@ else
 		fileName=fileNames[0]
 		currentFileBaseName = File.basename(fileName)
 
-		# upload start time
-		p "upload start time : " + Time.new.inspect
-
 		# upload the file to canvas server
 		uploadError = upload_to_canvas(fileName, token, server, outputDirectory)
 
-
-		# upload stop time
-		p "upload stop time : " + Time.new.inspect
 	end
 end
 
@@ -223,7 +267,7 @@ if (!uploadError)
 	exit
 else
 	## check first about the environment variable setting for MAILTO '
-	p " use the environment variable for sending out error messages #{ENV['MAILTO']}"
+	p " use the environment variable for sending out error messages to #{ENV['MAILTO']}"
 	## send email to support team with the error message
 	`echo #{uploadError} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
 	abort(uploadError)
