@@ -65,7 +65,6 @@
 
                 <small class="pull-right"><input type="checkbox" ng-model="filterMedSchool" id="includeMedSchool"/> <label style="font-weight:normal" for="includeMedSchool">Include Med School Terms</label></small>
             </h4>
-            <button class="btn btn-default" ng-hide="item.sectionsShown" href="#" ng-click="getSections($event, item.id, uniqname); $event.stopPropagation()">Move sections</button> 
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
@@ -93,8 +92,8 @@
                                 <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
                             </div>
                         </div>
-                        <ul class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
-                            <li ng-repeat="section in item.sections" class="row section ui-state-default" data-sectionid="{{section.id}}">
+                        <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
+                            <li ng-repeat="section in item.sections" class="row section" data-sectionid="{{section.id}}">
                                 <div class="col-md-5 sectionName">
                                     {{section.name}}
                                 </div>
@@ -131,6 +130,7 @@
         <script src="assets/vendor/jquery/jquery-ui-1.11.2/jquery-ui.min.js"></script>
         <script src="assets/vendor/angular/angular.min.js">
         </script>
+        <script src="assets/vendor/angular/sortable.js"></script>
         <script src="assets/vendor/bootstrap/bootstrap.min.js">
         </script>
         <script src="assets/vendor/moment/moment.min.js">
