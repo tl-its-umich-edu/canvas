@@ -1,5 +1,5 @@
 'use strict';
-/* global $, _, angular, getCurrentTerm */
+/* global $,  angular, getTermArray, getCurrentTerm */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters','ui.sortable']);
 
@@ -14,7 +14,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $scope.selectedTerm = null;
   //reset term scope
   $scope.terms = [];
-  var termsUrl ='manager/api/v1/accounts/1/terms';
+  var termsUrl ='manager/api/v1/accounts/1/terms';//?workflow_state=all
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
     $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
@@ -58,9 +58,9 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       }
       else {
         $scope.courses = data.data;
+        $scope.termArray = getTermArray(data.data);
         $scope.error = false;
         $scope.success = true;
-        $scope.successMessage = 'Found ' + data.data.length + ' courses for ';
         $scope.instructions = true;
         $scope.errorLookup = false;
       }
@@ -85,7 +85,6 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       },
       stop: function( event, ui ) {
         //add some animation feedback to the move
-        ui.item.css('transform', 'rotate(0deg)');
         $('li.course').removeClass('activeCourse');
         ui.item.closest('li.course').addClass('activeCourse');
         ui.item.css('background-color', '#FFFF9C')
@@ -99,43 +98,24 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
   $scope.getSections = function () {
 
     $('.sectionList').sortable({
-          connectWith: '.sectionList',
-          receive: function(event, ui) {
-            //on drop, append the name of the source course
-            var prevMovEl = ui.item.find('.status');
-            if(prevMovEl.text() !==''){
-              prevMovEl.next('span').show();
-            }
-            prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
-          },
-          stop: function( event, ui ) {
-            //add some animation feedback to the move
-            $('li.course').removeClass('activeCourse');
-            ui.item.closest('li.course').addClass('activeCourse');
-            ui.item.css('background-color', '#FFFF9C')
-              .animate({ backgroundColor: '#FFFFFF'}, 1500);
-          }
-        }).disableSelection();
-    
-    /*
-    event.preventDefault();
-    Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
-      if (data) {
-        //find the course object
-        var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
-        //append a section object to the course scope
-        $scope.courses[coursePos].sections = data.data;
-        //sectionsShown = true hides the Get Sections link
-        $scope.courses[coursePos].sectionsShown = true;
-        
-        //setting up the jQuery sortable
-    
-      } else {
-        //deal with this
+      connectWith: '.sectionList',
+      receive: function(event, ui) {
+        //on drop, append the name of the source course
+        var prevMovEl = ui.item.find('.status');
+        if(prevMovEl.text() !==''){
+          prevMovEl.next('span').show();
+        }
+        prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
+      },
+      stop: function( event, ui ) {
+        //add some animation feedback to the move
+        $('li.course').removeClass('activeCourse');
+        ui.item.closest('li.course').addClass('activeCourse');
+        ui.item.css('background-color', '#FFFF9C')
+          .animate({ backgroundColor: '#FFFFFF'}, 1500);
       }
-    });
-  */
-  };
+    }).disableSelection();
+   };
 }]);
 
 

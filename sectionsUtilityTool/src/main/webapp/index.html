@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="assets/vendor/jquery/jquery-ui-1.11.2/jquery-ui.min.css">
         <title>Sections Manager</title>
     </head>
-    <body>
+    <body ng-controller="coursesController" ng-cloak>
       <div class="alert alert-danger debugPanel" id="debugPanel"></div>
       <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
             <div class="container-fluid">
@@ -35,14 +35,18 @@
             <!-- /.container-fluid -->
         </nav>
 
-        <div class="container-fluid contentWrapper"  ng-controller="coursesController" ng-cloak>
-            <div class="btn-group pull-right">
+        <div class="container-fluid contentWrapper">
+            <div class="btn-group pull-right" ng-show="termArray" ng-controller = "termsController" ng-cloak>
                 <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
                     Terms <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu" ng-controller = "termsController" ng-cloak> <!--| filterMedSchool-->
+                <ul class="dropdown-menu" role="menu"> <!--| filterMedSchool-->
+                    <!--
                     <li ng-repeat="term in terms | orderBy : sis_term_id" ng-show="(term.sis_term_id.slice(-1) ==='0' || term.sis_term_id.slice(-1) !=='0' && filterMedSchool)">
-                        <a href='' ng-click="getTerm(term.sis_term_id, term.name, term.id)">{{term.name}}</a>
+                    -->
+
+                    <li ng-repeat="term in terms | orderBy : sis_term_id" ng-data-id="{{term.id}}" style="display:none">
+                        <a href='' ng-click="getTerm(term.sis_term_id, term.name, term.id)">{{term.name}} - {{term.id}}</a>
                     </li>
                 </ul>
             </div>
@@ -51,43 +55,31 @@
 
 
             <div class="form-inline">
+
               <div class="form-group">
                 <label for="uniqname" class="sr-only">Enter uniqname</label>
                 <input type="text"  ng-model="uniqname" id="uniqname" class="form-control"  placeholder="uniqname" autofocus>
+
               </div>
               <button id="uniqnameTrigger" type="button" ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses <span ng-show="uniqname">for</span> {{uniqname}}</button>
               <span ng-show="error" class="alert" role="alert">{{errorMessage}} </span>
               <span ng-show="errorLookup"> Lookup in the 
               <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
-              <span ng-show="success" class="alert" role="alert">{{successMessage}} for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a>.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
+              <span ng-show="success" class="alert" role="alert">Found {{filtered.length}} courses for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a> for this term.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
             </div>
-            <h4> {{currentTerm.currentTermName}} <span ng-show="currentTerm.currentTermId">- Term SIS Id: </span> {{currentTerm.currentTermId}} <span ng-show="currentTerm.currentTermCanvasId">- Canvas Term Id:</span> {{currentTerm.currentTermCanvasId}}
-
+            <h4 title="SIS-ID: {{currentTerm.currentTermId}} CV-ID: {{currentTerm.currentTermCanvasId}}"> {{currentTerm.currentTermName}}
+                <!--
                 <small class="pull-right"><input type="checkbox" ng-model="filterMedSchool" id="includeMedSchool"/> <label style="font-weight:normal" for="includeMedSchool">Include Med School Terms</label></small>
+                -->
             </h4>
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
-                    <li ng-repeat="item in courses | filter:{enrollment_term_id:currentTerm.currentTermCanvasId}" class="course">
+                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course">
                         <div class="row">
                             <div class="col-md-10">
-                                <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span ng-show="item.name"> - </span>{{item.name}} - term: {{item.enrollment_term_id}}
+                                <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
                             </div>
-                            <!--
-                            <div class="col-md-3">
-                                {{item.name}}
-                            </div>
-                            <div class="col-md-3">
- 
-                            </div>
-                            
-                            <div class="col-md-1">
-                                {{item.sis_course_id}} 
-                            </div>
-                            <div class="col-md-1">
-                                {{item.enrollment_term_id}}
-                            </div>
-                            -->
                             <div class="col-md-2">
                                 <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
                             </div>
@@ -97,29 +89,9 @@
                                 <div class="col-md-5 sectionName">
                                     {{section.name}}
                                 </div>
-                                <!--    
-                                <div class="col-md-2">
-                                    Section ID: {{section.id}}
-                                </div>        
-                                -->
                                 <div class="col-md-7">
-                                    <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span>
-                                    
+                                    <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span>                                    
                                 </div>        
-
-                                <!--
-                                <div class="col-md-2">
-                                    {{section.course_id}}
-                                </div>        
-
-                                <div class="col-md-2">
-                                    {{section.sis_section_id}}
-                                </div>        
-                                <div class="col-md-2">
-                                    {{section.sis_course_id}}
-                                </div>
-                                -->
-
                             </li>
                         </ul>
                     </li>
@@ -146,7 +118,9 @@
         <script src="assets/js/filters/filters.js">
         </script>
 
-        <!-- Modal -->
+
+
+        <!-- Server Info Modal -->
         <div class="modal fade" id="serverInfoModal" tabindex="-1" role="dialog" aria-labelledby="serverInfoLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
