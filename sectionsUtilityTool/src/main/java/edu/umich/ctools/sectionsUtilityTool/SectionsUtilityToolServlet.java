@@ -44,12 +44,12 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	
 	protected void doGet(HttpServletRequest request,HttpServletResponse response) throws IOException {
 		M_log.debug("doGet: Called");
-		request.setCharacterEncoding("UTF-8");
 		canvasRESTAPICall(request, response);
 	}
 	
 	protected void doPOST(HttpServletRequest request,HttpServletResponse response) throws IOException {
 		M_log.debug("doPOST: Called");
+		canvasRESTAPICall(request, response);
 		
 	}
 	
@@ -57,6 +57,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 
 	private void canvasRESTAPICall(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
+		request.setCharacterEncoding("UTF-8");
 		M_log.debug("canvasRESTAPICall(): called");
 		if(canvasProperties!=null) {
 			canvasToken = canvasProperties.getProperty(PROPERTY_CANVAS_ADMIN);
