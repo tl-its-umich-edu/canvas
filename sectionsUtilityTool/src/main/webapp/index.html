@@ -81,7 +81,7 @@
                                 <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
                             </div>
                             <div class="col-md-2">
-                                <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
+                                <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
                             </div>
                         </div>
                         <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
@@ -146,5 +146,32 @@
                 </div>
             </div>
         </div>
+
+        <!-- XList Modal -->
+        <div class="modal fade" id="xListModal" tabindex="-1" role="dialog" aria-labelledby="xListLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="xListLabel">Crosslist confirm</h3>
+                    </div>
+                    <div class="modal-body" id="xListInner">
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">
+                            Crosslist
+                        </button>
+                        <button type="button" class="btn btn-link"  data-dismiss="modal">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </body>
 </html>

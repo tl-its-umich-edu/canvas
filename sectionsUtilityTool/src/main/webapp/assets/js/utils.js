@@ -66,16 +66,17 @@ var getTermArray = function(coursesData) {
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
   e.preventDefault();
-  $('#debugPanel').empty();
   var thisCourse = $(this).attr('data-courseid');
+  var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
   var $sections = $(this).closest('li').find('ul').find('li');
+  var posts = [];
+  $('#xListInner').empty();
+  $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList"></ol>');
   $sections.each(function( ) {
-    //TODO: this needs to be the servlet endpoint
-    // right now just showing it in the UI
-
-    $('#debugPanel').append( '<p>POST /api/v1/sections/<strong>' + $(this).attr('data-sectionid') + '</strong>/crosslist/<strong>' + thisCourse + '</strong></p>');
+    posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse)
+    $('#listOfSectionsToCrossList').append( '<li>' + $(this).find('.sectionName').text() + '</li>');
   });
-  $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
+  $('#xListInner').append(posts.join('<br>'))
   return null;
 });
 
