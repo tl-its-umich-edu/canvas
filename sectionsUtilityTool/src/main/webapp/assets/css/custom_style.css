@@ -65,7 +65,7 @@ li.activeCourse button.setSections {
     background-color:#eee;
     cursor: -webkit-grabbing;
     cursor: -moz-grabbing;
-        
+}        
 
 .debugPanel {
     display:none;
