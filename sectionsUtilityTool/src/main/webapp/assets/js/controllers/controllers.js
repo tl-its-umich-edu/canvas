@@ -71,9 +71,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       placeholder: 'section',
       connectWith: '.sectionList',
       start: function(event, ui) {
-        ui.item.css({
-          'background-color':'#eee',
-        });
+        ui.item.addClass('grabbing');
       },
       receive: function(event, ui) {
       //on drop, append the name of the source course
@@ -90,6 +88,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         //add some animation feedback to the move
         ui.item.css('background-color', '#FFFF9C')
           .animate({ backgroundColor: '#FFFFFF'}, 1500);
+        ui.item.removeClass('grabbing');
       }
   };
   
