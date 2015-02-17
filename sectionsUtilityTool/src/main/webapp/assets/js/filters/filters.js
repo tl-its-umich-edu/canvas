@@ -1,6 +1,6 @@
 'use strict';
 /* jshint  strict: true*/
-/* global angular, $ */
+/* global angular, _ */
 
 //mot used - but keep for reference
 angular.module('sectionsFilters', []).filter('filterMedSchool', function () {
@@ -16,7 +16,19 @@ angular.module('sectionsFilters', []).filter('filterMedSchool', function () {
     }
     return filtered;
   };
-}).filter('anotherFilter', function () {
-  return function () {
+}).filter('showOnlyTermsWithCourses', function () {
+  return function (terms) {
+    var termsArray = [39,80,1];
+    var filtered = false;
+    for (var i = 0; i < terms.length; i++) {
+      var term = terms[i];
+      if (term.id !==null) {
+          if (_.find(termsArray, term.id)) {
+            filtered = true;
+          }
+      }
+    }
+    return filtered;
   };
+
 });

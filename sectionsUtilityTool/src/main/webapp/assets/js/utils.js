@@ -1,6 +1,6 @@
 'use strict';
 /* jshint  strict: true*/
-/* global $, moment*/
+/* global $, moment, _*/
 
 
 
@@ -40,14 +40,24 @@ var getCurrentTerm = function(termData) {
       if (this.sis_term_id !== null && this.sis_term_id !== undefined  && this.sis_term_id.slice(-1) ==='0'){
         currentTerm.currentTermId =  this.sis_term_id;
         currentTerm.currentTermName =  this.name;
+        currentTerm.currentTermCanvasId =  this.id;
       }
     }
   });
   return currentTerm;  
 };
 
-
-
+var getTermArray = function(coursesData) {
+  var termArray = [];
+  $.each(coursesData, function() {
+    if(this.enrollment_term_id !== null && this.enrollment_term_id !== undefined){
+      termArray.push(this.enrollment_term_id);
+      $('li[ng-data-id=' + this.enrollment_term_id + ']').show();
+    }
+  });
+  termArray = _.uniq(termArray);
+  return termArray;  
+};
 /**
  *
  * event watchers
