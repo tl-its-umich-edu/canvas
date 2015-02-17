@@ -76,6 +76,9 @@
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
                     <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course">
+                    <!-- works with insty user    
+                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:1})" class="course">
+                    -->
                         <div class="row">
                             <div class="col-md-10">
                                 <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
