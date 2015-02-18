@@ -38,7 +38,7 @@
         <div class="container-fluid contentWrapper">
             <div class="btn-group pull-right" ng-show="termArray" ng-controller = "termsController" ng-cloak>
                 <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
-                    Terms <span class="caret"></span>
+                    {{termArray}} Terms <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" role="menu"> <!--| filterMedSchool-->
                     <!--
@@ -164,7 +164,7 @@
                     <div class="modal-body" id="xListInner">
                     </div>    
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-dismiss="modal">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="postXList">
                             Crosslist
                         </button>
                         <button type="button" class="btn btn-link"  data-dismiss="modal">

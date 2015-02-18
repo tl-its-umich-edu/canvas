@@ -65,6 +65,7 @@ var getTermArray = function(coursesData) {
 
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
+
   e.preventDefault();
   var thisCourse = $(this).attr('data-courseid');
   var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
@@ -73,11 +74,35 @@ $(document).on('click', '.setSections', function (e) {
   $('#xListInner').empty();
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList"></ol>');
   $sections.each(function( ) {
-    posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse)
+    posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
     $('#listOfSectionsToCrossList').append( '<li>' + $(this).find('.sectionName').text() + '</li>');
   });
-  $('#xListInner').append(posts.join('<br>'))
-  return null;
+  $('#xListInner').append(posts.join('<br>'));
+  $('#postXList').click(function(){
+    var index, len;
+
+    $.when
+
+    for (index = 0, len = posts.length; index < len; ++index) {
+      console.log(posts[index]);
+
+    var xListUrl ='manager' + posts[index];
+
+      $.post(xListUrl, function() {
+          console.log( "success" );
+      })
+        .done(function() {
+          console.log( "second success" );
+        })
+        .fail(function() {
+          console.log( "error" );
+        })
+        .always(function() {
+          console.log( "finished" );
+      });
+    }  
+  });
+    return null;
 });
 
 $('body').on('keydown','#uniqname', function(event) {
