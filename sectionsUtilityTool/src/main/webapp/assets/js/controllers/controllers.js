@@ -15,7 +15,6 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   //reset term scope
   $scope.terms = [];
   var termsUrl ='manager/api/v1/accounts/1/terms?per_page=4000';
-
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
     $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
