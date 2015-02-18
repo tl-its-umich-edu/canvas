@@ -81,8 +81,6 @@ $(document).on('click', '.setSections', function (e) {
   $('#postXList').click(function(){
     var index, len;
 
-    $.when
-
     for (index = 0, len = posts.length; index < len; ++index) {
       console.log(posts[index]);
 
