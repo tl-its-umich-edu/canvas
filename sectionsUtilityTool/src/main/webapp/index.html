@@ -46,7 +46,7 @@
                     -->
 
                     <li ng-repeat="term in terms | orderBy : sis_term_id" ng-data-id="{{term.id}}" style="display:none">
-                        <a href='' ng-click="getTerm(term.sis_term_id, term.name, term.id)">{{term.name}} - {{term.id}}</a>
+                        <a href='' ng-click="getTerm(term.sis_term_id, term.name, term.id)">{{term.name}}</a>
                     </li>
                 </ul>
             </div>
