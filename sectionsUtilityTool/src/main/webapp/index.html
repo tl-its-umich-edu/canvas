@@ -75,16 +75,20 @@
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
-                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course">
+                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
                     <!-- works with insty user    
                     <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:1})" class="course">
                     -->
                         <div class="row">
-                            <div class="col-md-10">
+                            <div class="col-md-8">
                                 <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
                             </div>
-                            <div class="col-md-2">
-                                <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
+                            <div class="col-md-4">
+                                <span class="orphanMessage">Orphan candidate!</span>
+                                <div class="btn-group pull-right">
+                                    <button class="btn btn-default btn-xs getCourseInfo" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseInfoModal">Get Course Info</button>
+                                    <button ng-show="item.sections.length" class="btn btn-primary btn-xs setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
+                                </div>
                             </div>
                         </div>
                         <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
@@ -164,11 +168,33 @@
                     <div class="modal-body" id="xListInner">
                     </div>    
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="postXList">
+                        <button type="button" class="btn btn-primary" id="postXList">
                             Crosslist
                         </button>
                         <button type="button" class="btn btn-link"  data-dismiss="modal">
                             Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- XList Modal -->
+        <div class="modal fade" id="courseInfoModal" tabindex="-1" role="dialog" aria-labelledby="courseInfoLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="courseInfoLabel"></h3>
+                    </div>
+                    <div class="modal-body" id="courseInfoInner">
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary"  data-dismiss="modal">
+                            Close
                         </button>
                     </div>
                 </div>

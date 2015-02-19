@@ -65,7 +65,6 @@ var getTermArray = function(coursesData) {
 
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
-
   e.preventDefault();
   var thisCourse = $(this).attr('data-courseid');
   var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
@@ -75,32 +74,51 @@ $(document).on('click', '.setSections', function (e) {
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList"></ol>');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
-    $('#listOfSectionsToCrossList').append( '<li>' + $(this).find('.sectionName').text() + '</li>');
+    $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('.sectionName').text() + '</li>');
   });
-  $('#xListInner').append(posts.join('<br>'));
   $('#postXList').click(function(){
     var index, len;
-
     for (index = 0, len = posts.length; index < len; ++index) {
-      console.log(posts[index]);
-
-    var xListUrl ='manager' + posts[index];
-
+      var xListUrl ='manager' + posts[index];
+      var section = posts[index].split('/')[4];
+      $('#xListSection' +  section).css('color','red');
       $.post(xListUrl, function() {
-          console.log( "success" );
+        //render notification success
       })
-        .done(function() {
-          console.log( "second success" );
-        })
-        .fail(function() {
-          console.log( "error" );
-        })
-        .always(function() {
-          console.log( "finished" );
+      .fail(function() {
+        //render notification failure
+      })
+      .always(function() {
+        // do what
       });
+
+
     }  
   });
-    return null;
+  return null;
+});
+
+
+$(document).on('click', '.getCourseInfo', function (e) {
+  var uniqname = $.trim($('#uniqname').val());
+  e.preventDefault();
+  var thisCourse = $(this).attr('data-courseid');
+  var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
+  $('#courseInfoInner').empty();
+  $('#courseInfoLabel').empty();
+  $('#courseInfoLabel').text('Info on ' + thisCourseTitle);
+  $.get('manager/api/v1/courses/' + thisCourse + '/activity_stream?as_user_id=sis_login_id:' +uniqname, function(data) {
+      if(!data.length) {
+        $('#courseInfoInner').text('No course activity detected!');
+      }
+      else {
+        $('#courseInfoInner').text('Course activity detected! Number of events: '  + data.length); 
+      }
+  })
+  .fail(function() {
+    $('#courseInfoInner').text('There was an error getting course information'); 
+  });
+  return null;
 });
 
 $('body').on('keydown','#uniqname', function(event) {

@@ -79,6 +79,12 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         if(prevMovEl.text() !==''){
           prevMovEl.next('span').show();
         }
+        if(ui.sender.closest('.course').find('.section').length ===1){
+          ui.sender.closest('.course').addClass('onlyOneSection');
+        }
+        if(ui.sender.closest('.course').find('.section').length ===0){
+          ui.sender.closest('.course').addClass('noSections');
+        }
         prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
         $('li.course').removeClass('activeCourse');
         ui.item.closest('li.course').addClass('activeCourse');

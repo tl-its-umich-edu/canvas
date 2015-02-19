@@ -76,6 +76,18 @@ li.activeCourse button.setSections {
     right:25%;
 }
 
+.getCourseInfo {
+    display:none;
+}
+.onlyOneSection .getCourseInfo{
+    display:inline;
+}
+.orphanMessage {
+    display:none;
+}
+.noSections .orphanMessage {
+    display:inline;
+}
 [ng-cloak] {
   display: none !important;
 }
