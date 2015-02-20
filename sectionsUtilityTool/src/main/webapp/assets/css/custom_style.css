@@ -56,6 +56,17 @@ li.activeCourse button.setSections {
 .sectionList {
     min-height: 25px;
 }
+.sectionList li:hover {
+    cursor:move;
+    cursor: -webkit-grab; 
+    cursor: -moz-grab;
+}
+.sectionList li.grabbing {
+    background-color:#eee;
+    cursor: -webkit-grabbing;
+    cursor: -moz-grabbing;
+}        
+
 .debugPanel {
     display:none;
     position:absolute;

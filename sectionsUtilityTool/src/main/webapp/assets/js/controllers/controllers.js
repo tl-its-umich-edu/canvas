@@ -1,7 +1,7 @@
 'use strict';
-/* global $, _, angular, getCurrentTerm */
+/* global $,  angular, getTermArray, getCurrentTerm */
 
-var sectionsApp = angular.module('sectionsApp', ['sectionsFilters']);
+var sectionsApp = angular.module('sectionsApp', ['sectionsFilters','ui.sortable']);
 
 sectionsApp.run(function ($rootScope) {
   $rootScope.user = $.trim($('#uniqname').val());
@@ -14,7 +14,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $scope.selectedTerm = null;
   //reset term scope
   $scope.terms = [];
-  var termsUrl ='manager/api/v1/accounts/1/terms';
+  var termsUrl ='manager/api/v1/accounts/1/terms?per_page=4000';
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
     $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
@@ -22,31 +22,11 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
 
   //user selects a term from the dropdown that has been 
   //populated by $scope.terms 
-  $scope.getTerm = function (termId, termName) {
+  $scope.getTerm = function (termId, termName, termCanvasId) {
     $scope.$parent.currentTerm.currentTermName = termName;
     $scope.$parent.currentTerm.currentTermId = termId;
+    $scope.$parent.currentTerm.currentTermCanvasId = termCanvasId;
     $scope.$parent.loading = true;
-    /*reset $scope.$parent.courses
-    commented out here */
-    $scope.$parent.courses = [];
-
-    var uniqname = $.trim($('#uniqname').val());
-    var url = 'manager/api/v1/courses?as_user_id=sis_login_id:' + uniqname + '&per_page=100&enrollment_term_id=sis_term_id:' +  termId + '&published=true&with_enrollments=true&enrollment_type=teacher';
-
-    Courses.getCourses(url).then(function (data) {
-      if (data.failure) {
-        $scope.$parent.courses.errors = data;
-        $scope.$parent.loading = false;
-      } else {
-          $scope.$parent.courses = data.data;
-          $scope.$parent.success = true;
-          $scope.$parent.successMessage = 'Found ' + data.data.length + ' courses for ';
-          $scope.$parent.instructions = true;
-          $scope.$parent.errorLookup = false;
-          $scope.$parent.loading = false;
-      }
-    });
-    /**/
   };
 
 }]);
@@ -59,7 +39,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&per_page=100&enrollment_term_id=sis_term_id:' + $scope.currentTerm.currentTermId + 'published=true&with_enrollments=true&enrollment_type=teacher';
+    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=100&published=true&with_enrollments=true&enrollment_type=teacher';
     var url = '/sectionsUtilityTool'+mini;
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
@@ -78,51 +58,64 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       }
       else {
         $scope.courses = data.data;
+        $scope.termArray = getTermArray(data.data);
         $scope.error = false;
         $scope.success = true;
-        $scope.successMessage = 'Found ' + data.data.length + ' courses for ';
         $scope.instructions = true;
         $scope.errorLookup = false;
       }
     });
   };
+
+  $scope.sortableOptions = {
+      placeholder: 'section',
+      connectWith: '.sectionList',
+      start: function(event, ui) {
+        ui.item.addClass('grabbing');
+      },
+      receive: function(event, ui) {
+      //on drop, append the name of the source course
+        var prevMovEl = ui.item.find('.status');
+        if(prevMovEl.text() !==''){
+          prevMovEl.next('span').show();
+        }
+        prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
+        $('li.course').removeClass('activeCourse');
+        ui.item.closest('li.course').addClass('activeCourse');
+
+      },
+      stop: function( event, ui ) {
+        //add some animation feedback to the move
+        ui.item.css('background-color', '#FFFF9C')
+          .animate({ backgroundColor: '#FFFFFF'}, 1500);
+        ui.item.removeClass('grabbing');
+      }
+  };
+  
+
   /*User clicks on Get Sections and the sections for that course
   gets added to the course scope*/
-  $scope.getSections = function (event, courseId, uniqname) {
-    event.preventDefault();
-    Sections.getSectionsForCourseId(courseId, uniqname).then(function (data) {
-      if (data) {
-        //find the course object
-        var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
-        //append a section object to the course scope
-        $scope.courses[coursePos].sections = data.data;
-        //sectionsShown = true hides the Get Sections link
-        $scope.courses[coursePos].sectionsShown = true;
-        
-        //setting up the jQuery sortable
-        $('.sectionList').sortable({
-          connectWith: '.sectionList',
-          receive: function(event, ui) {
-            //on drop, append the name of the source course
-            var prevMovEl = ui.item.find('.status');
-            if(prevMovEl.text() !==''){
-              prevMovEl.next('span').show();
-            }
-            prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
-          },
-          stop: function( event, ui ) {
-            //add some animation feedback to the move
-            $('li.course').removeClass('activeCourse');
-            ui.item.closest('li.course').addClass('activeCourse');
-            ui.item.css('background-color', '#FFFF9C')
-              .animate({ backgroundColor: '#FFFFFF'}, 1500);
-          }
-        }).disableSelection();
-      } else {
-        //deal with this
+  $scope.getSections = function () {
+
+    $('.sectionList').sortable({
+      connectWith: '.sectionList',
+      receive: function(event, ui) {
+        //on drop, append the name of the source course
+        var prevMovEl = ui.item.find('.status');
+        if(prevMovEl.text() !==''){
+          prevMovEl.next('span').show();
+        }
+        prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
+      },
+      stop: function( event, ui ) {
+        //add some animation feedback to the move
+        $('li.course').removeClass('activeCourse');
+        ui.item.closest('li.course').addClass('activeCourse');
+        ui.item.css('background-color', '#FFFF9C')
+          .animate({ backgroundColor: '#FFFFFF'}, 1500);
       }
-    });
-};
+    }).disableSelection();
+   };
 }]);
 
 
