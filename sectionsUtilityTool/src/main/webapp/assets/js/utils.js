@@ -2,8 +2,6 @@
 /* jshint  strict: true*/
 /* global $, moment, _*/
 
-
-
 /**
  * set up global ajax options
  */
@@ -58,6 +56,16 @@ var getTermArray = function(coursesData) {
   termArray = _.uniq(termArray);
   return termArray;  
 };
+
+var calculateLastActivity = function(last_activity_at) {
+  if(last_activity_at) {
+    return moment(last_activity_at).fromNow();
+  } 
+  else {
+    return 'None';
+  }
+};
+
 /**
  *
  * event watchers
@@ -71,7 +79,7 @@ $(document).on('click', '.setSections', function (e) {
   var $sections = $(this).closest('li').find('ul').find('li');
   var posts = [];
   $('#xListInner').empty();
-  $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList"></ol>');
+  $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
     $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('.sectionName').text() + '</li>');
@@ -80,13 +88,13 @@ $(document).on('click', '.setSections', function (e) {
     var index, len;
     for (index = 0, len = posts.length; index < len; ++index) {
       var xListUrl ='manager' + posts[index];
-      var section = posts[index].split('/')[4];
-      $('#xListSection' +  section).css('color','red');
-      $.post(xListUrl, function() {
-        //render notification success
+      $.post(xListUrl, function(data) {
+        var section = data.id;
+        $('#xListSection' +  section).append('<span class=\"label label-success\">Success</span>');
       })
-      .fail(function() {
-        //render notification failure
+      .fail(function(data) {
+        var section = data.id;
+        $('#xListSection' +  section).append('<span class=\"label label-failure\">Failure</span>');
       })
       .always(function() {
         // do what
@@ -97,7 +105,6 @@ $(document).on('click', '.setSections', function (e) {
   });
   return null;
 });
-
 
 $(document).on('click', '.getCourseInfo', function (e) {
   var uniqname = $.trim($('#uniqname').val());
@@ -126,3 +133,37 @@ $('body').on('keydown','#uniqname', function(event) {
     $('#uniqnameTrigger').click();
   }
 });
+
+$(document).on('click', '.getEnrollements', function (e) {
+  //var uniqname = $.trim($('#uniqname').val());
+  e.preventDefault();
+  var thisCourse = $(this).attr('data-courseid');
+  var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
+  $('#courseGetEnrollmentsLabel').empty();
+  $('#courseGetEnrollmentsInner').empty();
+  $('#courseGetEnrollmentsLabel').text('Enrollments for ' + thisCourseTitle);
+  $.get('manager/api/v1/courses/' + thisCourse +  '/enrollments', function(data) {
+      if(!data.length) {
+        $('#courseGetEnrollmentsInner').text('No humans detected!');
+      }
+      else {
+        $('#courseGetEnrollmentsInner').append('<p>Humans detected: '  + data.length + '</p><ul class="container-fluid"></ul></div>'); 
+          $('#courseGetEnrollmentsInner .container-fluid').append('<li class="row"><small><strong><div class="col-md-4 col-lg-4">Name (and uniqname)</div><div class="col-md-4 col-lg-4">Role / section</div><div class="col-md-4 col-lg-4">Last activity</div></strong></small></li>');
+        $.each( data, function() {
+          $('#courseGetEnrollmentsInner .container-fluid').append('<li class="row"><small><div class="col-md-4 col-lg-4">'  + this.user.name +  ' (' + this.user.login_id + ')</div><div class="col-md-4 col-lg-4">' + this.type + ' /' + this.course_section_id + '</div><div class="col-md-4 col-lg-4">'+ calculateLastActivity(this.last_activity_at) + '</div></small></li>');
+        });
+      }
+  })
+  .fail(function() {
+    $('#courseGetEnrollmentsInner').text('There was an error getting enrollements'); 
+  });
+  return null;
+});
+
+$('body').on('keydown','#uniqname', function(event) {
+  if (event.keyCode == 13) {
+    $('#uniqnameTrigger').click();
+  }
+});
+
+

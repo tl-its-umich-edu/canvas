@@ -88,7 +88,6 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
         $('li.course').removeClass('activeCourse');
         ui.item.closest('li.course').addClass('activeCourse');
-
       },
       stop: function( event, ui ) {
         //add some animation feedback to the move

@@ -88,6 +88,16 @@ li.activeCourse button.setSections {
 .noSections .orphanMessage {
     display:inline;
 }
+.listOfSectionsToCrossList {
+    padding:5px 30px;
+    margin:0;
+}
+.listOfSectionsToCrossList li{
+    padding:5px;
+    margin:0;
+    line-height:20px;
+}
+
 [ng-cloak] {
   display: none !important;
 }
