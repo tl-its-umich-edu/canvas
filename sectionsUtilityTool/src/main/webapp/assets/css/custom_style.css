@@ -98,6 +98,13 @@ li.activeCourse button.setSections {
     line-height:20px;
 }
 
+.spinner{
+    background: url("../images/spinner-xs.gif") no-repeat scroll 0 0 transparent;
+    display: inline-block;
+    height: 30px;
+    width: 30px;
+}
+
 [ng-cloak] {
   display: none !important;
 }

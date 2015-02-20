@@ -26,7 +26,6 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
     $scope.$parent.currentTerm.currentTermName = termName;
     $scope.$parent.currentTerm.currentTermId = termId;
     $scope.$parent.currentTerm.currentTermCanvasId = termCanvasId;
-    $scope.$parent.loading = true;
   };
 
 }]);
@@ -34,13 +33,14 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
 //COURSES CONTROLLER
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
   //$scope.courses = [];
-  $scope.loading = true;
+
 
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
     var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=100&published=true&with_enrollments=true&enrollment_type=teacher';
     var url = '/sectionsUtilityTool'+mini;
+    $scope.loading = true;
     Courses.getCourses(url).then(function (data) {
       if (data.failure) {
         if(uniqname) {
@@ -55,6 +55,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $scope.success = false;
         $scope.error = true;
         $scope.instructions = false;
+        $scope.loading = false;
       }
       else {
         $scope.courses = data.data;
@@ -63,6 +64,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $scope.success = true;
         $scope.instructions = true;
         $scope.errorLookup = false;
+        $scope.loading = false;
       }
     });
   };
