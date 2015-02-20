@@ -104,7 +104,7 @@ def getMPathwayTerms(esbToken)
 	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
 	# TODO: we are expecting an array here eventually. But for single item return, it is not in array form now
 	termId=result["getSOCTermsResponse"]["Term"]["TermCode"]
-	rv.add(termId)
+	rv.add(termId.to_s)
 	return rv
 end
 
