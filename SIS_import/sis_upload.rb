@@ -6,14 +6,14 @@ require "rubygems"
 require "nokogiri"
 
 
-def upload_to_canvas(fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
 
 
 	# set the error flag, default to be false
 	upload_error = false
 
 	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
-	if (prior_upload_error(server, token))
+	if (prior_upload_error(currentDirectory, server, token))
 		## check first about the environment variable setting for MAILTO '
 		return "Previous upload job has not finished yet."
 	end
@@ -103,9 +103,9 @@ end ## end of method definition
 
 # get the prior upload process id and make Canvas API calls to see the current process status
 # return true if the process is 100% finished; false otherwise
-def prior_upload_error(server, token)
+def prior_upload_error(currentDirectory, server, token)
 	# find all the process id files, and sort in descending order based on last modified time
-	id_log_file_path = "#{Dir.pwd}/logs/*_id.txt"
+	id_log_file_path = "#{currentDirectory}logs/*_id.txt"
 	p "id log file path is #{id_log_file_path}"
 	files = Dir.glob(id_log_file_path)
 	files = files.sort_by { |file| File.mtime(file) }.reverse
@@ -258,7 +258,7 @@ else
 				currentFileBaseName = File.basename(fileName)
 
 				# upload the file to canvas server
-				upload_error = upload_to_canvas(fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+				upload_error = upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
 			end
 		end
 
