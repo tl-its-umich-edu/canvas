@@ -18,6 +18,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -30,6 +31,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 
 	private static final String POST = "POST";
 	private static final String GET = "GET";
+	private static final String PUT = "PUT";
 	private static final long serialVersionUID = 7284813350014385613L;
 	private static Log M_log = LogFactory.getLog(SectionsUtilityToolServlet.class);
 	private static final String SYSTEM_PROPERTY_FILE_PATH = "sectionsToolPropsPath";
@@ -53,6 +55,11 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	
 	protected void doPost(HttpServletRequest request,HttpServletResponse response) throws IOException {
 		M_log.debug("doPOST: Called");
+		canvasRestApiCall(request, response);
+		
+	}
+	protected void doPut(HttpServletRequest request,HttpServletResponse response) throws IOException {
+		M_log.debug("doPut: Called");
 		canvasRestApiCall(request, response);
 		
 	}
@@ -89,6 +96,8 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 			clientRequest = new HttpGet(url);
 		}else if (request.getMethod().equals(POST)) {
 			clientRequest = new HttpPost(url);
+		}else if(request.getMethod().equals(PUT)) {
+			clientRequest=new HttpPut(url);
 		}
 		HttpClient client = new DefaultHttpClient();
 		final ArrayList<NameValuePair> nameValues = new ArrayList<NameValuePair>();
