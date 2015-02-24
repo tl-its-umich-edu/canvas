@@ -185,13 +185,16 @@ $(document).on('click', '.postCourseNameChange', function (e) {
     url: url
     //headers: {'X-HTTP-Method-Override': 'PUT'},
     }).done(function( msg ) {
-      console.log('success');
-      console.log(msg);
+      //update course name
     }).fail(function( msg ) {
-      console.log('failure');
-      console.log(msg);
+      //notify user that something happened
   });
 
+});
+
+$(document).on('click', '.cancelCourseNameChange', function (e) {
+  e.preventDefault();
+  $('.courseTitleTextContainer').hide();
 });
 
 
