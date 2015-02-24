@@ -76,6 +76,17 @@
                         <div class="row">
                             <div class="col-md-8">
                                 <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
+                                - <a class="renameCourse" href="">Rename?</a>
+                                <span class="form-inline courseTitleTextContainer" style="display:none">
+                                  <span class="form-group">
+                                    <span class="input-group">
+                                      <input type="text" class="form-control courseTitleText input-sm">
+                                    </span>
+                                  </span>
+                                  <button type="button" class="btn btn-primary btn-sm postCourseNameChange" data-courseid="{{item.id}}">Ok</button>
+                                  <button type="button" class="btn btn-link btn-sm cancelCourseNameChange">Cancel</button>
+                                </span>
+
                             </div>
                             <div class="col-md-4">
                                 <span class="orphanMessage">Orphan candidate!</span>
@@ -201,7 +212,7 @@
 
 
 
-        <!-- XList Modal -->
+        <!-- courseInfo Modal -->
         <div class="modal fade" id="courseInfoModal" tabindex="-1" role="dialog" aria-labelledby="courseInfoLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
