@@ -199,7 +199,7 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 	begin
 		time = Time.now
 		time_formatted = time.strftime("%Y_%m_%d_%H%M%S")
-		outputFile = File.open(outputDirectory + "url_update_#{time_formatted}.txt", "w")
+		outputFile = File.open(outputDirectory + "Canvas_url_update_#{time_formatted}.txt", "w")
 
 		# get the MPathway term set
 		mPathwayTermSet = getMPathwayTerms(esbToken)

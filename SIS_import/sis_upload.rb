@@ -210,7 +210,7 @@ if (Dir[outputDirectory].length != 1)
 	upload_error = "Cannot find logs directory " + outputDirectory
 
 	## check first about the environment variable setting for MAILTO '
-	p " use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 	## send email to support team with the error message
 	`echo #{upload_error} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
 	abort(upload_error)
@@ -223,10 +223,10 @@ else
 
 		if (Dir[currentDirectory].length != 1)
 			## working directory
-			upload_error = "Cannot find current working directory " + currentDirectory
+			upload_error = "Cannot find current working directory " + currentDirectory + "."
 		elsif (Dir[archiveDirectory].length != 1)
 			## archive directory
-			upload_error = "Cannot find archive directory " + archiveDirectory
+			upload_error = "Cannot find archive directory " + archiveDirectory + "."
 		elsif (Dir[tokenFile].length != 1)
 			## token file
 			upload_error = "Cannot find token file #{tokenFile}."
@@ -248,7 +248,7 @@ else
 			fileNames = Dir[currentDirectory+ "Canvas_Extract_*.zip"];
 			if (fileNames.length == 0)
 				## cannot find zip file to upload
-				upload_error = "Cannot find SIS zip file"
+				upload_error = "Cannot find SIS zip file."
 			elsif (fileNames.length > 1)
 				## there are more than one zip file
 				upload_error = "There are more than one SIS zip files to be uploaded."
@@ -267,7 +267,7 @@ else
 			outputFile.write(upload_error)
 
 			## check first about the environment variable setting for MAILTO '
-			p " use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+			p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 			## send email to support team with the error message
 			`echo #{upload_error} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
 			abort(upload_error)
