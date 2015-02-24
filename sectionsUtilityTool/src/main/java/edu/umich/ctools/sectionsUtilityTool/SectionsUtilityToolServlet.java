@@ -17,6 +17,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
@@ -26,6 +28,8 @@ import edu.umich.its.lti.utils.PropertiesUtilities;
 
 public class SectionsUtilityToolServlet extends HttpServlet {
 
+	private static final String POST = "POST";
+	private static final String GET = "GET";
 	private static final long serialVersionUID = 7284813350014385613L;
 	private static Log M_log = LogFactory.getLog(SectionsUtilityToolServlet.class);
 	private static final String SYSTEM_PROPERTY_FILE_PATH = "sectionsToolPropsPath";
@@ -44,19 +48,20 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	
 	protected void doGet(HttpServletRequest request,HttpServletResponse response) throws IOException {
 		M_log.debug("doGet: Called");
-		request.setCharacterEncoding("UTF-8");
-		canvasRESTAPICall(request, response);
+		canvasRestApiCall(request, response);
 	}
 	
-	protected void doPOST(HttpServletRequest request,HttpServletResponse response) throws IOException {
+	protected void doPost(HttpServletRequest request,HttpServletResponse response) throws IOException {
 		M_log.debug("doPOST: Called");
+		canvasRestApiCall(request, response);
 		
 	}
 	
 	
 
-	private void canvasRESTAPICall(HttpServletRequest request,
+	private void canvasRestApiCall(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
+		request.setCharacterEncoding("UTF-8");
 		M_log.debug("canvasRESTAPICall(): called");
 		if(canvasProperties!=null) {
 			canvasToken = canvasProperties.getProperty(PROPERTY_CANVAS_ADMIN);
@@ -70,7 +75,6 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 			M_log.error("Failed to load system properties(sectionsToolProps.properties) for SectionsTool");
 			return;
 		}
-		HttpClient client = new DefaultHttpClient();
 		String queryString = request.getQueryString();
 		String pathInfo = request.getPathInfo();
 		String url=null;
@@ -80,14 +84,20 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		 }else {
 			url=canvasURL+pathInfo;
 		}
-		HttpGet clientRequest = new HttpGet(url);
+		HttpUriRequest clientRequest = null;
+		if(request.getMethod().equals(GET)) {
+			clientRequest = new HttpGet(url);
+		}else if (request.getMethod().equals(POST)) {
+			clientRequest = new HttpPost(url);
+		}
+		HttpClient client = new DefaultHttpClient();
 		final ArrayList<NameValuePair> nameValues = new ArrayList<NameValuePair>();
-	    nameValues.add(new BasicNameValuePair("Authorization", "Bearer"+ " " +canvasToken));
-	    nameValues.add(new BasicNameValuePair("content-type", "application/json"));
-	    for (final NameValuePair h : nameValues)
-	    {
-	        clientRequest.addHeader(h.getName(), h.getValue());
-	    }
+		nameValues.add(new BasicNameValuePair("Authorization", "Bearer"+ " " +canvasToken));
+		nameValues.add(new BasicNameValuePair("content-type", "application/json"));
+		for (final NameValuePair h : nameValues)
+		{
+		    clientRequest.addHeader(h.getName(), h.getValue());
+		}
 		BufferedReader rd = null;
 		try {
 			 rd = new BufferedReader(new InputStreamReader(client.execute(clientRequest).getEntity().getContent()));
@@ -106,6 +116,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		
 		}
 	}
+
 	
 	protected void getCanvasCredentials() {
 		M_log.debug("getCanvasCredentials(): called");
