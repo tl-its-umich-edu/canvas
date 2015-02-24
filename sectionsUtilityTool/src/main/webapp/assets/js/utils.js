@@ -76,6 +76,7 @@ $(document).on('click', '.setSections', function (e) {
   e.preventDefault();
   $('#debugPanel').empty();
   var thisCourse = $(this).attr('data-courseid');
+
   var thisCourseTitle = $(this).closest('li').find('a.courseLink').text();
   var $sections = $(this).closest('li').find('ul').find('li');
   var posts = [];

@@ -6,14 +6,14 @@ require "rubygems"
 require "nokogiri"
 
 
-def upload_to_canvas(fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
 
 
 	# set the error flag, default to be false
 	upload_error = false
 
 	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
-	if (prior_upload_error(server, token))
+	if (prior_upload_error(currentDirectory, server, token))
 		## check first about the environment variable setting for MAILTO '
 		return "Previous upload job has not finished yet."
 	end
@@ -103,16 +103,20 @@ end ## end of method definition
 
 # get the prior upload process id and make Canvas API calls to see the current process status
 # return true if the process is 100% finished; false otherwise
-def prior_upload_error(server, token)
+def prior_upload_error(currentDirectory, server, token)
 	# find all the process id files, and sort in descending order based on last modified time
-	files = Dir.glob("#{Dir.pwd}/logs/*_id.txt")
+	id_log_file_path = "#{currentDirectory}logs/*_id.txt"
+	p "id log file path is #{id_log_file_path}"
+	files = Dir.glob(id_log_file_path)
 	files = files.sort_by { |file| File.mtime(file) }.reverse
 	if (files.size == 0)
+		p "no id file found in path #{id_log_file_path}"
 		## first run, no prior cases
 		return false
 	else
 		## get the first and most recent id file
 		id_file = files[0]
+		p "found recent id file #{id_file}"
 		process_id = ''
 		File.open(id_file, 'r') do |idFile|
 			while line = idFile.gets
@@ -206,7 +210,7 @@ if (Dir[outputDirectory].length != 1)
 	upload_error = "Cannot find logs directory " + outputDirectory
 
 	## check first about the environment variable setting for MAILTO '
-	p " use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 	## send email to support team with the error message
 	`echo #{upload_error} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
 	abort(upload_error)
@@ -219,10 +223,10 @@ else
 
 		if (Dir[currentDirectory].length != 1)
 			## working directory
-			upload_error = "Cannot find current working directory " + currentDirectory
+			upload_error = "Cannot find current working directory " + currentDirectory + "."
 		elsif (Dir[archiveDirectory].length != 1)
 			## archive directory
-			upload_error = "Cannot find archive directory " + archiveDirectory
+			upload_error = "Cannot find archive directory " + archiveDirectory + "."
 		elsif (Dir[tokenFile].length != 1)
 			## token file
 			upload_error = "Cannot find token file #{tokenFile}."
@@ -244,7 +248,7 @@ else
 			fileNames = Dir[currentDirectory+ "Canvas_Extract_*.zip"];
 			if (fileNames.length == 0)
 				## cannot find zip file to upload
-				upload_error = "Cannot find SIS zip file"
+				upload_error = "Cannot find SIS zip file."
 			elsif (fileNames.length > 1)
 				## there are more than one zip file
 				upload_error = "There are more than one SIS zip files to be uploaded."
@@ -254,7 +258,7 @@ else
 				currentFileBaseName = File.basename(fileName)
 
 				# upload the file to canvas server
-				upload_error = upload_to_canvas(fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+				upload_error = upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
 			end
 		end
 
@@ -263,7 +267,7 @@ else
 			outputFile.write(upload_error)
 
 			## check first about the environment variable setting for MAILTO '
-			p " use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+			p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 			## send email to support team with the error message
 			`echo #{upload_error} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
 			abort(upload_error)

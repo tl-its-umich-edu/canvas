@@ -84,6 +84,8 @@
                                     <button class="btn btn-default btn-xs getCourseInfo" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseInfoModal">Get Course Info</button>
                                     <button ng-show="item.sections.length" class="btn btn-primary btn-xs setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
                                 </div>
+                            <div class="col-md-2">
+                                <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
                             </div>
                         </div>
                         <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">

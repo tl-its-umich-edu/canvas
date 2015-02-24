@@ -104,7 +104,7 @@ def getMPathwayTerms(esbToken)
 	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
 	# TODO: we are expecting an array here eventually. But for single item return, it is not in array form now
 	termId=result["getSOCTermsResponse"]["Term"]["TermCode"]
-	rv.add(termId)
+	rv.add(termId.to_s)
 	return rv
 end
 
@@ -199,13 +199,23 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 	begin
 		time = Time.now
 		time_formatted = time.strftime("%Y_%m_%d_%H%M%S")
-		outputFile = File.open(outputDirectory + "url_update_#{time_formatted}.txt", "w")
+		outputFile = File.open(outputDirectory + "Canvas_url_update_#{time_formatted}.txt", "w")
 
 		# get the MPathway term set
 		mPathwayTermSet = getMPathwayTerms(esbToken)
 
+		# update URL start time
+        	start_string = "update URL start time : " + Time.new.inspect
+		p start_string
+		outputFile.write(start_string)
+		
 		#call Canvas API to get course url
 		processTermCourses(mPathwayTermSet, esbToken, outputFile)
+
+		# update URL stop time
+                stop_string = "update URL stop time : " + Time.new.inspect
+                p stop_string
+                outputFile.write(stop_string)
 	# close output file
 	ensure
 	outputFile.close unless outputFile == nil
@@ -326,17 +336,10 @@ elsif (Dir[outputDirectory].length != 1)
 	## logs directory
 	abort("Cannot find logs directory " + outputDirectory)
 else
-	# URL update start time
-	p "URL update start time : " + Time.new.inspect
-
 	esbToken=refreshESBToken()
 
 	# update MPathway with Canvas urls
 	updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory)
-
-
-	# upload stop time
-	p "upload stop time : " + Time.new.inspect
 
 	if (!updateError)
 		## if there is no upload error
