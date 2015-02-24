@@ -105,14 +105,18 @@ end ## end of method definition
 # return true if the process is 100% finished; false otherwise
 def prior_upload_error(server, token)
 	# find all the process id files, and sort in descending order based on last modified time
-	files = Dir.glob("#{Dir.pwd}/logs/*_id.txt")
+	id_log_file_path = "#{Dir.pwd}/logs/*_id.txt"
+	p "id log file path is #{id_log_file_path}"
+	files = Dir.glob(id_log_file_path)
 	files = files.sort_by { |file| File.mtime(file) }.reverse
 	if (files.size == 0)
+		p "no id file found in path #{id_log_file_path}"
 		## first run, no prior cases
 		return false
 	else
 		## get the first and most recent id file
 		id_file = files[0]
+		p "found recent id file #{id_file}"
 		process_id = ''
 		File.open(id_file, 'r') do |idFile|
 			while line = idFile.gets
