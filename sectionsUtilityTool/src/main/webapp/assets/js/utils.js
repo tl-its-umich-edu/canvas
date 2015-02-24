@@ -178,13 +178,13 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   var thisCourse = $(this).attr('data-courseid');
   var newCourseName = $(this).closest('.courseTitleTextContainer').find('input.courseTitleText').val();
   var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName;
-  console.log(url)
   
   $.ajax({
     type: 'PUT', // Use POST with X-HTTP-Method-Override or a straight PUT if appropriate.
     url: url
     //headers: {'X-HTTP-Method-Override': 'PUT'},
     }).done(function( msg ) {
+
       //update course name
     }).fail(function( msg ) {
       //notify user that something happened
@@ -196,7 +196,6 @@ $(document).on('click', '.cancelCourseNameChange', function (e) {
   e.preventDefault();
   $('.courseTitleTextContainer').hide();
 });
-
 
 $('body').on('keydown','#uniqname', function(event) {
   if (event.keyCode == 13) {
