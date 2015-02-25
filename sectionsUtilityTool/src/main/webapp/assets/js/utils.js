@@ -66,6 +66,15 @@ var calculateLastActivity = function(last_activity_at) {
   }
 };
 
+var reportSuccess = function(msg){
+  $('#successContainer').fadeIn('slow').find('.msg').html(msg);
+};
+
+var reportError = function(msg){
+  $('#errorContainer').fadeIn('slow').find('.msg').html(msg);
+};
+
+
 /**
  *
  * event watchers
@@ -178,16 +187,16 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   var thisCourse = $(this).attr('data-courseid');
   var newCourseName = $(this).closest('.courseTitleTextContainer').find('input.courseTitleText').val();
   var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName;
-  
+  var $thisCourseTitle = $(this).closest('li').find('.courseLink');
   $.ajax({
-    type: 'PUT', // Use POST with X-HTTP-Method-Override or a straight PUT if appropriate.
+    type: 'PUT',
     url: url
-    //headers: {'X-HTTP-Method-Override': 'PUT'},
     }).done(function( msg ) {
-
-      //update course name
+     $('.courseTitleTextContainer').hide();
+      reportSuccess('Course ' + $thisCourseTitle.text() + ' renamed to ' + msg.course_code);
+      $thisCourseTitle.text(msg.course_code);
     }).fail(function( msg ) {
-      //notify user that something happened
+      //TODO: reportError(JSON.stringify(msg));
   });
 
 });
