@@ -67,7 +67,8 @@ var calculateLastActivity = function(last_activity_at) {
 };
 
 var reportSuccess = function(msg){
-  $('#successContainer').fadeIn('slow').find('.msg').html(msg);
+  $('#successContainer').find('.msg').html(msg);
+  $('#successContainer').fadeIn().delay(3000).fadeOut();
 };
 
 var reportError = function(msg){
@@ -186,15 +187,17 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   e.preventDefault();
   var thisCourse = $(this).attr('data-courseid');
   var newCourseName = $(this).closest('.courseTitleTextContainer').find('input.courseTitleText').val();
-  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName;
-  var $thisCourseTitle = $(this).closest('li').find('.courseLink');
+  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;;
+  var $thisCourseCode = $(this).closest('li').find('.courseLink');
+  var $thisCourseName = $(this).closest('li').find('.courseName');
   $.ajax({
     type: 'PUT',
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
-      reportSuccess('Course ' + $thisCourseTitle.text() + ' renamed to ' + msg.course_code);
-      $thisCourseTitle.text(msg.course_code);
+      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code) + '</strong>';
+      $thisCourseCode.text(msg.course_code);
+      $thisCourseName.text(msg.name)
     }).fail(function( msg ) {
       //TODO: reportError(JSON.stringify(msg));
   });

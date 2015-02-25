@@ -34,8 +34,7 @@
             </div>
             <!-- /.container-fluid -->
         </nav>
-        <div class="alert alert-success alert-dismissible reportContainer" id="successContainer" role="alert" style="display:none">
-          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <div class="alert alert-success reportContainer" id="successContainer" role="alert" style="display:none">
           <div class="msg"></div>
         </div>
         <div class="alert alert-danger alert-dismissible reportContainer" id="errorContainer" role="alert" style="display:none">
@@ -83,7 +82,7 @@
                     <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
                         <div class="row">
                             <div class="col-md-8">
-                                <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
+                                <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span class="courseName" title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
                                 - <a class="renameCourse" href="">Rename?</a>
                                 <span class="form-inline courseTitleTextContainer" style="display:none">
                                   <span class="form-group">
