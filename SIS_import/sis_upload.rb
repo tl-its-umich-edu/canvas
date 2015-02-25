@@ -275,7 +275,9 @@ else
 			# write the success message
 			## if there is no upload error
 			# move file to archive directory after processing
-			FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
+			FileUtils.mv(Dir.glob("#{currentDirectory}*.zip"), archiveDirectory)
+			FileUtils.mv(Dir.glob("#{currentDirectory}*MD5.txt"), archiveDirectory)
+
 			upload_success_msg = "SIS upload finished with " + fileName
 			outputFile.write(upload_success_msg)
 			p upload_success_msg
