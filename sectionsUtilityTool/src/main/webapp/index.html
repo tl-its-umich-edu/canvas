@@ -40,19 +40,12 @@
                 <button type="button" class="btn btn-sm btn-default dropdown-toggle pull-right" data-toggle="dropdown">
                     Terms <span class="caret"></span>
                 </button>
-                <ul class="dropdown-menu" role="menu"> <!--| filterMedSchool-->
-                    <!--
-                    <li ng-repeat="term in terms | orderBy : sis_term_id" ng-show="(term.sis_term_id.slice(-1) ==='0' || term.sis_term_id.slice(-1) !=='0' && filterMedSchool)">
-                    -->
-
+                <ul class="dropdown-menu" role="menu">
                     <li ng-repeat="term in terms | orderBy : sis_term_id" ng-data-id="{{term.id}}" style="display:none">
                         <a href='' ng-click="getTerm(term.sis_term_id, term.name, term.id)">{{term.name}}</a>
                     </li>
                 </ul>
             </div>
-
-            <div class="spinner pull-right" ng-show="loading"></div>
-
 
             <div class="form-inline">
 
@@ -62,6 +55,10 @@
 
               </div>
               <button id="uniqnameTrigger" type="button" ng-click="getCoursesForUniqname()" class="btn btn-primary">Look up courses <span ng-show="uniqname">for</span> {{uniqname}}</button>
+              <div class="spinner" ng-show="loading">&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+
+              
               <span ng-show="error" class="alert" role="alert">{{errorMessage}} </span>
               <span ng-show="errorLookup"> Lookup in the 
               <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
@@ -75,13 +72,18 @@
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
-                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course">
+                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
                         <div class="row">
-                            <div class="col-md-10">
+                            <div class="col-md-8">
                                 <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
                             </div>
-                            <div class="col-md-2">
-                                <button ng-show="item.sections.length" class="btn btn-primary btn-xs pull-right setSections" data-courseid="{{item.id}}">Update Course</button>
+                            <div class="col-md-4">
+                                <span class="orphanMessage">Orphan candidate!</span>
+                                <div class="btn-group pull-right">
+                                    <button class="btn btn-default btn-xs getEnrollements" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseGetEnrollmentsModal">Get Enrollemens</button>
+                                    <button class="btn btn-default btn-xs getCourseInfo" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseInfoModal">Get Course Info</button>
+                                    <button ng-show="item.sections.length" class="btn btn-primary btn-xs setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
+                                </div>
                             </div>
                         </div>
                         <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
@@ -137,9 +139,83 @@
                         <p>
                             <strong>Available test users:</strong> amanjo, csev, jxiaapl, pbogart, pfbodary, raquelng, sileo, trohlck
                         </p>
+                        <p>
+                            <strong>Available test users for xlisting:</strong> insty (has courses in default term)
+                        </p>
                     </div>    
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- XList Modal -->
+        <div class="modal fade" id="xListModal" tabindex="-1" role="dialog" aria-labelledby="xListLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="xListLabel">Crosslist confirm</h3>
+                    </div>
+                    <div class="modal-body" id="xListInner">
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="postXList">
+                            Crosslist
+                        </button>
+                        <button type="button" class="btn btn-link"  data-dismiss="modal">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- enrollments Modal -->
+        <div class="modal fade" id="courseGetEnrollmentsModal" tabindex="-1" role="dialog" aria-labelledby="courseGetEnrollmentsLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="courseGetEnrollmentsLabel"></h3>
+                    </div>
+                    <div class="modal-body" id="courseGetEnrollmentsInner">
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary"  data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- XList Modal -->
+        <div class="modal fade" id="courseInfoModal" tabindex="-1" role="dialog" aria-labelledby="courseInfoLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                        <h3 class="modal-title" id="courseInfoLabel"></h3>
+                    </div>
+                    <div class="modal-body" id="courseInfoInner">
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary"  data-dismiss="modal">
                             Close
                         </button>
                     </div>

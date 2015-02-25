@@ -2,8 +2,6 @@
 /* jshint  strict: true*/
 /* global $, moment, _*/
 
-
-
 /**
  * set up global ajax options
  */
@@ -58,6 +56,16 @@ var getTermArray = function(coursesData) {
   termArray = _.uniq(termArray);
   return termArray;  
 };
+
+var calculateLastActivity = function(last_activity_at) {
+  if(last_activity_at) {
+    return moment(last_activity_at).fromNow();
+  } 
+  else {
+    return 'None';
+  }
+};
+
 /**
  *
  * event watchers
@@ -68,14 +76,57 @@ $(document).on('click', '.setSections', function (e) {
   e.preventDefault();
   $('#debugPanel').empty();
   var thisCourse = $(this).attr('data-courseid');
-  var $sections = $(this).closest('li').find('ul').find('li');
-  $sections.each(function( ) {
-    //TODO: this needs to be the servlet endpoint
-    // right now just showing it in the UI
 
-    $('#debugPanel').append( '<p>POST /api/v1/sections/<strong>' + $(this).attr('data-sectionid') + '</strong>/crosslist/<strong>' + thisCourse + '</strong></p>');
+  var thisCourseTitle = $(this).closest('li').find('a.courseLink').text();
+  var $sections = $(this).closest('li').find('ul').find('li');
+  var posts = [];
+  $('#xListInner').empty();
+  $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
+  $sections.each(function( ) {
+    posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
+    $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('.sectionName').text() + '</li>');
   });
-  $('#debugPanel').fadeIn('fast').delay(3000).fadeOut('slow');
+  $('#postXList').click(function(){
+    var index, len;
+    for (index = 0, len = posts.length; index < len; ++index) {
+      var xListUrl ='manager' + posts[index];
+      $.post(xListUrl, function(data) {
+        var section = data.id;
+        $('#xListSection' +  section).append('<span class=\"label label-success\">Success</span>');
+      })
+      .fail(function(data) {
+        var section = data.id;
+        $('#xListSection' +  section).append('<span class=\"label label-failure\">Failure</span>');
+      })
+      .always(function() {
+        // do what
+      });
+
+
+    }  
+  });
+  return null;
+});
+
+$(document).on('click', '.getCourseInfo', function (e) {
+  var uniqname = $.trim($('#uniqname').val());
+  e.preventDefault();
+  var thisCourse = $(this).attr('data-courseid');
+  var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
+  $('#courseInfoInner').empty();
+  $('#courseInfoLabel').empty();
+  $('#courseInfoLabel').text('Info on ' + thisCourseTitle);
+  $.get('manager/api/v1/courses/' + thisCourse + '/activity_stream?as_user_id=sis_login_id:' +uniqname, function(data) {
+      if(!data.length) {
+        $('#courseInfoInner').text('No course activity detected!');
+      }
+      else {
+        $('#courseInfoInner').text('Course activity detected! Number of events: '  + data.length); 
+      }
+  })
+  .fail(function() {
+    $('#courseInfoInner').text('There was an error getting course information'); 
+  });
   return null;
 });
 
@@ -84,3 +135,37 @@ $('body').on('keydown','#uniqname', function(event) {
     $('#uniqnameTrigger').click();
   }
 });
+
+$(document).on('click', '.getEnrollements', function (e) {
+  //var uniqname = $.trim($('#uniqname').val());
+  e.preventDefault();
+  var thisCourse = $(this).attr('data-courseid');
+  var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
+  $('#courseGetEnrollmentsLabel').empty();
+  $('#courseGetEnrollmentsInner').empty();
+  $('#courseGetEnrollmentsLabel').text('Enrollments for ' + thisCourseTitle);
+  $.get('manager/api/v1/courses/' + thisCourse +  '/enrollments', function(data) {
+      if(!data.length) {
+        $('#courseGetEnrollmentsInner').text('No humans detected!');
+      }
+      else {
+        $('#courseGetEnrollmentsInner').append('<p>Humans detected: '  + data.length + '</p><ul class="container-fluid"></ul></div>'); 
+          $('#courseGetEnrollmentsInner .container-fluid').append('<li class="row"><small><strong><div class="col-md-4 col-lg-4">Name (and uniqname)</div><div class="col-md-4 col-lg-4">Role / section</div><div class="col-md-4 col-lg-4">Last activity</div></strong></small></li>');
+        $.each( data, function() {
+          $('#courseGetEnrollmentsInner .container-fluid').append('<li class="row"><small><div class="col-md-4 col-lg-4">'  + this.user.name +  ' (' + this.user.login_id + ')</div><div class="col-md-4 col-lg-4">' + this.type + ' /' + this.course_section_id + '</div><div class="col-md-4 col-lg-4">'+ calculateLastActivity(this.last_activity_at) + '</div></small></li>');
+        });
+      }
+  })
+  .fail(function() {
+    $('#courseGetEnrollmentsInner').text('There was an error getting enrollements'); 
+  });
+  return null;
+});
+
+$('body').on('keydown','#uniqname', function(event) {
+  if (event.keyCode == 13) {
+    $('#uniqnameTrigger').click();
+  }
+});
+
+
