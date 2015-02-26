@@ -30,6 +30,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
 
 }]);
 
+
 //COURSES CONTROLLER
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
   //$scope.courses = [];
