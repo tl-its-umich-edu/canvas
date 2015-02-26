@@ -71,7 +71,13 @@ def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory,
 
 	if (parsed_result["errors"])
 			## break and print error
-			upload_error=parsed_result["errors"]
+			if (parsed_result["errors"].is_a? Array and parsed_result["errors"][0]["message"])
+				# example error message
+				# {"errors":[{"message":"An error occurred.","error_code":"internal_server_error"}],"error_report_id":237849}
+				upload_error = parsed_result["errors"][0]["message"]
+			else
+				upload_error = parsed_result["errors"]
+			end
 			## hashmap ["message"=>"error_message"
 			outputFile.write("upload error: " + upload_error)
 			outputFile.write("\n")
