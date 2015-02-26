@@ -66,6 +66,16 @@ var calculateLastActivity = function(last_activity_at) {
   }
 };
 
+var reportSuccess = function(msg){
+  $('#successContainer').find('.msg').html(msg);
+  $('#successContainer').fadeIn().delay(3000).fadeOut();
+};
+
+var reportError = function(msg){
+  $('#errorContainer').fadeIn('slow').find('.msg').html(msg);
+};
+
+
 /**
  *
  * event watchers
@@ -160,6 +170,43 @@ $(document).on('click', '.getEnrollements', function (e) {
     $('#courseGetEnrollmentsInner').text('There was an error getting enrollements'); 
   });
   return null;
+});
+
+
+$(document).on('click', '.renameCourse', function (e) {
+  $('.courseTitleTextContainer').hide();
+  e.preventDefault();
+  var thisCourseTitle = $(this).closest('li').find('.courseLink').text();
+  $(this).next('.courseTitleTextContainer').find('input.courseTitleText').val(thisCourseTitle).focus();
+  $(this).next('.courseTitleTextContainer').fadeIn();
+  return null;
+});
+
+  
+$(document).on('click', '.postCourseNameChange', function (e) {
+  e.preventDefault();
+  var thisCourse = $(this).attr('data-courseid');
+  var newCourseName = $(this).closest('.courseTitleTextContainer').find('input.courseTitleText').val();
+  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;;
+  var $thisCourseCode = $(this).closest('li').find('.courseLink');
+  var $thisCourseName = $(this).closest('li').find('.courseName');
+  $.ajax({
+    type: 'PUT',
+    url: url
+    }).done(function( msg ) {
+     $('.courseTitleTextContainer').hide();
+      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code) + '</strong>';
+      $thisCourseCode.text(msg.course_code);
+      $thisCourseName.text(msg.name)
+    }).fail(function( msg ) {
+      //TODO: reportError(JSON.stringify(msg));
+  });
+
+});
+
+$(document).on('click', '.cancelCourseNameChange', function (e) {
+  e.preventDefault();
+  $('.courseTitleTextContainer').hide();
 });
 
 $('body').on('keydown','#uniqname', function(event) {
