@@ -94,7 +94,7 @@ $(document).on('click', '.setSections', function (e) {
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
-    $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('.sectionName').text() + '</li>');
+    $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('div.sectionName span').text() + '</li>');
   });
   $('#postXList').click(function(){
     var index, len;
@@ -250,20 +250,20 @@ $(document).on('click', '#uniqnameOtherTrigger', function (e) {
 });
 
 $(document).on('click', '#useOtherSections', function () {
-  //console.log($('#otherInstructorModal').find('.otherSectionSelection:checked').closest('li').length);
-  $('#otherInstructorModal').find('.otherSectionSelection:checked').closest('li').appendTo('.otherSectionsTarget');
+  $('#otherInstructorModal').find('.otherSectionSelection:checked').closest('li').appendTo('.otherSectionsTarget ul.sectionList');
   $('.otherSectionsTarget').find('.setSections').show();
+  $('#otherInstructorModal').modal('hide')
 });
 
 $(document).on('click', '.openOtherInstructorModal', function (e) { 
+  $('#otherInstructorInnerPayload').empty();
+  $('#uniqnameOther').val('');
+  $('#uniqnameOtherTrigger').text('Look up courses');
   $('#otherInstructorModal').on('shown.bs.modal', function (event) {
-        //console.log(event.relatedTarget.originalEvent.explicitOriginalTarget.id);
-        $('li.course').removeClass('otherSectionsTarget');
-        $(event.relatedTarget.originalEvent.explicitOriginalTarget).closest('li').addClass('otherSectionsTarget');
+      $('li.course').removeClass('otherSectionsTarget');
+      $(event.relatedTarget.originalEvent.explicitOriginalTarget).closest('li').addClass('otherSectionsTarget');
     }).on('hidden.bs.modal', function () {
-        //console.log(event.relatedTarget.originalEvent.explicitOriginalTarget.id);
         $('li.course').removeClass('otherSectionsTarget');
-        //$(event.relatedTarget.originalEvent.explicitOriginalTarget).closest('li').css('border','2px solid red')
     }).modal('toggle', e);
 });
 
@@ -272,4 +272,5 @@ $(document).on('click', '.removeSection', function (e) {
   $(this).closest('li').fadeOut( 'slow', function() {
     $(this).remove();
   });
+
 });

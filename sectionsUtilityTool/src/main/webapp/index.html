@@ -109,7 +109,7 @@
                         <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
                             <li ng-repeat="section in item.sections" class="row section" data-sectionid="{{section.id}}">
                                 <div class="col-md-5 sectionName">
-                                    {{section.name}}
+                                    <span>{{section.name}}</span>
                                 </div>
                                 <div class="col-md-7">
                                     <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span>                                    
@@ -278,9 +278,5 @@
                 </div>
             </div>
         </div>
-
-
-
-
     </body>
 </html>
