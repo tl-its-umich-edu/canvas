@@ -29,6 +29,10 @@ import edu.umich.its.lti.utils.PropertiesUtilities;
 
 
 public class SectionUtilityToolFilter implements Filter {
+	private static final String OU_GROUPS = "ou=Groups";
+	private static final String PROVIDER_URL = "ldap://ldap.itd.umich.edu:389/dc=umich,dc=edu";
+	private static final String LDAP_CTX_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
+	private static final String ASSETS_PATH = "/assets";
 	private static Log M_log = LogFactory.getLog(SectionUtilityToolFilter.class);
 	protected static final String SYSTEM_PROPERTY_FILE_PATH = "sectionsToolPropsPath";
 	protected static final String PROPERTY_CANVAS_ADMIN = "canvas.admin.token";
@@ -78,7 +82,14 @@ public class SectionUtilityToolFilter implements Filter {
 		return (value == null) || (value.trim().equals(""));
 	}
 	
-	
+	/*
+	 * User is authenicated using cosign  authorized using Ldap. For local development we are enabling
+	 * "testUser" parameter. "testUser" also go through the Ldap authorization process. 
+	 * we have test.url configured in the properties file in order to disable usage of "testUser" parameter in PROD.
+	 * "/assets" folder is where all the js/css resources. I am not making those folder go through authorization process for
+	 * 2 reasons 1) If the request of /index.html page fails we return the error page and that needs .css file for doing styling.
+	 * 2) if /index.html is 200 ok, the next request that follows are /assets. so it kind of redundant to go through ldap check.
+	 */
 	private boolean checkForAuthorization(HttpServletRequest request) {
 		M_log.debug("checkLdapForAuthorization(): called");
      	String remoteUser = request.getRemoteUser();
@@ -92,14 +103,14 @@ public class SectionUtilityToolFilter implements Filter {
 			M_log.warn("Failed to load system property test.url from sectionsToolProps.properties for SectionsTool");
 		}
 		
-		if(servletPath.startsWith("/assets")) {
+		if(servletPath.startsWith(ASSETS_PATH)) {
 			return true;
 		}
 		String testUserInSession = (String)request.getSession().getAttribute(TEST_USER);
 		
 	    if ( isTestUrlEnabled && testUser != null ) { 
 			isAuthorized=ldapAuthorizationVerification(testUser); 
-			request.getSession().setAttribute("testUser", testUser);
+			request.getSession().setAttribute(TEST_USER, testUser);
 		}
 		else if ( isTestUrlEnabled && testUserInSession != null )
 		{
@@ -110,14 +121,16 @@ public class SectionUtilityToolFilter implements Filter {
 		}
 		return isAuthorized;
 		
+		
 	}
 
 	private boolean ldapAuthorizationVerification(String user) {
+		M_log.debug("ldapAuthorizationVerification(): called");
 		boolean isMem = false;
 		String authGroup = AUTH_GROUP;
 		Hashtable<String,String> env = new Hashtable<String, String>();
-		env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-		env.put(Context.PROVIDER_URL, "ldap://ldap.itd.umich.edu:389/dc=umich,dc=edu");
+		env.put(Context.INITIAL_CONTEXT_FACTORY, LDAP_CTX_FACTORY);
+		env.put(Context.PROVIDER_URL, PROVIDER_URL);
 		try {
 			DirContext dirContext = new InitialDirContext(env);
 			String[] attrIDs = {"member"};
@@ -126,25 +139,25 @@ public class SectionUtilityToolFilter implements Filter {
 			searchControls.setReturningObjFlag(true);
 			searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			String filter = "(&(cn=" + authGroup + ") (objectclass=rfc822MailGroup))";
-			String searchBase = "ou=Groups";
+			String searchBase = OU_GROUPS;
 			NamingEnumeration listOfPeopleInAuthGroup = dirContext.search(searchBase, filter, searchControls);
 			String positiveMatch = "uid=" + user + ",";
 			while (listOfPeopleInAuthGroup.hasMore()) {
 				SearchResult searchResults = (SearchResult)listOfPeopleInAuthGroup.next();
-				NamingEnumeration e = (searchResults.getAttributes()).getAll();
-				while (e.hasMoreElements()){
-					Attribute attr = (Attribute) e.nextElement();
-					NamingEnumeration a = attr.getAll();
-					while (a.hasMoreElements()){
-						String val = (String) a.nextElement();
+				NamingEnumeration allSearchResultAttributes = (searchResults.getAttributes()).getAll();
+				while (allSearchResultAttributes.hasMoreElements()){
+					Attribute attr = (Attribute) allSearchResultAttributes.nextElement();
+					NamingEnumeration simpleListOfPeople = attr.getAll();
+					while (simpleListOfPeople.hasMoreElements()){
+						String val = (String) simpleListOfPeople.nextElement();
 						if(val.indexOf(positiveMatch) != -1){
 							isMem = true;
 							break;
 						}
 					}
-					a.close();
+					simpleListOfPeople.close();
 				}
-				e.close();
+				allSearchResultAttributes.close();
 			}
 			listOfPeopleInAuthGroup.close();
 			dirContext.close();
