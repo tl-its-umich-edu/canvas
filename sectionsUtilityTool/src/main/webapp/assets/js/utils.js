@@ -226,24 +226,30 @@ $(document).on('click', '#uniqnameOtherTrigger', function (e) {
     type: 'GET',
     url: url
     }).done(function( data ) {
-      var termIdInt = parseInt(termId);
-      var filteredData = _.where(data, {enrollment_term_id:termIdInt});
-      var render = '<div class="coursePanelOther well"><ul class="container-fluid courseList">';
-      $.each(filteredData, function() {
-        var course_code = this.course_code;
-        render = render + '<li class="course"><p><strong>' + this.course_code + '</strong></p><ul class="sectionList">';
-        $.each(this.sections, function() {
-            render = render + '<li class="section row otherSection" data-sectionid="' + this.id + '">' +
-              '<div class="col-md-5 sectionName"><input type="checkbox" class="otherSectionSelection courseOtherPanelChild" id="otherSectionSelection' + course_code + this.id + '">' +
-              ' <label for="otherSectionSelection' +  course_code + this.id + '" class="courseOtherPanelChild">' + this.name + '</label>' + 
-              '<span class="coursePanelChild">' + this.name +'</span></div><div class="col-md-7">'+ 
-              '<span class="coursePanelChild"> Originally from ' + course_code + ' (' + uniqnameOther +')</span>' + 
-              ' <a href="" class="coursePanelChild removeSection">Remove?</a></div></li>';
+      if(data.errors) {
+        $('<span class="alert alert-danger" style="display:none" id="uniqnameOtherError">' + data.errors + '</span>').insertAfter('#uniqnameOtherTrigger');
+        $('#uniqnameOtherError').fadeIn().delay(3000).fadeOut();
+      }
+      else {
+        var termIdInt = parseInt(termId);
+        var filteredData = _.where(data, {enrollment_term_id:termIdInt});
+        var render = '<div class="coursePanelOther well"><ul class="container-fluid courseList">';
+        $.each(filteredData, function() {
+          var course_code = this.course_code;
+          render = render + '<li class="course"><p><strong>' + this.course_code + '</strong></p><ul class="sectionList">';
+          $.each(this.sections, function() {
+              render = render + '<li class="section row otherSection" data-sectionid="' + this.id + '">' +
+                '<div class="col-md-5 sectionName"><input type="checkbox" class="otherSectionSelection courseOtherPanelChild" id="otherSectionSelection' + course_code + this.id + '">' +
+                ' <label for="otherSectionSelection' +  course_code + this.id + '" class="courseOtherPanelChild">' + this.name + '</label>' + 
+                '<span class="coursePanelChild">' + this.name +'</span></div><div class="col-md-7">'+ 
+                '<span class="coursePanelChild"> Originally from ' + course_code + ' (' + uniqnameOther +')</span>' + 
+                ' <a href="" class="coursePanelChild removeSection">Remove?</a></div></li>';
+          });
+          render = render + '</ul></li>';
         });
-        render = render + '</ul></li>';
-      });
-      render = render + '</ul></div>';
-      $('#otherInstructorInnerPayload').append(render);
+        render = render + '</ul></div>';
+        $('#otherInstructorInnerPayload').append(render);
+      }
     }).fail(function( data ) {
       //TODO: reportError(JSON.stringify(msg));
   });
