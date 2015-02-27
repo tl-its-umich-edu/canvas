@@ -23,7 +23,6 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
-import edu.umich.its.lti.utils.PropertiesUtilities;
 
 
 
@@ -34,17 +33,13 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private static final String PUT = "PUT";
 	private static final long serialVersionUID = 7284813350014385613L;
 	private static Log M_log = LogFactory.getLog(SectionsUtilityToolServlet.class);
-	private static final String SYSTEM_PROPERTY_FILE_PATH = "sectionsToolPropsPath";
-	private static final String PROPERTY_CANVAS_ADMIN = "canvas.admin.token";
-	private static final String PROPERTY_CANVAS_URL = "canvas.url";
-	protected Properties canvasProperties = null;
 	private String canvasToken;
 	private String canvasURL;
+
 	
 	
 	public void init() throws ServletException {
-		M_log.debug("init(): Called");
-		getCanvasCredentials();
+		M_log.debug(" Servlet init(): Called");
 		
 	}
 	
@@ -63,16 +58,15 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		canvasRestApiCall(request, response);
 		
 	}
-	
-	
 
 	private void canvasRestApiCall(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 		request.setCharacterEncoding("UTF-8");
 		M_log.debug("canvasRESTAPICall(): called");
+		Properties canvasProperties = SectionUtilityToolFilter.canvasProperties;
 		if(canvasProperties!=null) {
-			canvasToken = canvasProperties.getProperty(PROPERTY_CANVAS_ADMIN);
-			canvasURL = canvasProperties.getProperty(PROPERTY_CANVAS_URL);
+			canvasToken = canvasProperties.getProperty(SectionUtilityToolFilter.PROPERTY_CANVAS_ADMIN);
+			canvasURL = canvasProperties.getProperty(SectionUtilityToolFilter.PROPERTY_CANVAS_URL);
 		}
 		else {
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -127,20 +121,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	}
 
 	
-	protected void getCanvasCredentials() {
-		M_log.debug("getCanvasCredentials(): called");
-		String propertiesFilePath = System.getProperty(SYSTEM_PROPERTY_FILE_PATH);
-		if (!isEmpty(propertiesFilePath)) {
-		canvasProperties=PropertiesUtilities.getPropertiesObjectFromURL(propertiesFilePath);
-		}else {
-			M_log.error("File path for (sectionsToolProps.properties) is not provided");
-		}
-		
-		
-	}
-	 private boolean isEmpty(String value) {
-		return (value == null) || (value.trim().equals(""));
-	}
+	
     
 
 

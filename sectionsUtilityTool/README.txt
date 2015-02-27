@@ -13,6 +13,8 @@
 canvas.admin.token=
 # eg.https://umich.test.instructure.com
 canvas.url=
+# when cosign/local development is not enable set it true. Production should always be set it to false. We are enabling testUser for local develpemt and with this variable testUser will never is enabled. 
+test.url=false
 
  
  
