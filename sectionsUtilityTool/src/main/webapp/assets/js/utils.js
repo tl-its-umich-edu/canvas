@@ -75,11 +75,30 @@ var reportError = function(msg){
   $('#errorContainer').fadeIn('slow').find('.msg').html(msg);
 };
 
+/**
+ * Pop a window to display help matters, name allows to pass the 
+ * focus to it if already open and in the background
+ * 
+ * @param {Object} url 
+ * @param {Object} name - window name
+ */
+var utilPopWindow = function(url, name){
+    var notAModal = window.open(url, name, 'height=800,width=600, toolbar=yes, menubar=yes, scrollbars=yes, resizable=yes');
+    if (window.focus) {
+        notAModal.focus();
+    }
+    return false;
+};
 
 /**
  *
  * event watchers
  */
+
+//open help doc in new window
+$('#helpLink').click(function(){
+    utilPopWindow('help.html', 'help')
+});
 
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
