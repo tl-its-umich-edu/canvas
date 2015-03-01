@@ -4,6 +4,7 @@ require "json"
 require "fileutils"
 require "rubygems"
 require "nokogiri"
+require "digest"
 
 
 def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
@@ -170,6 +171,43 @@ def parseJson(data)
 	return parsedJson
 end
 
+def verify_checksum(base_file_path)
+	# default value
+	upload_error = false
+
+	# checksum verification
+	checksum_file_names = Dir[base_file_path +"MD5.txt"];
+	if (checksum_file_names.length == 0)
+		## there is no *MD5.txt file
+		upload_error = "Cannot find checksum file #{base_file_path}MD5.txt."
+	elsif (checksum_file_names.length > 1)
+		## there are more than one checksum file
+		upload_error = "There are more than one checksum file. "
+	else
+		## verify checksum value
+		# 1.read checksum value from the *MD5.txt file
+		checksum = ""
+		File.open("#{base_file_path}MD5.txt", 'r') do |checksum_file|
+			while line = checksum_file.gets
+				# only read the first line, which is the checksum value
+				checksum=line.strip
+				break
+			end
+		end
+
+		# 2. generate the checksum from current file
+		new_checksum = Digest::MD5.hexdigest(File.read("#{base_file_path}.zip"))
+
+		# 3. compare two checksum values
+		if (!checksum.eql? new_checksum)
+			upload_error = "Checksum value mismatch for #{base_file_path}.zip."
+		end
+	end
+
+	# return error if any
+	return upload_error
+end
+
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
 
@@ -261,10 +299,15 @@ else
 			elsif
 				## get the name of file to process
 				fileName=fileNames[0]
-				currentFileBaseName = File.basename(fileName)
+				currentFileBaseName = File.basename(fileName, ".zip")
 
-				# upload the file to canvas server
-				upload_error = upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+				## checksum verification step
+				upload_error = verify_checksum(currentDirectory + currentFileBaseName)
+
+				if (!upload_error)
+					# upload the file to canvas server
+					upload_error = upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+				end
 			end
 		end
 
