@@ -84,6 +84,13 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		 }else {
 			url=canvasURL+pathInfo;
 		}
+		String sessionId = request.getSession().getId();
+		StringBuilder strgBlder =new StringBuilder();
+		strgBlder.append("Canvas API request URL  \"");
+		strgBlder.append(url);
+		strgBlder.append("\" Session Id: ");
+		strgBlder.append(sessionId);
+		M_log.info(strgBlder);
 		HttpUriRequest clientRequest = null;
 		if(request.getMethod().equals(GET)) {
 			clientRequest = new HttpGet(url);
