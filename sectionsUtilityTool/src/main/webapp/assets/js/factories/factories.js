@@ -1,5 +1,5 @@
 'use strict';
-/* global  sectionsApp, errorHandler  */
+/* global  sectionsApp, errorDisplay  */
 
 //COURSES FACTORY - does the request for the courses controller
 sectionsApp.factory('Courses', function ($http) {
@@ -7,12 +7,13 @@ sectionsApp.factory('Courses', function ($http) {
     getCourses: function (url) {
       return $http.get(url, {cache: false}).then(
         function success(result) {
-            return result;
+          //forward the data - let the controller deal with it
+          return result; 
         },
         function error(result) {
-          result.errors = errorHandler(url, result);
+          errorDisplay(url, result.status, 'Unable to get courses');
           result.errors.failure = true;    
-          return result.errors;
+          return result;
         }
       );
     }

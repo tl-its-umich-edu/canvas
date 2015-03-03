@@ -1,5 +1,5 @@
 'use strict';
-/* global $,  angular, getTermArray, getCurrentTerm */
+/* global $,  angular, getTermArray, getCurrentTerm, errorDisplay */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters','ui.sortable']);
 
@@ -18,6 +18,8 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
     $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
+  }).error(function () {
+    errorDisplay(termsUrl,'','Unable to get terms data');
   });
 
   //user selects a term from the dropdown that has been 
@@ -41,10 +43,10 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
     var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=100&published=true&with_enrollments=true&enrollment_type=teacher';
     var url = '/sectionsUtilityTool'+mini;
     $scope.loading = true;
-    Courses.getCourses(url).then(function (data) {
-      if (data.failure) {
+    Courses.getCourses(url).then(function (result) {
+      if (result.data.errors) {
         if(uniqname) {
-          $scope.errorMessage = 'Could not get data for uniqname \"' + uniqname + '.\"';
+          $scope.errorMessage = result.data.errors + uniqname;
           $scope.errorLookup = true;
         }
         else {
@@ -58,13 +60,21 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         $scope.loading = false;
       }
       else {
-        $scope.courses = data.data;
-        $scope.termArray = getTermArray(data.data);
-        $scope.error = false;
-        $scope.success = true;
-        $scope.instructions = true;
-        $scope.errorLookup = false;
-        $scope.loading = false;
+        if(result.errors){
+          $scope.success = false;
+          $scope.error = true;
+          $scope.instructions = false;
+          $scope.loading = false;
+        }
+        else {
+          $scope.courses = result.data;
+          $scope.termArray = getTermArray(result.data);
+          $scope.error = false;
+          $scope.success = true;
+          $scope.instructions = true;
+          $scope.errorLookup = false;
+          $scope.loading = false;
+        }
       }
     });
   };

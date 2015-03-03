@@ -11,7 +11,10 @@ $.ajaxSetup({
   cache: false
 });
 
-
+var errorDisplay = function (url, status, errorMessage) {
+  $('#debugPanel').html('<h3>' + status + '</h3><p><code>' + url + '</code></p><p>' + errorMessage + '</p>');
+  $('#debugPanel').fadeIn().delay(5000).fadeOut();
+};
      
 var errorHandler = function (url, result) {    
   var errorResponse = {};    
@@ -187,7 +190,7 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   e.preventDefault();
   var thisCourse = $(this).attr('data-courseid');
   var newCourseName = $(this).closest('.courseTitleTextContainer').find('input.courseTitleText').val();
-  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;;
+  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;
   var $thisCourseCode = $(this).closest('li').find('.courseLink');
   var $thisCourseName = $(this).closest('li').find('.courseName');
   $.ajax({
@@ -195,9 +198,9 @@ $(document).on('click', '.postCourseNameChange', function (e) {
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
-      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code) + '</strong>';
+      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>)';
       $thisCourseCode.text(msg.course_code);
-      $thisCourseName.text(msg.name)
+      $thisCourseName.text(msg.name);
     }).fail(function( msg ) {
       //TODO: reportError(JSON.stringify(msg));
   });
