@@ -11,7 +11,15 @@ $.ajaxSetup({
   cache: false
 });
 
-
+var errorDecider = function (data, status, headers, config) {
+  switch(status) {
+    case 403:
+      window.location = '/sectionsUtilityTool/error.html';
+      break;
+    default:
+      //other errors
+  }
+}
      
 var errorHandler = function (url, result) {    
   var errorResponse = {};    

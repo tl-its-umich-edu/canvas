@@ -10,6 +10,7 @@ sectionsApp.factory('Courses', function ($http) {
             return result;
         },
         function error(result) {
+          errorDecider(data, status, headers, config)
           result.errors = errorHandler(url, result);
           result.errors.failure = true;    
           return result.errors;
