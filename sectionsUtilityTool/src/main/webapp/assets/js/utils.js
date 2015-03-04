@@ -70,15 +70,15 @@ var calculateLastActivity = function(last_activity_at) {
 };
 
 var reportSuccess = function(position, msg){
-  $('#successContainer').css('top', position - 300);
+  $('#successContainer').css('top', position);
   $('#successContainer').find('.msg').html(msg);
   $('#successContainer').fadeIn().delay(3000).fadeOut();
 };
 
 var reportError = function(position, msg){
-  $('#errorContainer').css('top', position - 300);
+  $('#errorContainer').css('top', position);
   $('#errorContainer').find('.msg').html(msg);
-  $('#errorContainer').fadeIn().delay(3000).fadeOut();
+  $('#errorContainer').fadeIn();
 };
 
 
@@ -207,7 +207,6 @@ $(document).on('click', '.postCourseNameChange', function (e) {
       $thisCourseCode.text(msg.course_code);
       $thisCourseName.text(msg.name);
     }).fail(function(jqXHR, textStatus, errorThrown) {
-      console.log(jqXHR)
       reportError(position,'There was an error changing this course name' + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')')
   });
 
