@@ -198,7 +198,7 @@ $(document).on('click', '.postCourseNameChange', function (e) {
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
-      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>)';
+      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>');
       $thisCourseCode.text(msg.course_code);
       $thisCourseName.text(msg.name);
     }).fail(function( msg ) {
