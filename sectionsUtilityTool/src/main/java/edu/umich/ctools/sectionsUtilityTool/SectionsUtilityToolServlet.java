@@ -40,7 +40,6 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	
 	public void init() throws ServletException {
 		M_log.debug(" Servlet init(): Called");
-		
 	}
 	
 	protected void doGet(HttpServletRequest request,HttpServletResponse response) throws IOException {
@@ -62,11 +61,11 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private void canvasRestApiCall(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 		request.setCharacterEncoding("UTF-8");
-		M_log.debug("canvasRESTAPICall(): called");
-		Properties canvasProperties = SectionUtilityToolFilter.canvasProperties;
-		if(canvasProperties!=null) {
-			canvasToken = canvasProperties.getProperty(SectionUtilityToolFilter.PROPERTY_CANVAS_ADMIN);
-			canvasURL = canvasProperties.getProperty(SectionUtilityToolFilter.PROPERTY_CANVAS_URL);
+		M_log.debug("canvasRestApiCall(): called");
+		Properties appExtSecureProperties = SectionUtilityToolFilter.appExtSecurePropertiesFile;
+		if(appExtSecureProperties!=null) {
+			canvasToken = appExtSecureProperties.getProperty(SectionUtilityToolFilter.PROPERTY_CANVAS_ADMIN);
+			canvasURL = appExtSecureProperties.getProperty(SectionUtilityToolFilter.PROPERTY_CANVAS_URL);
 		}
 		else {
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

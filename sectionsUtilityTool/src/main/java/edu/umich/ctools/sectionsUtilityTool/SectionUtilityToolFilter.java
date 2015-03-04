@@ -29,24 +29,30 @@ import edu.umich.its.lti.utils.PropertiesUtilities;
 
 
 public class SectionUtilityToolFilter implements Filter {
-	private static final String OU_GROUPS = "ou=Groups";
-	private static final String PROVIDER_URL = "ldap://ldap.itd.umich.edu:389/dc=umich,dc=edu";
-	private static final String LDAP_CTX_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
-	private static final String ASSETS_PATH = "/assets";
+
 	private static Log M_log = LogFactory.getLog(SectionUtilityToolFilter.class);
-	protected static final String SYSTEM_PROPERTY_FILE_PATH = "sectionsToolPropsPath";
+	
+	private static final String OU_GROUPS = "ou=Groups";
+	private static final String LDAP_CTX_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
+	protected static final String SYSTEM_PROPERTY_FILE_PATH_SECURE = "sectionsToolPropsPathSecure";
+	protected static final String SYSTEM_PROPERTY_FILE_PATH_LESS_SECURE = "sectionsToolPropsPathLessSecure";
 	protected static final String PROPERTY_CANVAS_ADMIN = "canvas.admin.token";
 	protected static final String PROPERTY_CANVAS_URL = "canvas.url";
-	protected static final String PROPERTY_TEST_URL = "test.url";
-	private static final String AUTH_GROUP = "its-canvas-sections";
+	protected static final String PROPERTY_USE_TEST_URL = "use.test.url";
+	protected static final String PROPERTY_LDAP_SERVER_URL = "ldap.server.url";
+	private static final String PROPERTY_AUTH_GROUP = "mcomm.group";
 	private static final String TEST_USER = "testUser";
-	protected static Properties canvasProperties = null;
+	private String providerURL = null;
+	private String mcommunityGroup = null;
 	private boolean isTestUrlEnabled=false;
-
+	protected static Properties appExtSecurePropertiesFile=null;
+	protected static Properties appExtLessSecurePropertiesFile=null;
+	private static final String FALSE = "false";
+	
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
 		M_log.debug("Filter Init(): Called");
-		getCanvasCredentials();
+		getExternalAppProperties();
 		
 	}
 
@@ -57,7 +63,7 @@ public class SectionUtilityToolFilter implements Filter {
 		HttpServletRequest useRequest = (HttpServletRequest) request;
 		HttpServletResponse useResponse=(HttpServletResponse)response;
 		if(!checkForAuthorization(useRequest)) {
-		      useResponse.sendError(403);
+			useResponse.sendError(403);
 			return;
 		}
 		chain.doFilter(useRequest, response);
@@ -65,17 +71,38 @@ public class SectionUtilityToolFilter implements Filter {
 
 	@Override
 	public void destroy() {
-		M_log.debug("detroy: Called");
+		M_log.debug("destroy: Called");
 	}
-	protected void getCanvasCredentials() {
-		M_log.debug("getCanvasCredentials(): called");
-		String propertiesFilePath = System.getProperty(SYSTEM_PROPERTY_FILE_PATH);
-		if (!isEmpty(propertiesFilePath)) {
-		canvasProperties=PropertiesUtilities.getPropertiesObjectFromURL(propertiesFilePath);
+	
+	protected void getExternalAppProperties() {
+		M_log.debug("getExternalAppProperties(): called");
+		String propertiesFilePathSecure = System.getProperty(SYSTEM_PROPERTY_FILE_PATH_SECURE);
+		String propertiesFilePathLessSecure = System.getProperty(SYSTEM_PROPERTY_FILE_PATH_LESS_SECURE);
+		if (!isEmpty(propertiesFilePathSecure)) {
+			appExtSecurePropertiesFile=PropertiesUtilities.getPropertiesObjectFromURL(propertiesFilePathSecure);
+			if(appExtSecurePropertiesFile!=null) {
+				isTestUrlEnabled = Boolean.parseBoolean(appExtSecurePropertiesFile.getProperty(SectionUtilityToolFilter.PROPERTY_USE_TEST_URL,FALSE));
+			}else {
+				M_log.warn("Failed to load secure application properties from sectionsToolPropsSecure.properties for SectionsTool");
+			}
+			
 		}else {
-			M_log.error("File path for (sectionsToolProps.properties) is not provided");
+			M_log.error("File path for (sectionsToolPropsPathSecure.properties) is not provided");
 		}
 		
+		if (!isEmpty(propertiesFilePathLessSecure)) {
+			appExtLessSecurePropertiesFile=PropertiesUtilities.getPropertiesObjectFromURL(propertiesFilePathLessSecure);
+			if(appExtLessSecurePropertiesFile!=null) {
+				providerURL=appExtLessSecurePropertiesFile.getProperty(PROPERTY_LDAP_SERVER_URL);
+				mcommunityGroup=appExtLessSecurePropertiesFile.getProperty(PROPERTY_AUTH_GROUP);
+			}else {
+				M_log.warn("Failed to load secure application properties from sectionsToolPropsLessSecure.properties for SectionsTool");
+			}
+			
+		}else {
+			M_log.error("File path for (sectionsToolPropsPathLessSecure.properties) is not provided");
+		}
+
 		
 	}
 	 private boolean isEmpty(String value) {
@@ -83,54 +110,51 @@ public class SectionUtilityToolFilter implements Filter {
 	}
 	
 	/*
-	 * User is authenicated using cosign  authorized using Ldap. For local development we are enabling
+	 * User is authenticated using cosign and authorized using Ldap. For local development we are enabling
 	 * "testUser" parameter. "testUser" also go through the Ldap authorization process. 
-	 * we have test.url configured in the properties file in order to disable usage of "testUser" parameter in PROD.
-	 * "/assets" folder is where all the js/css resources. I am not making those folder go through authorization process for
-	 * 2 reasons 1) If the request of /index.html page fails we return the error page and that needs .css file for doing styling.
-	 * 2) if /index.html is 200 ok, the next request that follows are /assets. so it kind of redundant to go through ldap check.
+	 * we have use.test.url configured in the properties file in order to disable usage of "testUser" parameter in PROD.
+	 * 
 	 */
 	private boolean checkForAuthorization(HttpServletRequest request) {
 		M_log.debug("checkLdapForAuthorization(): called");
      	String remoteUser = request.getRemoteUser();
-		String servletPath = request.getServletPath();
-		String testUser = request.getParameter(TEST_USER);
-		boolean isAuthorized = false;
+     	String testUser = request.getParameter(TEST_USER);
+     	boolean isAuthorized = false;
+		String user=null;
 		
-		if(canvasProperties!=null) {
-			isTestUrlEnabled = Boolean.parseBoolean(canvasProperties.getProperty(SectionUtilityToolFilter.PROPERTY_TEST_URL));
-		}else {
-			M_log.warn("Failed to load system property test.url from sectionsToolProps.properties for SectionsTool");
-		}
-		
-		if(servletPath.startsWith(ASSETS_PATH)) {
-			return true;
-		}
 		String testUserInSession = (String)request.getSession().getAttribute(TEST_USER);
 		
 	    if ( isTestUrlEnabled && testUser != null ) { 
-			isAuthorized=ldapAuthorizationVerification(testUser); 
+	    	user=testUser;
 			request.getSession().setAttribute(TEST_USER, testUser);
 		}
-		else if ( isTestUrlEnabled && testUserInSession != null )
-		{
-			isAuthorized=ldapAuthorizationVerification(testUserInSession); 
+		else if ( isTestUrlEnabled && testUserInSession != null ){
+			user=testUserInSession;
 		} 
 		if  ( !isAuthorized && remoteUser != null ) {
-			isAuthorized=ldapAuthorizationVerification(remoteUser); 
+			user=remoteUser;
 		}
+		isAuthorized=ldapAuthorizationVerification(user); 
 		return isAuthorized;
 		
 		
 	}
-
+     /*
+      * The Mcommunity group we have is a members-only group is one that only the members of the group can send mail to. 
+      * The group owner can turn this on or off.
+      * More info on Ldap configuration  http://www.itcs.umich.edu/itcsdocs/r1463/attributes-for-ldap.html#group.
+      */
 	private boolean ldapAuthorizationVerification(String user) {
 		M_log.debug("ldapAuthorizationVerification(): called");
 		boolean isMem = false;
-		String authGroup = AUTH_GROUP;
 		Hashtable<String,String> env = new Hashtable<String, String>();
+		if(!isEmpty(providerURL) && !isEmpty(mcommunityGroup)) {
 		env.put(Context.INITIAL_CONTEXT_FACTORY, LDAP_CTX_FACTORY);
-		env.put(Context.PROVIDER_URL, PROVIDER_URL);
+		env.put(Context.PROVIDER_URL, providerURL);
+		}else {
+			M_log.error(" [ldap.server.url] or [mcomm.group] properties are not set, review the sectionsToolPropsLessSecure.properties file");
+			return isMem;
+		}
 		try {
 			DirContext dirContext = new InitialDirContext(env);
 			String[] attrIDs = {"member"};
@@ -138,10 +162,11 @@ public class SectionUtilityToolFilter implements Filter {
 			searchControls.setReturningAttributes(attrIDs);
 			searchControls.setReturningObjFlag(true);
 			searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-			String filter = "(&(cn=" + authGroup + ") (objectclass=rfc822MailGroup))";
 			String searchBase = OU_GROUPS;
+			String filter = "(&(cn=" + mcommunityGroup + ") (objectclass=rfc822MailGroup))";
 			NamingEnumeration listOfPeopleInAuthGroup = dirContext.search(searchBase, filter, searchControls);
 			String positiveMatch = "uid=" + user + ",";
+			outerloop:
 			while (listOfPeopleInAuthGroup.hasMore()) {
 				SearchResult searchResults = (SearchResult)listOfPeopleInAuthGroup.next();
 				NamingEnumeration allSearchResultAttributes = (searchResults.getAttributes()).getAll();
@@ -152,7 +177,7 @@ public class SectionUtilityToolFilter implements Filter {
 						String val = (String) simpleListOfPeople.nextElement();
 						if(val.indexOf(positiveMatch) != -1){
 							isMem = true;
-							break;
+							break outerloop;
 						}
 					}
 					simpleListOfPeople.close();
