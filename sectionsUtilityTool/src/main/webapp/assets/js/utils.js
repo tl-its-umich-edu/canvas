@@ -69,13 +69,16 @@ var calculateLastActivity = function(last_activity_at) {
   }
 };
 
-var reportSuccess = function(msg){
+var reportSuccess = function(position, msg){
+  $('#successContainer').css('top', position - 300);
   $('#successContainer').find('.msg').html(msg);
   $('#successContainer').fadeIn().delay(3000).fadeOut();
 };
 
-var reportError = function(msg){
-  $('#errorContainer').fadeIn('slow').find('.msg').html(msg);
+var reportError = function(position, msg){
+  $('#errorContainer').css('top', position - 300);
+  $('#errorContainer').find('.msg').html(msg);
+  $('#errorContainer').fadeIn().delay(3000).fadeOut();
 };
 
 
@@ -112,7 +115,7 @@ $(document).on('click', '.setSections', function (e) {
         $('#xListSection' +  section).append('<span class=\"label label-failure\">Failure</span>');
       })
       .always(function() {
-        // do what
+        // need to count the success / failures
       });
 
 
@@ -120,7 +123,7 @@ $(document).on('click', '.setSections', function (e) {
   });
   return null;
 });
-
+  
 $(document).on('click', '.getCourseInfo', function (e) {
   var uniqname = $.trim($('#uniqname').val());
   e.preventDefault();
@@ -137,8 +140,8 @@ $(document).on('click', '.getCourseInfo', function (e) {
         $('#courseInfoInner').text('Course activity detected! Number of events: '  + data.length); 
       }
   })
-  .fail(function() {
-    $('#courseInfoInner').text('There was an error getting course information'); 
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    $('#courseInfoInner').text('There was an error getting course information'  + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
   });
   return null;
 });
@@ -169,8 +172,8 @@ $(document).on('click', '.getEnrollements', function (e) {
         });
       }
   })
-  .fail(function() {
-    $('#courseGetEnrollmentsInner').text('There was an error getting enrollements'); 
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    $('#courseGetEnrollmentsInner').text('There was an error getting enrollements' + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
   });
   return null;
 });
@@ -193,16 +196,19 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;
   var $thisCourseCode = $(this).closest('li').find('.courseLink');
   var $thisCourseName = $(this).closest('li').find('.courseName');
+  var position = e.pageX;
+
   $.ajax({
     type: 'PUT',
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
-      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>');
+      reportSuccess(position, 'Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>');
       $thisCourseCode.text(msg.course_code);
       $thisCourseName.text(msg.name);
-    }).fail(function( msg ) {
-      //TODO: reportError(JSON.stringify(msg));
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+      console.log(jqXHR)
+      reportError(position,'There was an error changing this course name' + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')')
   });
 
 });
