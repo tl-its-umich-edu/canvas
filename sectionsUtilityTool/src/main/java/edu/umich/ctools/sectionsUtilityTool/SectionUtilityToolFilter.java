@@ -35,7 +35,6 @@ public class SectionUtilityToolFilter implements Filter {
 	private static final String OU_GROUPS = "ou=Groups";
 	private static final String LDAP_CTX_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
 	protected static final String SYSTEM_PROPERTY_FILE_PATH_SECURE = "sectionsToolPropsPathSecure";
-	protected static final String SYSTEM_PROPERTY_FILE_PATH_LESS_SECURE = "sectionsToolPropsPathLessSecure";
 	protected static final String PROPERTY_CANVAS_ADMIN = "canvas.admin.token";
 	protected static final String PROPERTY_CANVAS_URL = "canvas.url";
 	protected static final String PROPERTY_USE_TEST_URL = "use.test.url";
@@ -46,7 +45,6 @@ public class SectionUtilityToolFilter implements Filter {
 	private String mcommunityGroup = null;
 	private boolean isTestUrlEnabled=false;
 	protected static Properties appExtSecurePropertiesFile=null;
-	protected static Properties appExtLessSecurePropertiesFile=null;
 	private static final String FALSE = "false";
 	
 	@Override
@@ -77,32 +75,19 @@ public class SectionUtilityToolFilter implements Filter {
 	protected void getExternalAppProperties() {
 		M_log.debug("getExternalAppProperties(): called");
 		String propertiesFilePathSecure = System.getProperty(SYSTEM_PROPERTY_FILE_PATH_SECURE);
-		String propertiesFilePathLessSecure = System.getProperty(SYSTEM_PROPERTY_FILE_PATH_LESS_SECURE);
 		if (!isEmpty(propertiesFilePathSecure)) {
 			appExtSecurePropertiesFile=PropertiesUtilities.getPropertiesObjectFromURL(propertiesFilePathSecure);
 			if(appExtSecurePropertiesFile!=null) {
 				isTestUrlEnabled = Boolean.parseBoolean(appExtSecurePropertiesFile.getProperty(SectionUtilityToolFilter.PROPERTY_USE_TEST_URL,FALSE));
+				providerURL=appExtSecurePropertiesFile.getProperty(PROPERTY_LDAP_SERVER_URL);
+				mcommunityGroup=appExtSecurePropertiesFile.getProperty(PROPERTY_AUTH_GROUP);
 			}else {
-				M_log.warn("Failed to load secure application properties from sectionsToolPropsSecure.properties for SectionsTool");
+				M_log.error("Failed to load secure application properties from sectionsToolPropsSecure.properties for SectionsTool");
 			}
 			
 		}else {
 			M_log.error("File path for (sectionsToolPropsPathSecure.properties) is not provided");
 		}
-		
-		if (!isEmpty(propertiesFilePathLessSecure)) {
-			appExtLessSecurePropertiesFile=PropertiesUtilities.getPropertiesObjectFromURL(propertiesFilePathLessSecure);
-			if(appExtLessSecurePropertiesFile!=null) {
-				providerURL=appExtLessSecurePropertiesFile.getProperty(PROPERTY_LDAP_SERVER_URL);
-				mcommunityGroup=appExtLessSecurePropertiesFile.getProperty(PROPERTY_AUTH_GROUP);
-			}else {
-				M_log.warn("Failed to load secure application properties from sectionsToolPropsLessSecure.properties for SectionsTool");
-			}
-			
-		}else {
-			M_log.error("File path for (sectionsToolPropsPathLessSecure.properties) is not provided");
-		}
-
 		
 	}
 	 private boolean isEmpty(String value) {
@@ -115,48 +100,52 @@ public class SectionUtilityToolFilter implements Filter {
 	 * we have use.test.url configured in the properties file in order to disable usage of "testUser" parameter in PROD.
 	 * 
 	 */
-	private boolean checkForAuthorization(HttpServletRequest request) {
-		M_log.debug("checkLdapForAuthorization(): called");
-     	String remoteUser = request.getRemoteUser();
-     	String testUser = request.getParameter(TEST_USER);
-     	boolean isAuthorized = false;
-		String user=null;
-		
-		String testUserInSession = (String)request.getSession().getAttribute(TEST_USER);
-		
-	    if ( isTestUrlEnabled && testUser != null ) { 
-	    	user=testUser;
-			request.getSession().setAttribute(TEST_USER, testUser);
-		}
-		else if ( isTestUrlEnabled && testUserInSession != null ){
-			user=testUserInSession;
-		} 
-		if  ( !isAuthorized && remoteUser != null ) {
-			user=remoteUser;
-		}
-		isAuthorized=ldapAuthorizationVerification(user); 
-		return isAuthorized;
-		
-		
-	}
+	 private boolean checkForAuthorization(HttpServletRequest request) {
+		 M_log.debug("checkLdapForAuthorization(): called");
+		 String remoteUser = request.getRemoteUser();
+		 String testUser = request.getParameter(TEST_USER);
+		 boolean isAuthorized = false;
+		 String user=null;
+
+		 String testUserInSession = (String)request.getSession().getAttribute(TEST_USER);
+
+		 if ( isTestUrlEnabled && testUser != null ) { 
+			 user=testUser;
+			 request.getSession().setAttribute(TEST_USER, testUser);
+		 }
+		 else if ( isTestUrlEnabled && testUserInSession != null ){
+			 user=testUserInSession;
+		 } 
+		 if  ( !isAuthorized && remoteUser != null ) {
+			 user=remoteUser;
+		 }
+		 isAuthorized=ldapAuthorizationVerification(user); 
+		 return isAuthorized;
+
+
+	 }
      /*
       * The Mcommunity group we have is a members-only group is one that only the members of the group can send mail to. 
       * The group owner can turn this on or off.
       * More info on Ldap configuration  http://www.itcs.umich.edu/itcsdocs/r1463/attributes-for-ldap.html#group.
       */
-	private boolean ldapAuthorizationVerification(String user) {
+	private boolean ldapAuthorizationVerification(String user)  {
 		M_log.debug("ldapAuthorizationVerification(): called");
-		boolean isMem = false;
+		boolean isAuthorized = false;
+		DirContext dirContext=null;
+		NamingEnumeration listOfPeopleInAuthGroup=null;
+		NamingEnumeration allSearchResultAttributes=null;
+		NamingEnumeration simpleListOfPeople=null;
 		Hashtable<String,String> env = new Hashtable<String, String>();
 		if(!isEmpty(providerURL) && !isEmpty(mcommunityGroup)) {
 		env.put(Context.INITIAL_CONTEXT_FACTORY, LDAP_CTX_FACTORY);
 		env.put(Context.PROVIDER_URL, providerURL);
 		}else {
 			M_log.error(" [ldap.server.url] or [mcomm.group] properties are not set, review the sectionsToolPropsLessSecure.properties file");
-			return isMem;
+			return isAuthorized;
 		}
 		try {
-			DirContext dirContext = new InitialDirContext(env);
+			dirContext = new InitialDirContext(env);
 			String[] attrIDs = {"member"};
 			SearchControls searchControls = new SearchControls();
 			searchControls.setReturningAttributes(attrIDs);
@@ -164,33 +153,60 @@ public class SectionUtilityToolFilter implements Filter {
 			searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			String searchBase = OU_GROUPS;
 			String filter = "(&(cn=" + mcommunityGroup + ") (objectclass=rfc822MailGroup))";
-			NamingEnumeration listOfPeopleInAuthGroup = dirContext.search(searchBase, filter, searchControls);
+			listOfPeopleInAuthGroup = dirContext.search(searchBase, filter, searchControls);
 			String positiveMatch = "uid=" + user + ",";
 			outerloop:
 			while (listOfPeopleInAuthGroup.hasMore()) {
 				SearchResult searchResults = (SearchResult)listOfPeopleInAuthGroup.next();
-				NamingEnumeration allSearchResultAttributes = (searchResults.getAttributes()).getAll();
+				allSearchResultAttributes = (searchResults.getAttributes()).getAll();
 				while (allSearchResultAttributes.hasMoreElements()){
 					Attribute attr = (Attribute) allSearchResultAttributes.nextElement();
-					NamingEnumeration simpleListOfPeople = attr.getAll();
+					simpleListOfPeople = attr.getAll();
 					while (simpleListOfPeople.hasMoreElements()){
 						String val = (String) simpleListOfPeople.nextElement();
 						if(val.indexOf(positiveMatch) != -1){
-							isMem = true;
+							isAuthorized = true;
 							break outerloop;
 						}
 					}
-					simpleListOfPeople.close();
 				}
-				allSearchResultAttributes.close();
 			}
-			listOfPeopleInAuthGroup.close();
-			dirContext.close();
-			return isMem;
+			return isAuthorized;
 		} catch (NamingException e) {
 			M_log.error("Problem getting attribute:" + e);
-			return isMem;
+			return isAuthorized;
 		}
+		finally {
+			try {
+				if(simpleListOfPeople!=null) {
+				simpleListOfPeople.close();
+				}
+			} catch (NamingException e) {
+				M_log.error("Problem occurred while closing the NamingEnumeration list \"simpleListOfPeople\" list ",e);
+			}
+			try {
+				if(allSearchResultAttributes!=null) {
+				allSearchResultAttributes.close();
+				}
+			} catch (NamingException e) {
+				M_log.error("Problem occurred while closing the NamingEnumeration \"allSearchResultAttributes\" list ",e);
+			}
+			try {
+				if(listOfPeopleInAuthGroup!=null) {
+				listOfPeopleInAuthGroup.close();
+				}
+			} catch (NamingException e) {
+				M_log.error("Problem occurred while closing the NamingEnumeration \"listOfPeopleInAuthGroup\" list ",e);
+			}
+			try {
+				if(dirContext!=null) {
+				dirContext.close();
+				}
+			} catch (NamingException e) {
+				M_log.error("Problem occurred while closing the  \"dirContext\"  object",e);
+			}
+		}
+		
 	}
 
 }
