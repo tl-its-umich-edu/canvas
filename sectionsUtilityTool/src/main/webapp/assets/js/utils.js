@@ -258,7 +258,7 @@ $(document).on('click', '#uniqnameOtherTrigger', function (e) {
 $(document).on('click', '#useOtherSections', function () {
   $('#otherInstructorModal').find('.otherSectionSelection:checked').closest('li').appendTo('.otherSectionsTarget ul.sectionList');
   $('.otherSectionsTarget').find('.setSections').show();
-  $('#otherInstructorModal').modal('hide')
+  $('#otherInstructorModal').modal('hide');
 });
 
 $(document).on('click', '.openOtherInstructorModal', function (e) { 
