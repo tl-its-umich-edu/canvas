@@ -104,7 +104,7 @@
                                 </div>
                             </div>
                         </div>
-                        <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
+                        <ul ui-sortable="sortableOptions" ng-model="item.sections" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
                             <li ng-repeat="section in item.sections" class="row section" data-sectionid="{{section.id}}">
                                 <div class="col-md-5 sectionName">
                                     {{section.name}}
