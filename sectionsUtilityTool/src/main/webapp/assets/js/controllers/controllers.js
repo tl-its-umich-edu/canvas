@@ -18,6 +18,8 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $http.get(termsUrl).success(function (data) {
     $scope.terms = data.enrollment_terms;
     $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
+  }).error(function (data, status, headers, config) {
+    errorDecider(data, status, headers, config)
   });
 
   //user selects a term from the dropdown that has been 
