@@ -121,7 +121,7 @@ $(document).on('click', '.setSections', function (e) {
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
-    $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('.sectionName').text() + '</li>');
+    $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('div.sectionName span').text() + '</li>');
   });
   $('#postXList').click(function(){
     var index, len;
@@ -214,7 +214,7 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   e.preventDefault();
   var thisCourse = $(this).attr('data-courseid');
   var newCourseName = $(this).closest('.courseTitleTextContainer').find('input.courseTitleText').val();
-  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;;
+  var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;
   var $thisCourseCode = $(this).closest('li').find('.courseLink');
   var $thisCourseName = $(this).closest('li').find('.courseName');
   $.ajax({
@@ -222,9 +222,9 @@ $(document).on('click', '.postCourseNameChange', function (e) {
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
-      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code) + '</strong>';
+      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>');
       $thisCourseCode.text(msg.course_code);
-      $thisCourseName.text(msg.name)
+      $thisCourseName.text(msg.name);
     }).fail(function( msg ) {
       //TODO: reportError(JSON.stringify(msg));
   });
@@ -242,4 +242,68 @@ $('body').on('keydown','#uniqname', function(event) {
   }
 });
 
+$(document).on('click', '#uniqnameOtherTrigger', function (e) {
+  e.preventDefault();
+  var uniqnameOther = $.trim($('#uniqnameOther').val());
+  var termId = $.trim($('#canvasTermId').text());
+  var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqnameOther+ '&include=sections&per_page=100&published=true&with_enrollments=true&enrollment_type=teacher';
+  var url = '/sectionsUtilityTool'+mini;
+  
+  $.ajax({
+    type: 'GET',
+    url: url
+    }).done(function( data ) {
+      if(data.errors) {
+        $('<span class="alert alert-danger" style="display:none" id="uniqnameOtherError">' + data.errors + '</span>').insertAfter('#uniqnameOtherTrigger');
+        $('#uniqnameOtherError').fadeIn().delay(3000).fadeOut();
+      }
+      else {
+        var termIdInt = parseInt(termId);
+        var filteredData = _.where(data, {enrollment_term_id:termIdInt});
+        var render = '<div class="coursePanelOther well"><ul class="container-fluid courseList">';
+        $.each(filteredData, function() {
+          var course_code = this.course_code;
+          render = render + '<li class="course"><p><strong>' + this.course_code + '</strong></p><ul class="sectionList">';
+          $.each(this.sections, function() {
+              render = render + '<li class="section row otherSection" data-sectionid="' + this.id + '">' +
+                '<div class="col-md-5 sectionName"><input type="checkbox" class="otherSectionSelection courseOtherPanelChild" id="otherSectionSelection' + course_code + this.id + '">' +
+                ' <label for="otherSectionSelection' +  course_code + this.id + '" class="courseOtherPanelChild">' + this.name + '</label>' + 
+                '<span class="coursePanelChild">' + this.name +'</span></div><div class="col-md-7">'+ 
+                '<span class="coursePanelChild"> Originally from ' + course_code + ' (' + uniqnameOther +')</span>' + 
+                ' <a href="" class="coursePanelChild removeSection">Remove?</a></div></li>';
+          });
+          render = render + '</ul></li>';
+        });
+        render = render + '</ul></div>';
+        $('#otherInstructorInnerPayload').append(render);
+      }
+    }).fail(function( data ) {
+      //TODO: reportError(JSON.stringify(msg));
+  });
+});
 
+$(document).on('click', '#useOtherSections', function () {
+  $('#otherInstructorModal').find('.otherSectionSelection:checked').closest('li').appendTo('.otherSectionsTarget ul.sectionList');
+  $('.otherSectionsTarget').find('.setSections').show();
+  $('#otherInstructorModal').modal('hide');
+});
+
+$(document).on('click', '.openOtherInstructorModal', function (e) { 
+  $('#otherInstructorInnerPayload').empty();
+  $('#uniqnameOther').val('');
+  $('#uniqnameOtherTrigger').text('Look up courses');
+  $('#otherInstructorModal').on('shown.bs.modal', function (event) {
+      $('li.course').removeClass('otherSectionsTarget');
+      $(event.relatedTarget.originalEvent.explicitOriginalTarget).closest('li').addClass('otherSectionsTarget');
+    }).on('hidden.bs.modal', function () {
+        $('li.course').removeClass('otherSectionsTarget');
+    }).modal('toggle', e);
+});
+
+$(document).on('click', '.removeSection', function (e) {
+  e.preventDefault();
+  $(this).closest('li').fadeOut( 'slow', function() {
+    $(this).remove();
+  });
+
+});

@@ -26,11 +26,11 @@ ul {
     list-style: none;
 }
 
-.coursePanel {
+.coursePanel, .coursePanelOther {
     margin-top:10px;
     padding:5px 0;
 }
-.coursePanel li {
+.coursePanel li, .coursePanelOther li {
     position:relative;
     margin: 5px 0;
     padding: 10px;
@@ -44,7 +44,7 @@ ul {
     box-shadow: 1px 1px 2px 0px rgba(150, 150, 150, 0.15);
 }
 
-.coursePanel  li.course {
+.coursePanel  li.course, .coursePanelOther  li.course  {
     background:#ffe;
 }
 .coursePanel  li.course button.setSections {
@@ -110,6 +110,20 @@ li.activeCourse button.setSections {
     width:50%;
     margin:0 25%;
     z-index: 10000;
+}
+
+.otherSectionsTarget {
+    border:1px solid #000 !important;
+}
+
+.coursePanelOther .courseOtherPanelChild, .coursePanel .coursePanelChild  {
+    display:inline;
+}
+.coursePanel .otherSection {
+    background:#eee;
+}
+.coursePanelOther .coursePanelChild, .coursePanel .courseOtherPanelChild  {
+    display:none !important; 
 }
 
 [ng-cloak] {
