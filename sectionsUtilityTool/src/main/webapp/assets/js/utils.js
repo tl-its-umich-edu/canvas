@@ -11,37 +11,21 @@ $.ajaxSetup({
   cache: false
 });
 
-var errorDecider = function (data, status, headers, config) {
+var errorDisplay = function (url, status, errorMessage) {
   switch(status) {
     case 403:
       window.location = '/sectionsUtilityTool/error.html';
       break;
     default:
-      //other errors
+      $('#debugPanel').html('<h3>' + status + '</h3><p><code>' + url + '</code></p><p>' + errorMessage + '</p>');
+      $('#debugPanel').fadeIn().delay(5000).fadeOut();
   }
-}
-     
-var errorHandler = function (url, result) {    
-  var errorResponse = {};    
-  if (!result) {   
-    errorResponse.message = 'Something happened!';   
-    errorResponse.requestUrl = url;    
-    errorResponse.details = result.status;   
-   
-  } else {   
-    errorResponse.message = 'Something happened with a service we depend on!';   
-    errorResponse.requestUrl = url;    
-    errorResponse.details = result.status;   
-  }    
-  return errorResponse;       
 };
 
 var getCurrentTerm = function(termData) {
   var now = moment();
   var currentTerm = [];
   $.each(termData, function() {
-    //horrifying
-    //TODO: deal with Med School terms later - as this is filtering anyth8ing that does not end in '0'
     if(moment(this.start_at).isBefore(now) && moment(this.end_at).isAfter(now)) {
       if (this.sis_term_id !== null && this.sis_term_id !== undefined  && this.sis_term_id.slice(-1) ==='0'){
         currentTerm.currentTermId =  this.sis_term_id;
@@ -74,13 +58,16 @@ var calculateLastActivity = function(last_activity_at) {
   }
 };
 
-var reportSuccess = function(msg){
+var reportSuccess = function(position, msg){
+  $('#successContainer').css('top', position);
   $('#successContainer').find('.msg').html(msg);
   $('#successContainer').fadeIn().delay(3000).fadeOut();
 };
 
-var reportError = function(msg){
-  $('#errorContainer').fadeIn('slow').find('.msg').html(msg);
+var reportError = function(position, msg){
+  $('#errorContainer').css('top', position);
+  $('#errorContainer').find('.msg').html(msg);
+  $('#errorContainer').fadeIn();
 };
 
 /**
@@ -105,7 +92,7 @@ var utilPopWindow = function(url, name){
 
 //open help doc in new window
 $('#helpLink').click(function(){
-    utilPopWindow('help.html', 'help')
+    utilPopWindow('help.html', 'help');
 });
 
 //handler for the Update Course button
@@ -136,7 +123,7 @@ $(document).on('click', '.setSections', function (e) {
         $('#xListSection' +  section).append('<span class=\"label label-failure\">Failure</span>');
       })
       .always(function() {
-        // do what
+        // need to count the success / failures
       });
 
 
@@ -144,7 +131,7 @@ $(document).on('click', '.setSections', function (e) {
   });
   return null;
 });
-
+  
 $(document).on('click', '.getCourseInfo', function (e) {
   var uniqname = $.trim($('#uniqname').val());
   e.preventDefault();
@@ -161,8 +148,8 @@ $(document).on('click', '.getCourseInfo', function (e) {
         $('#courseInfoInner').text('Course activity detected! Number of events: '  + data.length); 
       }
   })
-  .fail(function() {
-    $('#courseInfoInner').text('There was an error getting course information'); 
+  .fail(function(jqXHR) {
+    $('#courseInfoInner').text('There was an error getting course information'  + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
   });
   return null;
 });
@@ -193,8 +180,8 @@ $(document).on('click', '.getEnrollements', function (e) {
         });
       }
   })
-  .fail(function() {
-    $('#courseGetEnrollmentsInner').text('There was an error getting enrollements'); 
+  .fail(function(jqXHR) {
+    $('#courseGetEnrollmentsInner').text('There was an error getting enrollements' + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
   });
   return null;
 });
@@ -217,18 +204,18 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   var url = 'manager/api/v1/courses/' + thisCourse + '?course[course_code]=' + newCourseName + '&course[name]=' + newCourseName;
   var $thisCourseCode = $(this).closest('li').find('.courseLink');
   var $thisCourseName = $(this).closest('li').find('.courseName');
+  var position = $(e.target).closest('.course').position().top;
   $.ajax({
     type: 'PUT',
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
-      reportSuccess('Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>');
+      reportSuccess(position, 'Course <strong>' + $thisCourseCode.text() + '</strong> renamed to <strong>' + msg.course_code + '</strong>');
       $thisCourseCode.text(msg.course_code);
       $thisCourseName.text(msg.name);
-    }).fail(function( msg ) {
-      //TODO: reportError(JSON.stringify(msg));
-  });
-
+    }).fail(function(jqXHR) {
+      reportError(position,'There was an error changing this course name' + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')');
+    });
 });
 
 $(document).on('click', '.cancelCourseNameChange', function (e) {
@@ -277,8 +264,8 @@ $(document).on('click', '#uniqnameOtherTrigger', function (e) {
         render = render + '</ul></div>';
         $('#otherInstructorInnerPayload').append(render);
       }
-    }).fail(function( data ) {
-      //TODO: reportError(JSON.stringify(msg));
+    }).fail(function() {
+      alert('Could not get courses for ' + uniqnameOther);
   });
 });
 
