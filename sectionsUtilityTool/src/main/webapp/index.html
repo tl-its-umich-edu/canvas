@@ -106,7 +106,10 @@
                                 </div>
                             </div>
                         </div>
+                        <!--
                         <ul ui-sortable="sortableOptions" ng-model="item.sections" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
+                        -->
+                        <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
                             <li ng-repeat="section in item.sections" class="row section" data-sectionid="{{section.id}}">
                                 <div class="col-md-5 sectionName">
                                     <span>{{section.name}}</span>
@@ -157,6 +160,10 @@
                         <button type="button" class="btn btn-primary" id="postXList">
                             Crosslist
                         </button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal"  id="postXListDone">
+                            Done
+                        </button>
+ 
                         <button type="button" class="btn btn-link"  data-dismiss="modal">
                             Cancel
                         </button>

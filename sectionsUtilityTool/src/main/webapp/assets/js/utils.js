@@ -85,6 +85,25 @@ var utilPopWindow = function(url, name){
     return false;
 };
 
+var doXListPosts = function(posts){
+  var index, len;
+  var xListPosts = [];
+  for (index = 0, len = posts.length; index < len; ++index) {
+    var xListUrl ='manager' + posts[index];    
+    xListPosts.push(
+      $.post(xListUrl, function(data) {
+        var section = data.id;
+        $('#xListSection' +  section).append(' <span class=\"label label-success\">Success</span>');
+      })
+      .fail(function(data) {
+        var section = data.id;
+        $('#xListSection' +  section).append(' <span class=\"label label-failure\">Failure</span>');
+      })
+    );
+  }
+    return xListPosts;
+};
+
 /**
  *
  * event watchers
@@ -97,11 +116,15 @@ $('#helpLink').click(function(){
 
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
+  $('#postXListDone').hide();
+  $('#postXList').show();
   e.preventDefault();
   $('#debugPanel').empty();
   var thisCourse = $(this).attr('data-courseid');
 
-  var thisCourseTitle = $(this).closest('li').find('a.courseLink').text();
+  var thisCourseContainer = $(this).closest('li.course');
+  var thisCourseTitle = thisCourseContainer.find('a.courseLink').text();
+
   var $sections = $(this).closest('li').find('ul').find('li');
   var posts = [];
   $('#xListInner').empty();
@@ -111,24 +134,13 @@ $(document).on('click', '.setSections', function (e) {
     $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('div.sectionName span').text() + '</li>');
   });
   $('#postXList').click(function(){
-    var index, len;
-    for (index = 0, len = posts.length; index < len; ++index) {
-      var xListUrl ='manager' + posts[index];
-      $.post(xListUrl, function(data) {
-        var section = data.id;
-        $('#xListSection' +  section).append('<span class=\"label label-success\">Success</span>');
-      })
-      .fail(function(data) {
-        var section = data.id;
-        $('#xListSection' +  section).append('<span class=\"label label-failure\">Failure</span>');
-      })
-      .always(function() {
-        // need to count the success / failures
-      });
-
-
-    }  
-  });
+    var xListPosts = doXListPosts(posts);
+    $.when.apply($, xListPosts).done(function() {
+      $('#postXListDone').show();
+      $('#postXList').hide();
+      $(thisCourseContainer).find('.setSections').fadeOut().delay(5000).hide();
+    });
+  });  
   return null;
 });
   
