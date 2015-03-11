@@ -4,6 +4,17 @@
 	version="2.4">
   <display-name>SectionsUtilityTool</display-name>
   
+	
+	
+	<filter>
+		<filter-name>SectionUtilityToolFilter</filter-name>
+		<filter-class>edu.umich.ctools.sectionsUtilityTool.SectionUtilityToolFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>SectionUtilityToolFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	
 	<servlet>
 		<servlet-name>SectionsServlet</servlet-name>
 		<servlet-class>edu.umich.ctools.sectionsUtilityTool.SectionsUtilityToolServlet</servlet-class>
@@ -12,6 +23,21 @@
 		<servlet-name>SectionsServlet</servlet-name>
 		<url-pattern>/manager/*</url-pattern>
 	</servlet-mapping>
+	
+	<servlet-mapping>
+	    <servlet-name>default</servlet-name>
+	    <url-pattern>*.html</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+		<servlet-name>default</servlet-name>
+		<url-pattern>/assets/*</url-pattern>
+</servlet-mapping>
+	
+	<error-page>
+    <!-- Forbidden directory listing -->
+    <error-code>403</error-code>
+    <location>/error.html</location>
+</error-page>
 	
 	
 	

@@ -16,10 +16,15 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $scope.terms = [];
   var termsUrl ='manager/api/v1/accounts/1/terms?per_page=4000';
   $http.get(termsUrl).success(function (data) {
-    $scope.terms = data.enrollment_terms;
-    $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
+    if(data.enrollment_terms){
+      $scope.terms = data.enrollment_terms;
+      $scope.$parent.currentTerm =  getCurrentTerm(data.enrollment_terms);
+    }
+    else {
+      errorDisplay(termsUrl,status,'Unable to get terms data');  
+    }
   }).error(function () {
-    errorDisplay(termsUrl,'','Unable to get terms data');
+    errorDisplay(termsUrl,status,'Unable to get terms data');
   });
 
   //user selects a term from the dropdown that has been 
@@ -31,6 +36,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   };
 
 }]);
+
 
 //COURSES CONTROLLER
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
