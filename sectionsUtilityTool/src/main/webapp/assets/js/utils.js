@@ -118,6 +118,7 @@ $('#helpLink').click(function(){
 $(document).on('click', '.setSections', function (e) {
   $('#postXListDone').hide();
   $('#postXList').show();
+  $('#xListConfirm').hide();
   e.preventDefault();
   $('#debugPanel').empty();
   var thisCourse = $(this).attr('data-courseid');
@@ -129,6 +130,7 @@ $(document).on('click', '.setSections', function (e) {
   var posts = [];
   $('#xListInner').empty();
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
+  $('#xListConfirm').attr('href','https://umich.test.instructure.com/courses/' + thisCourse + '/settings#tab-sections');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
     $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('div.sectionName span').text() + '</li>');
@@ -138,6 +140,7 @@ $(document).on('click', '.setSections', function (e) {
     $.when.apply($, xListPosts).done(function() {
       $('#postXListDone').show();
       $('#postXList').hide();
+      $('#xListConfirm').show();
       $(thisCourseContainer).find('.setSections').fadeOut().delay(5000).hide();
     });
   });  
