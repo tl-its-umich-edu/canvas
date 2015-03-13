@@ -125,6 +125,11 @@ li.activeCourse button.setSections {
     display:none !important; 
 }
 
+.otherInstructorInner {
+    max-height: calc(100vh - 210px) !important;
+    overflow-y: auto !important;
+}
+
 [ng-cloak] {
   display: none !important;
 }
