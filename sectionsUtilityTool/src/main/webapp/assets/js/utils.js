@@ -116,6 +116,8 @@ $('#helpLink').click(function(){
 
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
+  var server = $('#serverInfo').text();
+  console.log (server)
   $('#postXListDone').hide();
   $('#postXList').show();
   $('#xListConfirm').hide();
@@ -127,10 +129,12 @@ $(document).on('click', '.setSections', function (e) {
   var thisCourseTitle = thisCourseContainer.find('a.courseLink').text();
 
   var $sections = $(this).closest('li').find('ul').find('li');
+  
   var posts = [];
   $('#xListInner').empty();
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
-  $('#xListConfirm').attr('href','https://umich.test.instructure.com/courses/' + thisCourse + '/settings#tab-sections');
+
+  $('#xListConfirm').attr('href',server + '/courses/' + thisCourse + '/settings#tab-sections');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
     $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('div.sectionName span').text() + '</li>');

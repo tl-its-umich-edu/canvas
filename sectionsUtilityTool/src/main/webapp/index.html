@@ -20,7 +20,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <h1 class="navbar-brand collapse-nav">Sections Manager</h1>
+                    <h1 class="navbar-brand collapse-nav">Sections Manager <small id="serverInfo">{{server}}</small></h1>
                 </div>
                 <!-- Collect the nav links, forms, and other content for toggling -->
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
@@ -82,7 +82,7 @@
                     <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
                         <div class="row">
                             <div class="col-md-8">
-                                <strong><a class="courseLink" href="https://umich.instructure.com/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span class="courseName" title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
+                                <strong><a class="courseLink" href="{{server}}/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span class="courseName" title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
                                 - <a class="renameCourse" href="">Rename?</a>
                                 <span class="form-inline courseTitleTextContainer" style="display:none">
                                   <span class="form-group">
