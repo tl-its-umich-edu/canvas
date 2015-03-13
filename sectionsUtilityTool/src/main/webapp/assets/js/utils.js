@@ -117,7 +117,6 @@ $('#helpLink').click(function(){
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
   var server = $('#serverInfo').text();
-  console.log (server)
   $('#postXListDone').hide();
   $('#postXList').show();
   $('#xListConfirm').hide();
