@@ -141,6 +141,7 @@ $(document).on('click', '.setSections', function (e) {
       $('#postXListDone').show();
       $('#postXList').hide();
       $('#xListConfirm').show();
+      $('.activeCourse').removeClass('activeCourse');
       $(thisCourseContainer).find('.setSections').fadeOut().delay(5000).hide();
     });
   });  
