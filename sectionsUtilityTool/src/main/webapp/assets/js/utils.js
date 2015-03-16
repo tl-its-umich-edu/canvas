@@ -233,7 +233,7 @@ $(document).on('click', '#uniqnameOtherTrigger', function (e) {
   e.preventDefault();
   var uniqnameOther = $.trim($('#uniqnameOther').val());
   var termId = $.trim($('#canvasTermId').text());
-  var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqnameOther+ '&include=sections&per_page=100&published=true&with_enrollments=true&enrollment_type=teacher';
+  var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqnameOther+ '&include=sections&per_page=200&published=true&with_enrollments=true&enrollment_type=teacher';
   var url = '/sectionsUtilityTool'+mini;
   
   $.ajax({

@@ -14,7 +14,7 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
   $scope.selectedTerm = null;
   //reset term scope
   $scope.terms = [];
-  var termsUrl ='manager/api/v1/accounts/1/terms?per_page=4000';
+  var termsUrl ='manager/api/v1/accounts/1/terms?per_page=4000&_=' + (new Date().getTime());
   $http.get(termsUrl).success(function (data) {
     if(data.enrollment_terms){
       $scope.terms = data.enrollment_terms;
@@ -46,7 +46,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=200&published=true&with_enrollments=true&enrollment_type=teacher';
+    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=200&published=true&with_enrollments=true&enrollment_type=teacher&_='+ (new Date().getTime());
     var url = '/sectionsUtilityTool'+mini;
     $scope.loading = true;
     Courses.getCourses(url).then(function (result) {
