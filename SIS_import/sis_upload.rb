@@ -5,16 +5,37 @@ require "fileutils"
 require "rubygems"
 require "nokogiri"
 require "digest"
+require "rest-client"
 
+## make Canvas API GET call
+def Canvas_API_GET(url)
+	response = RestClient.get url, {:Authorization => "Bearer #{$token}",
+	                                :accept => "application/json",
+	                                :verify_ssl => true}
+	return JSON.parse(response)
+end
 
-def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
+## make Canvas API POST call
+def Canvas_API_POST(url, fileName)
+	response = RestClient.post url, {:multipart => true,
+																	 :attachment => File.new(fileName, 'rb')
+																	},
+																	{:Authorization => "Bearer #{$token}",
+	                                :accept => "application/json",
+	                                :import_type => "instructure_csv",
+	                                :content_type => "application/zip",
+	                                :verify_ssl => true}
+	return JSON.parse(response)
+end
+
+def upload_to_canvas(fileName, outputFile, output_file_base_name)
 
 
 	# set the error flag, default to be false
 	upload_error = false
 
 	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
-	if (prior_upload_error(currentDirectory, server, token))
+	if (prior_upload_error)
 		## check first about the environment variable setting for MAILTO '
 		return "Previous upload job has not finished yet."
 	end
@@ -23,15 +44,7 @@ def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory,
 	outputFile.write("upload start time : " + Time.new.inspect)
 
 	# continue the current upload process
-
-	# Web Service call
-	p fileName
-	p server
-
-	json_data=`curl -H "Content-Type: application/zip" --data-binary @#{fileName} -H "Authorization: Bearer #{token}" #{server}/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
-
-	outputFile.write("#{json_data}\n")
-	parsed = parseJson(json_data)
+	parsed = Canvas_API_POST("#{$server}/api/v1/accounts/1/sis_imports.json", fileName)
 
 	if (parsed["errors"])
 		## break and print error
@@ -48,7 +61,7 @@ def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory,
 
 	begin
 		#open a separate file to log the job id
-		outputIdFile = File.open(outputDirectory + output_file_base_name + "_id.txt", "w")
+		outputIdFile = File.open($outputDirectory + output_file_base_name + "_id.txt", "w")
 		# write the job id into the id file
 		outputIdFile.write(job_id);
 	ensure
@@ -60,15 +73,12 @@ def upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory,
 
 	begin
 		#sleep every 10 sec, before checking the status again
-		sleep(10);
+		sleep($sleep);
 
-		json_result=`curl '#{server}/api/v1/accounts/1/sis_imports/#{job_id}' -H "Authorization: Bearer #{token}"`
+		parsed_result = Canvas_API_GET("#{$server}/api/v1/accounts/1/sis_imports/#{job_id}")
 
 		#print out the whole json result
-		outputFile.write("#{json_result}\n")
-
-		#parse the status percentage
-		parsed_result=parseJson(json_result)
+		outputFile.write("#{parsed_result}\n")
 
 	if (parsed_result["errors"])
 			## break and print error
@@ -110,9 +120,9 @@ end ## end of method definition
 
 # get the prior upload process id and make Canvas API calls to see the current process status
 # return true if the process is 100% finished; false otherwise
-def prior_upload_error(currentDirectory, server, token)
+def prior_upload_error
 	# find all the process id files, and sort in descending order based on last modified time
-	id_log_file_path = "#{currentDirectory}logs/*_id.txt"
+	id_log_file_path = "#{$currentDirectory}logs/*_id.txt"
 	p "id log file path is #{id_log_file_path}"
 	files = Dir.glob(id_log_file_path)
 	files = files.sort_by { |file| File.mtime(file) }.reverse
@@ -132,10 +142,10 @@ def prior_upload_error(currentDirectory, server, token)
 				break
 			end
 		end
-		process_result=`curl '#{server}/api/v1/accounts/1/sis_imports/#{process_id}' -H "Authorization: Bearer #{token}"`
 
+		process_result = Canvas_API_GET("#{$server}/api/v1/accounts/1/sis_imports/#{process_id}")
 		#parse the status percentage
-		progress_status = parseJson(process_result)["progress"]
+		progress_status = process_result["progress"]
 		if (progress_status != 100)
 			# the prior job has not been processed 100%
 			p "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
@@ -208,30 +218,110 @@ def verify_checksum(base_file_path)
 	return upload_error
 end
 
+def get_settings(securityFile, propertiesFile)
+	# 1. read from security file
+	if (Dir[securityFile].length != 1)
+		## security file
+		return "Cannot find security file #{securityFile}."
+	else
+		File.open(securityFile, 'r') do |sFile|
+			while line = sFile.gets
+				# only read the first line
+				# format: token=TOKEN,server=SERVER,directory=DIRECTORY
+				env_array = line.strip.split(',')
+				if (env_array.size != 2)
+					return "security file should have the settings in format of: token=TOKEN,server=SERVER"
+				end
+				token_array=env_array[0].split('=')
+				$token=token_array[1]
+				server_array=env_array[1].split('=')
+				$server=server_array[1]
+				break
+			end
+		end
+		if ($token=="")
+			return "Empty token for Canvas upload."
+		end
+	end
+
+	#2. read from properties file
+	if (Dir[propertiesFile].length != 1)
+		## properties file
+		return "Cannot find properties file #{propertiesFile}."
+	else
+		File.open(propertiesFile, 'r') do |pFile|
+			while line = pFile.gets
+				# only read the first line
+				# format: sleep=SLEEP
+				env_array = line.strip.split(',')
+				if (env_array.size != 2)
+					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP"
+				end
+				directory_array=env_array[0].split('=')
+				$currentDirectory=directory_array[1]
+				sleep_array=env_array[1].split('=')
+				$sleep=sleep_array[1].to_i
+				break
+			end
+		end
+		if (Dir[$currentDirectory].length != 1)
+			## working directory
+			return "Cannot find current working directory " + $currentDirectory + "."
+		else
+			# get the current working directory and the archive folder inside
+			$archiveDirectory=$currentDirectory + "archive/"
+			$outputDirectory=$currentDirectory + "logs/"
+
+			p "server=" + $server
+			p "current directory: " + $currentDirectory
+			p "archive directory: " + $archiveDirectory
+			p "output directory: " + $outputDirectory
+
+			if (Dir[$archiveDirectory].length != 1)
+				## archive directory
+				return "Cannot find archive directory " + $archiveDirectory + "."
+			end
+			if (Dir[$outputDirectory].length != 1)
+				## logs directory
+				return "Cannot find output directory " + $outputDirectory + "."
+			end
+		end
+	end
+
+	# all is fine
+	return false
+end
+
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
 
-# token file name
-tokenFile = ""
+# the security file name
+securityFile = ""
+# the properties file name
+propertiesFile = ""
+
 # the access token
-token = ""
+$token = ""
 # the Canvas server name
-server = ""
-# the current working directory
-currentDirectory=""
+$server = ""
+# the current working directory, archive directory and output directory
+$currentDirectory=""
+$archiveDirectory=""
+$outputDirectory=""
+
+# the interval in seconds between API calls to check upload process status
+$sleep = 10
 
 # the command line argument count
 count=1
 # iterate through the inline arguments
 ARGV.each do|arg|
 	if (count==1)
-		tokenFile = arg
+		#security file
+		securityFile = arg
 	elsif (count==2)
 		# the second argument should be the server name
-		server=arg
-	elsif (count==3)
-		# the third path should be the workspace path
-		currentDirectory=arg
+		propertiesFile=arg
 	else
 		# break
 	end
@@ -240,101 +330,58 @@ ARGV.each do|arg|
 	count=count+1
 end
 
-# get the current working directory and the archive folder inside
-archiveDirectory=currentDirectory + "archive/"
-outputDirectory=currentDirectory + "logs/"
+# read the settings from properties files
+upload_error = get_settings(securityFile, propertiesFile)
 
-p "server=" + server
-p "current directory: " + currentDirectory
-p "archive directory: " + archiveDirectory
-p "output directory: " + outputDirectory
-
-if (Dir[outputDirectory].length != 1)
-	## logs directory
-	upload_error = "Cannot find logs directory " + outputDirectory
-
-	## check first about the environment variable setting for MAILTO '
-	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
-	## send email to support team with the error message
-	`echo #{upload_error} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
-	abort(upload_error)
-else
+outputFile = false
+if (!upload_error)
 	#open the output file
 	begin
 		# get output file name
 		output_file_base_name = "Canvas_upload_" + Time.new.strftime("%Y%m%d%H%M%S")
-		outputFile = File.open(outputDirectory + output_file_base_name + ".txt", "w")
+		outputFile = File.open($outputDirectory + output_file_base_name + ".txt", "w")
 
-		if (Dir[currentDirectory].length != 1)
-			## working directory
-			upload_error = "Cannot find current working directory " + currentDirectory + "."
-		elsif (Dir[archiveDirectory].length != 1)
-			## archive directory
-			upload_error = "Cannot find archive directory " + archiveDirectory + "."
-		elsif (Dir[tokenFile].length != 1)
-			## token file
-			upload_error = "Cannot find token file #{tokenFile}."
-		else
-			File.open(tokenFile, 'r') do |tFile|
-				while line = tFile.gets
-					# only read the first line, which is the token value
-					token=line.strip
-					break
-				end
-			end
-			if (token=="")
-				upload_error="Empty token for Canvas upload."
-			end
-		end
+		# the canvas import zip file
+		fileNames = Dir[$currentDirectory+ "Canvas_Extract_*.zip"];
+		if (fileNames.length == 0)
+			## cannot find zip file to upload
+			upload_error = "Cannot find SIS zip file."
+		elsif (fileNames.length > 1)
+			## there are more than one zip file
+			upload_error = "There are more than one SIS zip files to be uploaded."
+		elsif
+			## get the name of file to process
+			fileName=fileNames[0]
+			currentFileBaseName = File.basename(fileName, ".zip")
 
-		if (!upload_error)
-			# the canvas import zip file
-			fileNames = Dir[currentDirectory+ "Canvas_Extract_*.zip"];
-			if (fileNames.length == 0)
-				## cannot find zip file to upload
-				upload_error = "Cannot find SIS zip file."
-			elsif (fileNames.length > 1)
-				## there are more than one zip file
-				upload_error = "There are more than one SIS zip files to be uploaded."
-			elsif
-				## get the name of file to process
-				fileName=fileNames[0]
-				currentFileBaseName = File.basename(fileName, ".zip")
+			## checksum verification step
+			upload_error = verify_checksum($currentDirectory + currentFileBaseName)
 
-				## checksum verification step
-				upload_error = verify_checksum(currentDirectory + currentFileBaseName)
-
-				if (!upload_error)
-					# upload the file to canvas server
-					upload_error = upload_to_canvas(currentDirectory, fileName, token, server, outputDirectory, outputFile, output_file_base_name)
-				end
+			if (!upload_error)
+				# upload the file to canvas server
+				upload_error = upload_to_canvas(fileName, outputFile, output_file_base_name)
 			end
 		end
-
-		if (upload_error)
-			# write upload error string into file
-			outputFile.write(upload_error)
-
-			## check first about the environment variable setting for MAILTO '
-			p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
-			## send email to support team with the error message
-			`echo #{upload_error} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
-			abort(upload_error)
-		else
-			# write the success message
-			## if there is no upload error
-			# move file to archive directory after processing
-			FileUtils.mv(Dir.glob("#{currentDirectory}*.zip"), archiveDirectory)
-			FileUtils.mv(Dir.glob("#{currentDirectory}*MD5.txt"), archiveDirectory)
-
-			upload_success_msg = "SIS upload finished with " + fileName
-			outputFile.write(upload_success_msg)
-			p upload_success_msg
-		end
-
-	# close output file
-	ensure
-		outputFile.close unless outputFile == nil
 	end
 end
 
+if (upload_error)
+	## check first about the environment variable setting for MAILTO '
+	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+	p upload_error
+	## send email to support team with the error message
+	`echo #{upload_error} | mail -s "#{$server} Upload Error" #{ENV['MAILTO']}`
+else
+	# write the success message
+	## if there is no upload error
+	# move file to archive directory after processing
+	FileUtils.mv(Dir.glob("#{$currentDirectory}*.zip"), $archiveDirectory)
+	FileUtils.mv(Dir.glob("#{$currentDirectory}*MD5.txt"), $archiveDirectory)
+
+	upload_success_msg = "SIS upload finished with " + fileName
+	outputFile.write(upload_success_msg)
+	p upload_success_msg
+end
+
+# close output file
+outputFile.close unless outputFile == false
