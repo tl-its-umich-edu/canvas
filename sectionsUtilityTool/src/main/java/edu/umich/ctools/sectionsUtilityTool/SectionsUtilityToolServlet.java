@@ -33,13 +33,13 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private static Log M_log = LogFactory.getLog(SectionsUtilityToolServlet.class);
 	private static final long serialVersionUID = 7284813350014385613L;
 	
-	private static final String CANVAS_API_DECROSSLIST = "canvas.api.decrosslist";
-	private static final String CANVAS_API_CROSSLIST = "canvas.api.crosslist";
-	private static final String CANVAS_API_GETCOURSE_INFO = "canvas.api.getcourse.info";
-	private static final String CANVAS_API_RENAME_COURSE = "canvas.api.rename.course";
-	private static final String CANVAS_API_GETCOURSE_BY_UNIQNAME = "canvas.api.getcourse.by.uniqname";
-	private static final String CANVAS_API_ENROLLMENT = "canvas.api.enrollment";
-	private static final String CANVAS_API_TERMS = "canvas.api.terms";
+	private static final String CANVAS_API_DECROSSLIST = "canvas.api.decrosslist.regex";
+	private static final String CANVAS_API_CROSSLIST = "canvas.api.crosslist.regex";
+	private static final String CANVAS_API_GETCOURSE_INFO = "canvas.api.getcourse.info.regex";
+	private static final String CANVAS_API_RENAME_COURSE = "canvas.api.rename.course.regex";
+	private static final String CANVAS_API_GETCOURSE_BY_UNIQNAME = "canvas.api.getcourse.by.uniqname.regex";
+	private static final String CANVAS_API_ENROLLMENT = "canvas.api.enrollment.regex";
+	private static final String CANVAS_API_TERMS = "canvas.api.terms.regex";
 	private static final String DELETE = "DELETE";
 	private static final String POST = "POST";
 	private static final String GET = "GET";
@@ -54,23 +54,39 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		M_log.debug(" Servlet init(): Called");
 	}
 	
-	protected void doGet(HttpServletRequest request,HttpServletResponse response) throws IOException {
+	protected void doGet(HttpServletRequest request,HttpServletResponse response){
 		M_log.debug("doGet: Called");
-		canvasRestApiCall(request, response);
+		try {
+			canvasRestApiCall(request, response);
+		}catch(Exception e) {
+			M_log.error("GET request has some exceptions",e);
+		}
 	}
 	
-	protected void doPost(HttpServletRequest request,HttpServletResponse response) throws IOException {
+	protected void doPost(HttpServletRequest request,HttpServletResponse response){
 		M_log.debug("doPOST: Called");
-		canvasRestApiCall(request, response);
+		try {
+			canvasRestApiCall(request, response);
+		}catch(Exception e) {
+			M_log.error("POST request has some exceptions",e);
+		}
 		
 	}
-	protected void doPut(HttpServletRequest request,HttpServletResponse response) throws IOException {
+	protected void doPut(HttpServletRequest request,HttpServletResponse response){
 		M_log.debug("doPut: Called");
-		canvasRestApiCall(request, response);
+		try {
+			canvasRestApiCall(request, response);
+		}catch(Exception e) {
+			M_log.error("PUT request has some exceptions",e);
+		}
 	}
-	protected void doDelete(HttpServletRequest request,HttpServletResponse response) throws IOException {
+	protected void doDelete(HttpServletRequest request,HttpServletResponse response) {
 		M_log.debug("doDelete: Called");
-		canvasRestApiCall(request, response);
+		try {
+			canvasRestApiCall(request, response);
+		}catch(Exception e) {
+			M_log.error("DELETE request has some exceptions",e);
+		}
 	}
 	
    /*
