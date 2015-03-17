@@ -118,6 +118,7 @@ public class SectionUtilityToolFilter implements Filter {
 		 } 
 		 if  ( !isAuthorized && remoteUser != null ) {
 			 user=remoteUser;
+			 M_log.info("The Service Desk Person uniqname issuing the request is: "+remoteUser);
 		 }
 		 isAuthorized=ldapAuthorizationVerification(user); 
 		 return isAuthorized;
