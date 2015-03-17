@@ -85,18 +85,23 @@ var utilPopWindow = function(url, name){
     return false;
 };
 
+var xListPostStatus;
+
 var doXListPosts = function(posts){
   var index, len;
   var xListPosts = [];
+  xListPostStatus = {successes: [], failures: []};
   for (index = 0, len = posts.length; index < len; ++index) {
     var xListUrl ='manager' + posts[index];    
     xListPosts.push(
       $.post(xListUrl, function(data) {
         var section = data.id;
+        xListPostStatus.successes.push(data);
         $('#xListSection' +  section).append(' <span class=\"label label-success\">Success</span>');
       })
       .fail(function(data) {
         var section = data.id;
+        xListPostStatus.failures.push(data);
         $('#xListSection' +  section).append(' <span class=\"label label-failure\">Failure</span>');
       })
     );
@@ -141,6 +146,12 @@ $(document).on('click', '.setSections', function (e) {
   $('#postXList').click(function(){
     var xListPosts = doXListPosts(posts);
     $.when.apply($, xListPosts).done(function() {
+      if(xListPostStatus.successes.length === posts.length ){
+        $('#xListConfirmMessage').text(posts.length + ' sections crosslisted. ');
+      }
+      else {
+        $('#xListConfirmMessage').text(xListPostStatus.failures.length + ' error(s). ');
+      }
       $('#postXListDone').show();
       $('#postXList').hide();
       $('#xListConfirm').show();
