@@ -112,55 +112,8 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 			M_log.error("Failed to load system properties(sectionsToolProps.properties) for SectionsTool");
 			return;
 		}
-		String queryString = request.getQueryString();
-		String pathInfo = request.getPathInfo();
-		String url=null;
 		if(isAllowedApiRequest(request)) {
-			if(queryString!=null) {
-				url= canvasURL+pathInfo+"?"+queryString;
-			}else {
-				url=canvasURL+pathInfo;
-			}
-			String sessionId = request.getSession().getId();
-			StringBuilder loggingApiWithSessionInfo =new StringBuilder();
-			loggingApiWithSessionInfo.append("Canvas API request with Session Id:  \"");
-			loggingApiWithSessionInfo.append(sessionId);
-			loggingApiWithSessionInfo.append("\" for URL:  \"");
-			loggingApiWithSessionInfo.append(url);
-			loggingApiWithSessionInfo.append("\"");
-			M_log.info(loggingApiWithSessionInfo);
-			HttpUriRequest clientRequest = null;
-			if(request.getMethod().equals(GET)) {
-				clientRequest = new HttpGet(url);
-			}else if (request.getMethod().equals(POST)) {
-				clientRequest = new HttpPost(url);
-			}else if(request.getMethod().equals(PUT)) {
-				clientRequest=new HttpPut(url);
-			}else if(request.getMethod().equals(DELETE)) {
-				clientRequest=new HttpDelete(url);
-			}
-			HttpClient client = new DefaultHttpClient();
-			final ArrayList<NameValuePair> nameValues = new ArrayList<NameValuePair>();
-			nameValues.add(new BasicNameValuePair("Authorization", "Bearer"+ " " +canvasToken));
-			nameValues.add(new BasicNameValuePair("content-type", "application/json"));
-			for (final NameValuePair h : nameValues)
-			{
-				clientRequest.addHeader(h.getName(), h.getValue());
-			}
-			BufferedReader rd = null;
-			try {
-				rd = new BufferedReader(new InputStreamReader(client.execute(clientRequest).getEntity().getContent()));
-			} catch (IOException e) {
-				M_log.error("Canvas API call did not happen",e);
-			}
-			String line = "";
-			StringBuilder sb = new StringBuilder();
-			while ((line = rd.readLine()) != null) {
-				sb.append(line);
-			}
-			
-			out.print(sb.toString());
-			out.flush();
+			apiConnectionLogic(request,response);
 
 		}else {
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -169,6 +122,59 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 			out.flush();
 		}
 
+	}
+	/*
+	 * This function has logic that execute client(i.e., browser) request and get results from the canvas  
+	 * using Apache Http client library
+	 */
+	
+
+	private void apiConnectionLogic(HttpServletRequest request, HttpServletResponse response)
+			throws IOException {
+		String queryString = request.getQueryString();
+		String pathInfo = request.getPathInfo();
+		PrintWriter out = response.getWriter();
+		String url;
+		if(queryString!=null) {
+			url= canvasURL+pathInfo+"?"+queryString;
+		}else {
+			url=canvasURL+pathInfo;
+		}
+		String sessionId = request.getSession().getId();
+		String loggingApiWithSessionInfo = String.format("Canvas API request with Session Id \"%s\" for URL \"%s\"", sessionId,url);
+		M_log.info(loggingApiWithSessionInfo);
+		HttpUriRequest clientRequest = null;
+		if(request.getMethod().equals(GET)) {
+			clientRequest = new HttpGet(url);
+		}else if (request.getMethod().equals(POST)) {
+			clientRequest = new HttpPost(url);
+		}else if(request.getMethod().equals(PUT)) {
+			clientRequest=new HttpPut(url);
+		}else if(request.getMethod().equals(DELETE)) {
+			clientRequest=new HttpDelete(url);
+		}
+		HttpClient client = new DefaultHttpClient();
+		final ArrayList<NameValuePair> nameValues = new ArrayList<NameValuePair>();
+		nameValues.add(new BasicNameValuePair("Authorization", "Bearer"+ " " +canvasToken));
+		nameValues.add(new BasicNameValuePair("content-type", "application/json"));
+		for (final NameValuePair h : nameValues)
+		{
+			clientRequest.addHeader(h.getName(), h.getValue());
+		}
+		BufferedReader rd = null;
+		try {
+			rd = new BufferedReader(new InputStreamReader(client.execute(clientRequest).getEntity().getContent()));
+		} catch (IOException e) {
+			M_log.error("Canvas API call did not happen",e);
+		}
+		String line = "";
+		StringBuilder sb = new StringBuilder();
+		while ((line = rd.readLine()) != null) {
+			sb.append(line);
+		}
+		
+		out.print(sb.toString());
+		out.flush();
 	}
     /*
      * This method control canvas api request allowed. If a particular request from UI is not in the allowed list then it will not process the request 
@@ -183,29 +189,29 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		if(queryString!=null) {
 			url=pathInfo+"?"+queryString;
 			if(url.matches(props.getString(CANVAS_API_TERMS))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for terms");
+				return true;
 			}else if (url.matches(props.getString(CANVAS_API_ENROLLMENT))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for enrollment");
+				return true;
 			}else if (url.matches(props.getString(CANVAS_API_GETCOURSE_BY_UNIQNAME))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for getting courses by uniqname");
+				return true;
 			}else if (url.matches(props.getString(CANVAS_API_RENAME_COURSE))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for rename a course");
+				return true;
 			}else if (url.matches(props.getString(CANVAS_API_GETCOURSE_INFO))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for getting course info");
+				return true;
 			}
 		}else {
 			url=pathInfo;
 			if(url.matches(props.getString(CANVAS_API_CROSSLIST))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for crosslist");
+				return true;
 			}else if(url.matches(props.getString(CANVAS_API_DECROSSLIST))) {
-				isAllowedRequest=true;
 				M_log.debug("The canvas api request for decrosslist");
+				return true;
 			}
 		}
 		return isAllowedRequest;
