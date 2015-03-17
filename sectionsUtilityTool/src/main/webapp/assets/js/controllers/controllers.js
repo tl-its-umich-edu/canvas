@@ -80,6 +80,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
           $scope.instructions = true;
           $scope.errorLookup = false;
           $scope.loading = false;
+          $rootScope.server = result.data[0].calendar.ics.split('/feed')[0];
         }
       }
     });

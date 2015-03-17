@@ -85,6 +85,30 @@ var utilPopWindow = function(url, name){
     return false;
 };
 
+var xListPostStatus;
+
+var doXListPosts = function(posts){
+  var index, len;
+  var xListPosts = [];
+  xListPostStatus = {successes: [], failures: []};
+  for (index = 0, len = posts.length; index < len; ++index) {
+    var xListUrl ='manager' + posts[index];    
+    xListPosts.push(
+      $.post(xListUrl, function(data) {
+        var section = data.id;
+        xListPostStatus.successes.push(data);
+        $('#xListSection' +  section).append(' <span class=\"label label-success\">Success</span>');
+      })
+      .fail(function(data) {
+        var section = data.id;
+        xListPostStatus.failures.push(data);
+        $('#xListSection' +  section).append(' <span class=\"label label-failure\">Failure</span>');
+      })
+    );
+  }
+    return xListPosts;
+};
+
 /**
  *
  * event watchers
@@ -97,38 +121,44 @@ $('#helpLink').click(function(){
 
 //handler for the Update Course button
 $(document).on('click', '.setSections', function (e) {
+  var server = $('#serverInfo').text();
+  $('#postXListDone').hide();
+  $('#postXList').show();
+  $('#xListConfirm').hide();
   e.preventDefault();
   $('#debugPanel').empty();
   var thisCourse = $(this).attr('data-courseid');
 
-  var thisCourseTitle = $(this).closest('li').find('a.courseLink').text();
+  var thisCourseContainer = $(this).closest('li.course');
+  var thisCourseTitle = thisCourseContainer.find('a.courseLink').text();
+
   var $sections = $(this).closest('li').find('ul').find('li');
+  
   var posts = [];
   $('#xListInner').empty();
   $('#xListInner').append('<p><strong>' + thisCourseTitle + '</strong></p><ol id="listOfSectionsToCrossList" class="listOfSectionsToCrossList"></ol>');
+
+  $('#xListConfirm').attr('href',server + '/courses/' + thisCourse + '/settings#tab-sections');
   $sections.each(function( ) {
     posts.push('/api/v1/sections/' + $(this).attr('data-sectionid') + '/crosslist/' + thisCourse);
     $('#listOfSectionsToCrossList').append( '<li id=\"xListSection' + $(this).attr('data-sectionid') + '\">' + $(this).find('div.sectionName span').text() + '</li>');
   });
   $('#postXList').click(function(){
-    var index, len;
-    for (index = 0, len = posts.length; index < len; ++index) {
-      var xListUrl ='manager' + posts[index];
-      $.post(xListUrl, function(data) {
-        var section = data.id;
-        $('#xListSection' +  section).append('<span class=\"label label-success\">Success</span>');
-      })
-      .fail(function(data) {
-        var section = data.id;
-        $('#xListSection' +  section).append('<span class=\"label label-failure\">Failure</span>');
-      })
-      .always(function() {
-        // need to count the success / failures
-      });
-
-
-    }  
-  });
+    var xListPosts = doXListPosts(posts);
+    $.when.apply($, xListPosts).done(function() {
+      if(xListPostStatus.successes.length === posts.length ){
+        $('#xListConfirmMessage').text(posts.length + ' sections crosslisted. ');
+      }
+      else {
+        $('#xListConfirmMessage').text(xListPostStatus.failures.length + ' error(s). ');
+      }
+      $('#postXListDone').show();
+      $('#postXList').hide();
+      $('#xListConfirm').show();
+      $('.activeCourse').removeClass('activeCourse');
+      $(thisCourseContainer).find('.setSections').fadeOut().delay(5000).hide();
+    });
+  });  
   return null;
 });
   
