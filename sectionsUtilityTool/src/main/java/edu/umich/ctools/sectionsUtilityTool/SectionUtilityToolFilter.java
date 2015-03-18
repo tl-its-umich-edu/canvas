@@ -108,6 +108,7 @@ public class SectionUtilityToolFilter implements Filter {
 		 String user=null;
 
 		 String testUserInSession = (String)request.getSession().getAttribute(TEST_USER);
+		 String sessionId = request.getSession().getId();
 
 		 if ( isTestUrlEnabled && testUser != null ) { 
 			 user=testUser;
@@ -118,7 +119,7 @@ public class SectionUtilityToolFilter implements Filter {
 		 } 
 		 if  ( !isAuthorized && remoteUser != null ) {
 			 user=remoteUser;
-			 M_log.info("The Service Desk Person uniqname issuing the request is: "+remoteUser);
+			 M_log.info(String.format("The session id \"%s\" of Service Desk Person with uniqname  \"%s\" issuing the request" ,sessionId,remoteUser));
 		 }
 		 isAuthorized=ldapAuthorizationVerification(user); 
 		 return isAuthorized;
