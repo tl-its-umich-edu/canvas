@@ -11,7 +11,7 @@ set -x
 timestamp=$(date +%Y%m%d%H%M%S)
 
 #which mvn
-#cd sectionsUtilityTool
+cd sectionsUtilityTool
 #mvn clean install
 cd target
 
