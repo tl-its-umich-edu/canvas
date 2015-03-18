@@ -12,7 +12,9 @@ timestamp=$(date +%Y%m%d%H%M%S)
 cd sectionsUtilityTool
 cd target
 warFilename=$(ls *.war | head -1)
-branch= ${GIT_BRANCH}
 targetFilename=$(basename ${warFilename} .war)
-mv ${targetFilename}.war ${targetFilename}.${timestamp}.${${branch}:7}.war
+#origin/TLUNIZIN-424, origin/master
+branch=${GIT_BRANCH}
+btemp=${branch:7}
+mv ${targetFilename}.war ${targetFilename}.${timestamp}.${btemp}.war
 
