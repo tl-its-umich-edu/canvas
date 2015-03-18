@@ -14,5 +14,5 @@ cd target
 warFilename=$(ls *.war | head -1)
 branch= ${GIT_BRANCH}
 targetFilename=$(basename ${warFilename} .war)
-mv ${targetFilename}.war ${targetFilename}.${timestamp}.${branch:7}.war
+mv ${targetFilename}.war ${targetFilename}.${timestamp}.${${branch}:7}.war
 
