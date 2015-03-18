@@ -9,7 +9,7 @@ sectionsApp.run(function ($rootScope) {
 
 function generateCurrentTimestamp(){
 	return new Date().getTime();
-};
+}
 
 /* TERMS CONTROLLER */
 sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$http', function (Courses, $rootScope, $scope, $http) {
@@ -43,8 +43,6 @@ sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$
 
 //COURSES CONTROLLER
 sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope', '$scope', function (Courses, Sections, $rootScope, $scope) {
-  //$scope.courses = [];
-
 
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
@@ -54,15 +52,19 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
     $scope.loading = true;
     Courses.getCourses(url).then(function (result) {
       if (result.data.errors) {
+        // the call to CAPI has returned a json with an error node
         if(uniqname) {
+          // if the uniqname field had a value, report the problem (bad uniqname)
           $scope.errorMessage = result.data.errors + uniqname;
           $scope.errorLookup = true;
         }
         else {
+          // if the uniqname field had no value ask for it
           $scope.errorMessage = 'Please supply a uniqname at left.';
           $scope.instructions = false;
           $scope.errorLookup = false;
         }
+        // various error flags in the scope  that do things in the UI
         $scope.success = false;
         $scope.error = true;
         $scope.instructions = false;
@@ -70,12 +72,15 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       }
       else {
         if(result.errors){
+          // catch all error
           $scope.success = false;
           $scope.error = true;
           $scope.instructions = false;
           $scope.loading = false;
         }
         else {
+          // all is well - add the courses to the scope, extract the terms represented in course data
+          // change scope flags and get the root server from the courses feed (!)
           $scope.courses = result.data;
           $scope.termArray = getTermArray(result.data);
           $scope.error = false;
@@ -88,7 +93,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
       }
     });
   };
-
+  // make the sections sortable drag and droppable the angular way
   $scope.sortableOptions = {
       placeholder: 'section',
       connectWith: '.sectionList',
@@ -118,31 +123,6 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         ui.item.removeClass('grabbing');
       }
   };
-  
-
-  /*User clicks on Get Sections and the sections for that course
-  gets added to the course scope*/
-  $scope.getSections = function () {
-
-    $('.sectionList').sortable({
-      connectWith: '.sectionList',
-      receive: function(event, ui) {
-        //on drop, append the name of the source course
-        var prevMovEl = ui.item.find('.status');
-        if(prevMovEl.text() !==''){
-          prevMovEl.next('span').show();
-        }
-        prevMovEl.text('Moved  from ' + ui.sender.closest('.course').find('.courseLink').text());
-      },
-      stop: function( event, ui ) {
-        //add some animation feedback to the move
-        $('li.course').removeClass('activeCourse');
-        ui.item.closest('li.course').addClass('activeCourse');
-        ui.item.css('background-color', '#FFFF9C')
-          .animate({ backgroundColor: '#FFFFFF'}, 1500);
-      }
-    }).disableSelection();
-   };
 }]);
 
 
