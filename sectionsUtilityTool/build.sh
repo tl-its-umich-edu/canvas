@@ -13,5 +13,5 @@ cd sectionsUtilityTool
 cd target
 warFilename=$(ls *.war | head -1)
 targetFilename=$(basename ${warFilename} .war)
-mv ${targetFilename}.war ${targetFilename}.${timestamp}.${GIT_BRANCH}war
+mv ${targetFilename}.war ${targetFilename}.${timestamp}.${GIT_BRANCH}.war
 
