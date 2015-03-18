@@ -109,6 +109,7 @@ var doXListPosts = function(posts){
     return xListPosts;
 };
 
+
 /**
  *
  * event watchers
@@ -183,6 +184,51 @@ $(document).on('click', '.getCourseInfo', function (e) {
   });
   return null;
 });
+
+
+$(document).on('click', '.sectionCheck', function (e) {
+    e.preventDefault();
+    var thisSection = $(this).closest('li.section');
+    var thisSectionId = thisSection.attr('data-sectionid');
+
+    $('#unCrossListInner').empty();
+    $.get('manager/api/v1/sections/' + thisSectionId, function(data) {
+      if(data.nonxlist_course_id){
+        $('#unCrossListInner').text('This section may be uncrosslisted'); 
+        $('#unCrossList').show();
+        $('#unCrossList').attr('data-section-id', thisSectionId);
+      } else {
+        $('#unCrossList').hide();
+        $('#unCrossListInner').text('This section may NOT be uncrosslisted'); 
+      }
+    })
+    .fail(function(jqXHR) {
+      $('#unCrossListInner').text('There was an error!'  + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
+    });
+  return null;
+});  
+
+$(document).on('click', '#unCrossList', function (e) {
+  e.preventDefault();
+  var thisSectionId = $(this).attr('data-section-id');
+  var thisSectionEl = $('.section[data-sectionid="' + thisSectionId + '"]');
+
+  thisSectionEl.css('border','1px solid #000');
+  $.ajax({
+    type: 'DELETE',
+    url: 'manager/api/v1/sections/' + thisSectionId + '/crosslist'
+    }).done(function( data ) {
+      $('#unCrossList').hide();
+      $('#unCrossListDone').show();
+      $('#unCrossListInner').html('Uncrosslisting of <strong>' + data.name + '</strong> was successful');
+      thisSectionEl.fadeOut('slow');
+    }).fail(function(jqXHR) {
+      $('#unCrossListInner').text('There was an error!'  + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
+    });
+  return null;
+});  
+  
+
 
 $('body').on('keydown','#uniqname', function(event) {
   if (event.keyCode == 13) {
