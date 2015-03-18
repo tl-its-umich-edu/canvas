@@ -10,6 +10,7 @@ set -x
 
 timestamp=$(date +%Y%m%d%H%M%S)
 
+which mvn
 cd sectionsUtilityTool
 mvn clean install
 cd target
