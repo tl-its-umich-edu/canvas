@@ -9,13 +9,9 @@
 set -x
 
 timestamp=$(date +%Y%m%d%H%M%S)
-br=`git branch | grep "*"`
-echo ${br/* /}
-#cd sectionsUtilityTool
+cd sectionsUtilityTool
 cd target
-
 warFilename=$(ls *.war | head -1)
 targetFilename=$(basename ${warFilename} .war)
-
-mv ${targetFilename}.war ${targetFilename}.${timestamp}.war
+mv ${targetFilename}.war ${targetFilename}.${timestamp}.${GIT_BRANCH}war
 
