@@ -11,6 +11,7 @@ $.ajaxSetup({
   cache: false
 });
 
+// generic error report
 var errorDisplay = function (url, status, errorMessage) {
   switch(status) {
     case 403:
@@ -22,6 +23,7 @@ var errorDisplay = function (url, status, errorMessage) {
   }
 };
 
+// calculate the current term based on today, used in the angular gets
 var getCurrentTerm = function(termData) {
   var now = moment();
   var currentTerm = [];
@@ -37,6 +39,7 @@ var getCurrentTerm = function(termData) {
   return currentTerm;  
 };
 
+// parse the courses feed and return a term array of unique items
 var getTermArray = function(coursesData) {
   var termArray = [];
   $.each(coursesData, function() {
@@ -49,6 +52,7 @@ var getTermArray = function(coursesData) {
   return termArray;  
 };
 
+// use moment to craft a user friendly message about last recorded activity
 var calculateLastActivity = function(last_activity_at) {
   if(last_activity_at) {
     return moment(last_activity_at).fromNow();
@@ -58,12 +62,13 @@ var calculateLastActivity = function(last_activity_at) {
   }
 };
 
+// specific success reporting, used in the jQuery requests
 var reportSuccess = function(position, msg){
   $('#successContainer').css('top', position);
   $('#successContainer').find('.msg').html(msg);
   $('#successContainer').fadeIn().delay(3000).fadeOut();
 };
-
+// specific error reporting, used in the jQuery requests
 var reportError = function(position, msg){
   $('#errorContainer').css('top', position);
   $('#errorContainer').find('.msg').html(msg);
@@ -85,8 +90,12 @@ var utilPopWindow = function(url, name){
     return false;
 };
 
+
 var xListPostStatus;
 
+// function used in xlist multiple post - returns a referred that the calling 
+// function can use to determine success/errors - it also adds labels for each
+// case in the modal
 var doXListPosts = function(posts){
   var index, len;
   var xListPosts = [];
@@ -161,7 +170,8 @@ $(document).on('click', '.setSections', function (e) {
   });  
   return null;
 });
-  
+
+// see if there is any activity in the course (used to prevent orphaning a course that is active)  
 $(document).on('click', '.getCourseInfo', function (e) {
   var uniqname = $.trim($('#uniqname').val());
   e.preventDefault();
@@ -190,6 +200,8 @@ $('body').on('keydown','#uniqname', function(event) {
   }
 });
 
+
+// see what the enrollements are in a course (used to prevent orphaning a course that is active)  
 $(document).on('click', '.getEnrollements', function (e) {
   //var uniqname = $.trim($('#uniqname').val());
   e.preventDefault();
@@ -216,7 +228,7 @@ $(document).on('click', '.getEnrollements', function (e) {
   return null;
 });
 
-
+// user clicks to rename a course, UI is modified to provide formish things to do this
 $(document).on('click', '.renameCourse', function (e) {
   $('.courseTitleTextContainer').hide();
   e.preventDefault();
@@ -226,7 +238,8 @@ $(document).on('click', '.renameCourse', function (e) {
   return null;
 });
 
-  
+// user has filled in the formish things above and "submits"  them - creating a POST that does the rename of the course name and 
+// the course code
 $(document).on('click', '.postCourseNameChange', function (e) {
   e.preventDefault();
   var thisCourse = $(this).attr('data-courseid');
@@ -248,17 +261,20 @@ $(document).on('click', '.postCourseNameChange', function (e) {
     });
 });
 
+// cancel course renaming, UI adjusted
 $(document).on('click', '.cancelCourseNameChange', function (e) {
   e.preventDefault();
   $('.courseTitleTextContainer').hide();
 });
 
+// if user hits enter while uniqname field has focus, send a click trigger to the button
 $('body').on('keydown','#uniqname', function(event) {
   if (event.keyCode == 13) {
     $('#uniqnameTrigger').click();
   }
 });
 
+// open a modal where the other instructor's courses are looked up, selected
 $(document).on('click', '#uniqnameOtherTrigger', function (e) {
   e.preventDefault();
   var uniqnameOther = $.trim($('#uniqnameOther').val());
@@ -299,12 +315,16 @@ $(document).on('click', '#uniqnameOtherTrigger', function (e) {
   });
 });
 
+// do some UI things based on the user clicking the "Use these Sections"
+// in the other instructor panel (namely moving the selected sections
+// from the modal to the main list)
 $(document).on('click', '#useOtherSections', function () {
   $('#otherInstructorModal').find('.otherSectionSelection:checked').closest('li').appendTo('.otherSectionsTarget ul.sectionList');
   $('.otherSectionsTarget').find('.setSections').show();
   $('#otherInstructorModal').modal('hide');
 });
 
+// user selects to open modal to pick sections from some other instructor
 $(document).on('click', '.openOtherInstructorModal', function (e) { 
   $('#otherInstructorInnerPayload').empty();
   $('#uniqnameOther').val('');
@@ -317,6 +337,7 @@ $(document).on('click', '.openOtherInstructorModal', function (e) {
     }).modal('toggle', e);
 });
 
+// user has added some sections from the other instructor list but may want to remove them
 $(document).on('click', '.removeSection', function (e) {
   e.preventDefault();
   $(this).closest('li').fadeOut( 'slow', function() {
