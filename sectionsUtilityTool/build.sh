@@ -6,17 +6,11 @@
 #
 
 # Debugging: -x to enable, +x to disable
-set +x
+set -x
 
 timestamp=$(date +%Y%m%d%H%M%S)
 
-# configuration-files.txt contains list of files to archive.
-# Use "-C <dir>" to change to <dir> before processing remaining files.
-#tar --exclude .svn -cf target/configuration-files.${timestamp}.tar \
-# $(cat configuration-files.txt)
-
-
-cd sectionUtilityTool
+cd sectionsUtilityTool
 mvn clean install
 cd target
 
