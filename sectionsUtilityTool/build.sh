@@ -12,6 +12,7 @@ timestamp=$(date +%Y%m%d%H%M%S)
 cd sectionsUtilityTool
 cd target
 warFilename=$(ls *.war | head -1)
+branch="TLUNIZIN-423"
 targetFilename=$(basename ${warFilename} .war)
-mv ${targetFilename}.war ${targetFilename}.${timestamp}.war
+mv ${targetFilename}.war ${targetFilename}.${timestamp}.${branch}.war
 
