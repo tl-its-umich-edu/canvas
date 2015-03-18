@@ -15,6 +15,9 @@ timestamp=$(date +%Y%m%d%H%M%S)
 #tar --exclude .svn -cf target/configuration-files.${timestamp}.tar \
 # $(cat configuration-files.txt)
 
+cd canvas
+cd sectionUtilityTool
+mvn clean install
 cd target
 
 warFilename=$(ls *.war | head -1)
