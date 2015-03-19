@@ -13,7 +13,10 @@ warFilename=$(ls *.war | head -1)
 targetFilename=$(basename ${warFilename} .war)
 #GIT_BRANCH =origin/TLUNIZIN-424 or origin/master jenkins environmental variable to get git branch
 branch=${GIT_BRANCH}
-# substring'ing  ignores string before /
-btemp=${branch:7}
+if [ -n "$branch" ]; then
+btemp=$(basename ${branch} /)
+else
+btemp="local"
+fi
 mv ${targetFilename}.war ${targetFilename}.${btemp}.${timestamp}.war
 
