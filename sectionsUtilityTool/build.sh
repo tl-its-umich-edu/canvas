@@ -4,7 +4,7 @@
 # Intended to be run after the Maven build is successful.
 
 # Debugging: -x to enable, +x to disable
-set +x
+set -x
 
 timestamp=$(date +%Y%m%d%H%M%S)
 cd sectionsUtilityTool
@@ -15,5 +15,5 @@ targetFilename=$(basename ${warFilename} .war)
 branch=${GIT_BRANCH}
 # substring'ing  ignores string before /
 btemp=${branch:7}
-mv ${targetFilename}.war ${targetFilename}.${timestamp}.${btemp}.war
+mv ${targetFilename}.war ${targetFilename}.${btemp}.${timestamp}.war
 
