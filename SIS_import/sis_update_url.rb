@@ -191,17 +191,15 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 		mPathwayTermSet = getMPathwayTerms(esbToken)
 
 		# update URL start time
-    start_string = "update URL start time : " + Time.new.inspect
-		p start_string
+		start_string = "update URL start time : " + Time.new.inspect
 		outputFile.write(start_string)
-		
+
 		#call Canvas API to get course url
 		processTermCourses(mPathwayTermSet, esbToken, outputFile)
 
 		# update URL stop time
-    stop_string = "update URL stop time : " + Time.new.inspect
-    p stop_string
-    outputFile.write(stop_string)
+		stop_string = "update URL stop time : " + Time.new.inspect
+		outputFile.write(stop_string)
 	ensure
 		# close output file
 		outputFile.close unless outputFile == nil
