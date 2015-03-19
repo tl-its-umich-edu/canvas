@@ -79,7 +79,7 @@
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
-                    <li ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
+                    <li data-course-id="{{item.id}}" ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
                         <div class="row">
                             <div class="col-md-8">
                                 <strong><a class="courseLink" href="{{server}}/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span class="courseName" title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
@@ -113,7 +113,10 @@
                                     <span>{{section.name}}</span>
                                 </div>
                                 <div class="col-md-7">
-                                    <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span>                                    
+                                    <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span> 
+                                    <a href="" class="pull-right sectionCheck" data-toggle="modal" data-target="#unCrossListModal">
+                                      <span class="glyphicon glyphicon-resize-full"></span> <span class="sr-only">Uncrosslist {{section.name}}</a>
+                                    </a>
                                 </div>        
                             </li>
                         </ul>
@@ -218,6 +221,34 @@
             </div>
         </div>
 
+      <!-- unCrossList Modal -->
+      <div class="modal fade" id="unCrossListModal" tabindex="-1" role="dialog" aria-labelledby="unCrossListLabel" aria-hidden="true">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal">
+                          <span aria-hidden="true">&times;</span>
+                          <span class="sr-only">Close</span>
+                      </button>
+                      <h3 class="modal-title" id="unCrossListLabel">Uncrosslisting</h3>
+                  </div>
+                  <div class="modal-body" id="unCrossListInner">
+                  </div>
+                  <div class="modal-footer">
+                      <button id="unCrossList" type="button" class="btn btn-primary" data-section-id="">
+                          Uncrosslist
+                      </button>
+                      <button id="unCrossListDone" type="button" class="btn btn-primary"  data-dismiss="modal" style="display:none">
+                          Done
+                      </button>
+
+                      <button type="button" class="btn btn-default" data-dismiss="modal">
+                          Close
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
 
         <!-- otherInstructor Modal -->
         <div class="modal fade" id="otherInstructorModal" tabindex="-1" role="dialog" aria-labelledby="otherInstructorLabel" aria-hidden="true">

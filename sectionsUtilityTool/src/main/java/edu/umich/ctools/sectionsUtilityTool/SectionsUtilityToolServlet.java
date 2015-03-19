@@ -30,6 +30,8 @@ import org.apache.http.message.BasicNameValuePair;
 
 public class SectionsUtilityToolServlet extends HttpServlet {
 
+	private static final String CANVAS_API_GETSECTION_PER_COURSE = "canvas.api.getsection.per.course.regex";
+	private static final String CANVAS_API_GETSECTION_INFO = "canvas.api.getsection.info.regex";
 	private static Log M_log = LogFactory.getLog(SectionsUtilityToolServlet.class);
 	private static final long serialVersionUID = 7284813350014385613L;
 	
@@ -202,6 +204,12 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 				return true;
 			}else if (url.matches(props.getString(CANVAS_API_GETCOURSE_INFO))) {
 				M_log.debug("The canvas api request for getting course info");
+				return true;
+			}else if (url.matches(props.getString(CANVAS_API_GETSECTION_INFO))){
+				M_log.debug("The canvas api request for getting section info");
+				return true;
+			}else if (url.matches(props.getString(CANVAS_API_GETSECTION_PER_COURSE))) {
+				M_log.debug("The canvas api request for getting section info for a given course");
 				return true;
 			}
 		}else {
