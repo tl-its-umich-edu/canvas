@@ -9,15 +9,21 @@ require "rest-client"
 
 ## make Canvas API GET call
 def Canvas_API_GET(url)
-	response = RestClient.get url, {:Authorization => "Bearer #{$token}",
+	begin
+		response = RestClient.get url, {:Authorization => "Bearer #{$token}",
 	                                :accept => "application/json",
 	                                :verify_ssl => true}
-	return JSON.parse(response)
+		return JSON.parse(response)
+	rescue => e
+		p "#{e.response} for #{url}"
+		return JSON.parse(e.response)
+	end
 end
 
 ## make Canvas API POST call
 def Canvas_API_POST(url, fileName)
-	response = RestClient.post url, {:multipart => true,
+	begin
+		response = RestClient.post url, {:multipart => true,
 																	 :attachment => File.new(fileName, 'rb')
 																	},
 																	{:Authorization => "Bearer #{$token}",
@@ -25,7 +31,11 @@ def Canvas_API_POST(url, fileName)
 	                                :import_type => "instructure_csv",
 	                                :content_type => "application/zip",
 	                                :verify_ssl => true}
-	return JSON.parse(response)
+		return JSON.parse(response)
+	rescue => e
+		p "#{e.response} for #{url}"
+		return JSON.parse(e.response)
+	end
 end
 
 def upload_to_canvas(fileName, outputFile, output_file_base_name)
@@ -80,7 +90,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 		#print out the whole json result
 		outputFile.write("#{parsed_result}\n")
 
-	if (parsed_result["errors"])
+		if (parsed_result["errors"])
 			## break and print error
 			if (parsed_result["errors"].is_a? Array and parsed_result["errors"][0]["message"])
 				# example error message
@@ -144,6 +154,11 @@ def prior_upload_error
 		end
 
 		process_result = Canvas_API_GET("#{$server}/api/v1/accounts/1/sis_imports/#{process_id}")
+		if (process_result["errors"] && (process_result["errors"].is_a? Array))
+			p "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
+			# if the prior process lookup result in error, there is no need to block future uploads
+			return false
+		end
 		#parse the status percentage
 		progress_status = process_result["progress"]
 		if (progress_status != 100)
@@ -159,34 +174,12 @@ def prior_upload_error
 	end
 end
 
-def parseJson(data)
-	begin
-		parsedJson = JSON.parse(data)
-	rescue JSON::ParserError => e
-		# sometimes a html document is returned, containing the following secion
-		#<div class="text">
-		#<p>
-		#<img src="https://s3.amazonaws.com/canvas-maintenance/logo.png" /> &nbsp; Instructure Canvas is currently down for maintenance.
-		#	</p>
-		#</div>
-		# try html parser, and print out the error message
-		page = Nokogiri::HTML(data)
-		error_text = page.xpath('//body/div[@class="text"]/p').text
-		error_text = error_text.gsub(/^\s+/,'')
-		error_text = error_text.gsub(/\n/,'')
-		parsedJson={"errors"=>[{"message"=>error_text}]}
-	end
-
-	# return JSON
-	return parsedJson
-end
-
 def verify_checksum(base_file_path)
 	# default value
 	upload_error = false
 
 	# checksum verification
-	checksum_file_names = Dir[base_file_path +"MD5.txt"];
+	checksum_file_names = Dir["#{base_file_path}MD5.txt"];
 	if (checksum_file_names.length == 0)
 		## there is no *MD5.txt file
 		upload_error = "Cannot find checksum file #{base_file_path}MD5.txt."
