@@ -15,7 +15,7 @@ def Canvas_API_GET(url)
 	                                :verify_ssl => true}
 		return JSON.parse(response)
 	rescue => e
-		p "#{e.response} for #{url}"
+		p "#{e} for #{url}"
 		return JSON.parse(e.response)
 	end
 end
@@ -33,7 +33,7 @@ def Canvas_API_POST(url, fileName)
 	                                :verify_ssl => true}
 		return JSON.parse(response)
 	rescue => e
-		p "#{e.response} for #{url}"
+		p "#{e} for #{url}"
 		return JSON.parse(e.response)
 	end
 end
@@ -54,7 +54,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 	outputFile.write("upload start time : " + Time.new.inspect)
 
 	# continue the current upload process
-	parsed = Canvas_API_POST("#{$server}/api/v1/accounts/1/sis_imports.json", fileName)
+	parsed = Canvas_API_POST("#{$server_api_url}accounts/1/sis_imports.json", fileName)
 
 	if (parsed["errors"])
 		## break and print error
@@ -85,7 +85,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 		#sleep every 10 sec, before checking the status again
 		sleep($sleep);
 
-		parsed_result = Canvas_API_GET("#{$server}/api/v1/accounts/1/sis_imports/#{job_id}")
+		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/1/sis_imports/#{job_id}")
 
 		#print out the whole json result
 		outputFile.write("#{parsed_result}\n")
@@ -153,7 +153,7 @@ def prior_upload_error
 			end
 		end
 
-		process_result = Canvas_API_GET("#{$server}/api/v1/accounts/1/sis_imports/#{process_id}")
+		process_result = Canvas_API_GET("#{$server_api_url}accounts/1/sis_imports/#{process_id}")
 		if (process_result["errors"] && (process_result["errors"].is_a? Array))
 			p "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
 			# if the prior process lookup result in error, there is no need to block future uploads
@@ -229,6 +229,7 @@ def get_settings(securityFile, propertiesFile)
 				$token=token_array[1]
 				server_array=env_array[1].split('=')
 				$server=server_array[1]
+				$server_api_url= "#{$server}/api/v1/"
 				break
 			end
 		end
@@ -297,6 +298,8 @@ propertiesFile = ""
 $token = ""
 # the Canvas server name
 $server = ""
+# the Canvas server api url
+$server_api_url = ""
 # the current working directory, archive directory and output directory
 $currentDirectory=""
 $archiveDirectory=""

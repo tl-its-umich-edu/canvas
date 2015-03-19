@@ -10,7 +10,6 @@ require "net/http"
 require "rest-client"
 require "uri"
 require "time"
-require "rubygems" ## needed for ruby 1.8.7
 require "cgi"
 
 ## refresh token for ESB API call
@@ -26,9 +25,9 @@ def refreshESBToken()
 end
 
 ## make Canvas API call
-def Canvas_APICall(url, authorization_string, content_type, request_type, param_hash)
+def Canvas_API_call(url, authorization_string)
 	response = RestClient.get url, {:Authorization => "Bearer #{authorization_string}",
-	                                :accept => content_type,
+	                                :accept => "application/json",
 	                                :verify_ssl => true}
 return JSON.parse(response)
 end
@@ -119,11 +118,8 @@ end
 ## 4. if the course is open/available, find sections/classes in each course, set the class url in MPathway
 def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 
-	term_data = Canvas_APICall("#{$canvasUrl}/api/v1/accounts/1/terms",
-	                           $canvasToken,
-	                           "application/json",
-	                           "GET",
-	                           nil)
+	term_data = Canvas_API_call("#{$canvasUrl}/api/v1/accounts/1/terms",
+	                           $canvasToken)
 	term_data["enrollment_terms"].each {|term|
 		if(mPathwayTermSet.include?(term["sis_term_id"]))
 			#SIS term ID
@@ -135,11 +131,8 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 			outputFile.write("for term SIS_ID=#{term["sis_term_id"]} and Canvas term id=#{termId}\n")
 
 			# Web Service call
-			json_data = Canvas_APICall("#{$canvasUrl}/api/v1/accounts/1/courses?per_page=#{$page_size}&enrollment_term_id=#{termId}&published=true&with_enrollments=true",
-			                  $canvasToken,
-			                  "application/json",
-			                  "GET",
-			                  nil)
+			json_data = Canvas_API_call("#{$canvasUrl}/api/v1/accounts/1/courses?per_page=#{$page_size}&enrollment_term_id=#{termId}&published=true&with_enrollments=true",
+			                  $canvasToken)
 			#outputFile.write("#{json_data}\n")
 			json_data.each { |course|
 				if (course.has_key?("workflow_state") && course["workflow_state"] == "available" )
@@ -148,21 +141,15 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 					course.each do |key, value|
 						if (key=="id")
 							courseId = value
-							sections_data = Canvas_APICall("#{$canvasUrl}/api/v1/courses/#{courseId}/sections",
-							                           $canvasToken,
-							                           "application/json",
-							                           "GET",
-							                           nil)
+							sections_data = Canvas_API_call("#{$canvasUrl}/api/v1/courses/#{courseId}/sections",
+							                           $canvasToken)
 							#outputFile.write("#{sections_data}\n")
 							sections_data.each { |section|
 								# section is a hash
 								section.each do |sectionKey, sectionValue|
 									if (sectionKey=="id")
-										section_data = Canvas_APICall("#{$canvasUrl}/api/v1/sections/#{sectionValue}",
-										                               $canvasToken,
-										                               "application/json",
-										                               "GET",
-										                               nil)
+										section_data = Canvas_API_call("#{$canvasUrl}/api/v1/sections/#{sectionValue}",
+										                               $canvasToken)
 										if (section_data.has_key?("sis_section_id"))
 											sectionParsedSISID=section_data["sis_section_id"]
 											if (sectionParsedSISID != nil)
@@ -278,7 +265,6 @@ ARGV.each do|arg|
 				$esbTokenUrl=token_url_array[1]
 				caRootFilePath_array=env_array[6].split('=')
 				$caRootFilePath=caRootFilePath_array[1]
-				p env_array[7]
 				inCommonFilePath_array=env_array[7].split('=')
 				$inCommonFilePath=inCommonFilePath_array[1]
 				break
