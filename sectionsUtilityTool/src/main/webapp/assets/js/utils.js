@@ -365,8 +365,9 @@ $(document).on('click', '.openOtherInstructorModal', function (e) {
   $('#otherInstructorInnerPayload').empty();
   $('#uniqnameOther').val('');
   $('#uniqnameOtherTrigger').text('Look up courses');
+  $('li.course').removeClass('otherSectionsTarget');
+  $(this).closest('li').addClass('otherSectionsTarget');
   $('#otherInstructorModal').on('shown.bs.modal', function (event) {
-      $('li.course').removeClass('otherSectionsTarget');
       $(event.relatedTarget.originalEvent.explicitOriginalTarget).closest('li').addClass('otherSectionsTarget');
     }).on('hidden.bs.modal', function () {
         $('li.course').removeClass('otherSectionsTarget');
