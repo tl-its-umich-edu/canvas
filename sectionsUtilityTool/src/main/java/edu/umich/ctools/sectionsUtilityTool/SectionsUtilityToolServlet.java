@@ -53,6 +53,16 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private String canvasToken;
 	private String canvasURL;
 	ResourceBundle props = ResourceBundle.getBundle("sectiontool");
+	/*
+	 * When needed to add another api call add to "apiListRegex" list. Make sure to add a log message with a particular api to the  "apiListDebugMsg" list also and in the same order. 
+	 * Here we are taking the advantage of an ArrayList being ordered list.  
+	 */
+	private static final ArrayList<String> apiListRegex = new ArrayList<String>(Arrays.asList(CANVAS_API_TERMS, CANVAS_API_CROSSLIST,CANVAS_API_RENAME_COURSE, CANVAS_API_GETCOURSE_BY_UNIQNAME,CANVAS_API_GETCOURSE_BY_UNIQNAME_NO_SECTIONS,
+			CANVAS_API_ENROLLMENT, CANVAS_API_GETCOURSE_INFO,CANVAS_API_DECROSSLIST, CANVAS_API_GETSECTION_INFO,CANVAS_API_GETSECTION_PER_COURSE,CANVAS_API_GETALLSECTIONS_PER_COURSE));
+	
+	private static final ArrayList<String> apiListDebugMsg = new ArrayList<String>(Arrays.asList("The canvas api request for terms","The canvas api request for crosslist","The canvas api request for rename a course","The canvas api request for getting courses by uniqname",
+			"The canvas api request for getting courses by uniqname not including sections","The canvas api request for enrollment","The canvas api request for getting course info","The canvas api request for decrosslist",
+			"The canvas api request for getting section info","The canvas api request for getting section info for a given course","The canvas api request for getting all section info for a given course"));
 
 	
 	
@@ -193,50 +203,32 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		String queryString = request.getQueryString();
 		String pathInfo = request.getPathInfo();
 		boolean isAllowedRequest=false;
-		ArrayList<String> apiList = new ArrayList<String>(Arrays.asList(
-				CANVAS_API_TERMS, CANVAS_API_CROSSLIST,
-				CANVAS_API_RENAME_COURSE, CANVAS_API_GETCOURSE_BY_UNIQNAME,
-				CANVAS_API_GETCOURSE_BY_UNIQNAME_NO_SECTIONS,
-				CANVAS_API_ENROLLMENT, CANVAS_API_GETCOURSE_INFO,
-				CANVAS_API_DECROSSLIST, CANVAS_API_GETSECTION_INFO,
-				CANVAS_API_GETSECTION_PER_COURSE,
-				CANVAS_API_GETALLSECTIONS_PER_COURSE));
-		ArrayList<String> apiListDebugMsg = new ArrayList<String>(Arrays.asList(
-						"The canvas api request for terms",
-						"The canvas api request for crosslist",
-						"The canvas api request for rename a course",
-						"The canvas api request for getting courses by uniqname",
-						"The canvas api request for getting courses by uniqname not including sections",
-						"The canvas api request for enrollment",
-						"The canvas api request for getting course info",
-						"The canvas api request for decrosslist",
-						"The canvas api request for getting section info",
-						"The canvas api request for getting section info for a given course",
-						"The canvas api request for getting all section info for a given course"));
 		if(queryString!=null) {
 			url=pathInfo+"?"+queryString;
-			isAllowedRequest=isApiFoundIntheList(url, apiList, apiListDebugMsg);
+			isAllowedRequest=isApiFoundIntheList(url);
 		}else {
 			url=pathInfo;
-			isAllowedRequest=isApiFoundIntheList(url, apiList, apiListDebugMsg);
+			isAllowedRequest=isApiFoundIntheList(url);
 			
 		}
 		return isAllowedRequest;
 	}
-
-	private boolean isApiFoundIntheList(String url, ArrayList<String> apiList,
-			ArrayList<String> apiListDebugMsg) {
+    /*
+     * This helper method iterate through the list of api's that sections tool have and if a match is found then logs associated debug message.
+     * For eg, for terms api it will log terms debug message.  So the order in which you place the api's/log messages is important!!!  
+     */
+	private boolean isApiFoundIntheList(String url) {
 		boolean isMatch=false;
-		for (String api : apiList) {
+		for (String api : apiListRegex) {
 			if(url.matches(props.getString(api))) {
-				apiList.indexOf(api);
-				M_log.debug(apiListDebugMsg.get(apiList.indexOf(api)));
+				apiListRegex.indexOf(api);
+				M_log.debug(apiListDebugMsg.get(apiListRegex.indexOf(api)));
 				isMatch= true;
-				
+				break;
 			}
 			
 		}
-		return isMatch ;
+		return isMatch;
 	}
 
 	
