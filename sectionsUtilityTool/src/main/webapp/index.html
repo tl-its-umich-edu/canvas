@@ -261,7 +261,7 @@
                         </button>
                         <h3 class="modal-title" id="otherInstructorLabel">Select sections from other instructors ({{currentTerm.currentTermName}})<span id="canvasTermId" style="display:none">{{currentTerm.currentTermCanvasId}}</span></h3>
                     </div>
-                    <div class="modal-body" id="otherInstructorInner">
+                    <div class="modal-body otherInstructorInner" id="otherInstructorInner">
                         <div class="form-inline">
                             <div class="form-group">
                                 <label for="uniqnameOther" class="sr-only">Enter uniqname</label>
@@ -270,8 +270,8 @@
                             <button id="uniqnameOtherTrigger" type="button" class="btn btn-primary">Look up courses <span ng-show="uniqnameOther">for</span> {{uniqnameOther}}</button>
                             <div class="otherSpinner" ng-show="loading">&nbsp;&nbsp;&nbsp;&nbsp;</div>
                         </div>
+                        <div id="otherInstructorInnerPayload"></div>
                     </div>
-                    <div id="otherInstructorInnerPayload"></div>
                     <div class="modal-footer">
                         <button id="useOtherSections" type="button" class="btn btn-primary">
                             Use selected
