@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -53,18 +53,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private String canvasToken;
 	private String canvasURL;
 	ResourceBundle props = ResourceBundle.getBundle("sectiontool");
-	/*
-	 * When needed to add another api call add to "apiListRegex" list. Make sure to add a log message with a particular api to the  "apiListDebugMsg" list also and in the same order. 
-	 * Here we are taking the advantage of an ArrayList being ordered list.  
-	 */
-	private static final ArrayList<String> apiListRegex = new ArrayList<String>(Arrays.asList(CANVAS_API_TERMS, CANVAS_API_CROSSLIST,CANVAS_API_RENAME_COURSE, CANVAS_API_GETCOURSE_BY_UNIQNAME,CANVAS_API_GETCOURSE_BY_UNIQNAME_NO_SECTIONS,
-			CANVAS_API_ENROLLMENT, CANVAS_API_GETCOURSE_INFO,CANVAS_API_DECROSSLIST, CANVAS_API_GETSECTION_INFO,CANVAS_API_GETSECTION_PER_COURSE,CANVAS_API_GETALLSECTIONS_PER_COURSE));
-	
-	private static final ArrayList<String> apiListDebugMsg = new ArrayList<String>(Arrays.asList("The canvas api request for terms","The canvas api request for crosslist","The canvas api request for rename a course","The canvas api request for getting courses by uniqname",
-			"The canvas api request for getting courses by uniqname not including sections","The canvas api request for enrollment","The canvas api request for getting course info","The canvas api request for decrosslist",
-			"The canvas api request for getting section info","The canvas api request for getting section info for a given course","The canvas api request for getting all section info for a given course"));
 
-	
 	
 	public void init() throws ServletException {
 		M_log.debug(" Servlet init(): Called");
@@ -215,14 +204,20 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	}
     /*
      * This helper method iterate through the list of api's that sections tool have and if a match is found then logs associated debug message.
-     * For eg, for terms api it will log terms debug message.  So the order in which you place the api's/log messages is important!!!  
      */
 	private boolean isApiFoundIntheList(String url) {
+		M_log.debug("isApiFoundIntheList(): called");
+		String prefixDebugMsg="The canvas api request ";
+		HashMap<String,String> apiListRegexWithDebugMsg= new HashMap<String,String>(){{
+			put(CANVAS_API_TERMS, "for terms");put(CANVAS_API_CROSSLIST, "for crosslist");put(CANVAS_API_RENAME_COURSE, "for rename a course");put(CANVAS_API_GETCOURSE_BY_UNIQNAME, "for getting courses by uniqname");
+			put(CANVAS_API_GETCOURSE_BY_UNIQNAME_NO_SECTIONS, "for getting courses by uniqname not including sections");put(CANVAS_API_ENROLLMENT, "for enrollment");put(CANVAS_API_GETCOURSE_INFO, "for getting course info");put(CANVAS_API_DECROSSLIST,"for decrosslist");
+			put(CANVAS_API_GETSECTION_INFO, "for getting section info");put(CANVAS_API_GETSECTION_PER_COURSE, "for getting section info for a given course");put(CANVAS_API_GETALLSECTIONS_PER_COURSE, "for getting all sections info for a given course");
+		}};
 		boolean isMatch=false;
+		Set<String> apiListRegex = apiListRegexWithDebugMsg.keySet();
 		for (String api : apiListRegex) {
 			if(url.matches(props.getString(api))) {
-				apiListRegex.indexOf(api);
-				M_log.debug(apiListDebugMsg.get(apiListRegex.indexOf(api)));
+				M_log.debug(prefixDebugMsg+apiListRegexWithDebugMsg.get(api));
 				isMatch= true;
 				break;
 			}
