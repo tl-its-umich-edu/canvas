@@ -168,17 +168,16 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		try {
 			rd = new BufferedReader(new InputStreamReader(client.execute(clientRequest).getEntity().getContent()));
 		} catch (IOException e) {
-			M_log.error("Canvas API call did not happen",e);
+			M_log.error("Canvas API call did not complete successfully", e);
 		}
 		long stopTime = System.currentTimeMillis();
-	    long elapsedTime = stopTime - startTime;
-	    M_log.info(String.format("CANVAS Api response took %sms",elapsedTime));
+		long elapsedTime = stopTime - startTime;
+		M_log.info(String.format("CANVAS Api response took %sms",elapsedTime));
 		String line = "";
 		StringBuilder sb = new StringBuilder();
 		while ((line = rd.readLine()) != null) {
 			sb.append(line);
 		}
-		
 		out.print(sb.toString());
 		out.flush();
 	}
