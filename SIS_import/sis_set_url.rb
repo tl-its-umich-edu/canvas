@@ -217,7 +217,6 @@ $canvasUrl = ""
 $canvasToken=""
 
 # ESB parameters
-esbTokenFile=""
 $esbKey=""
 $esbSecret=""
 $esbUrl=""
