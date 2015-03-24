@@ -157,7 +157,7 @@ def processTermCourses(mPathwayTermSet,esbToken, outputFile)
 												sectionParsedSISID = sectionParsedSISID[4,8]
 
 												result_json = setMPathwayUrl($canvasUrl, $esbUrl, esbToken, sisTermId, sectionParsedSISID, courseId)
-												message = "set url result for course id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}\n\n"
+												message = "set url result for course id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
 												p message
 												# write into output file
 												outputFile.write(message)
@@ -178,27 +178,24 @@ end
 
 ## the main function
 def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
-
 	upload_error = false
 
 	#open the output file
 	begin
-		time = Time.now
-		time_formatted = time.strftime("%Y_%m_%d_%H%M%S")
-		outputFile = File.open(outputDirectory + "Canvas_url_update_#{time_formatted}.txt", "w")
+		outputFile = File.open(outputDirectory + "Canvas_set_url_#{Time.new.strftime("%Y%m%d%H%M%S")}.txt", "w")
 
 		# get the MPathway term set
 		mPathwayTermSet = getMPathwayTerms(esbToken)
 
-		# update URL start time
-		start_string = "update URL start time : " + Time.new.inspect
+		# set URL start time
+		start_string = "set URL start time : " + Time.new.inspect
 		outputFile.write(start_string)
 
 		#call Canvas API to get course url
 		processTermCourses(mPathwayTermSet, esbToken, outputFile)
 
-		# update URL stop time
-		stop_string = "update URL stop time : " + Time.new.inspect
+		# set URL stop time
+		stop_string = "set URL stop time : " + Time.new.inspect
 		outputFile.write(stop_string)
 	ensure
 		# close output file
@@ -317,7 +314,7 @@ else
 
 	if (!updateError)
 		## if there is no upload error
-		p "Sites update URLs finished"
+		p "Sites set URLs finished"
 		exit
 	else
 		abort(updateError)
