@@ -79,7 +79,7 @@
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
                 <ul class="container-fluid courseList">
-                    <li data-course-id="{{item.id}}" ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId})" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
+                    <li data-course-id="{{item.id}}" ng-repeat="item in filtered = (courses  | filter:{enrollment_term_id:currentTerm.currentTermCanvasId}) | orderBy:'name'" class="course" ng-class="item.sections.length === 1 ? 'course onlyOneSection' :'course'">
                         <div class="row">
                             <div class="col-md-8">
                                 <strong><a class="courseLink" href="{{server}}/courses/{{item.id}}" target="_blank">{{item.course_code}}</a></strong> <span class="courseName" title="CV-TERM-ID: {{item.enrollment_term_id}}" ng-show="item.name">{{item.name}}</span>
@@ -98,6 +98,7 @@
                             <div class="col-md-4">
                                 <span class="orphanMessage">Orphan candidate!</span>
                                 <div class="btn-group pull-right">
+                                    <a href="" class="btn btn-default btn-xs" ng-hide="item.sectionsShown" href="#" ng-click="getSections(item.id)">Get all sections <span class="sr-only"> for {{item.name}}</a> 
                                     <button class="btn btn-default btn-xs getEnrollements" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseGetEnrollmentsModal" title="Get Enrollments"><span class="sr-only">Get Enrollments</span><i class="glyphicon glyphicon-user"></i></button>
                                     <button class="btn btn-default btn-xs getCourseInfo" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseInfoModal" title="Get Course Info"><span class="sr-only">Get Course Info</span><i class="glyphicon glyphicon-info-sign"></i></button>
                                     <button ng-show="item.sections.length" class="btn btn-warning btn-xs setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
@@ -108,13 +109,13 @@
                         </div>
                         <!--//removed  ng-model="item.sections" below //-->
                         <ul ui-sortable="sortableOptions" class="sectionList" id="course{{item.id}}" ng-show="item.sections.length">
-                            <li ng-repeat="section in item.sections" class="row section" data-sectionid="{{section.id}}">
+                            <li ng-repeat="section in item.sections | orderBy:'name'" class="row section" data-sectionid="{{section.id}}">
                                 <div class="col-md-5 sectionName">
                                     <span>{{section.name}}</span>
                                 </div>
                                 <div class="col-md-7">
                                     <span class="status"></span> <span class="orig" style="display:none"> - Originally from: {{item.course_code}}</span> 
-                                    <a href="" class="pull-right sectionCheck" data-toggle="modal" data-target="#unCrossListModal">
+                                    <a href="" ng-show="section.nonxlist_course_id" title="Uncrosslist {{section.name}}"class="pull-right sectionCheck" data-toggle="modal" data-target="#unCrossListModal">
                                       <span class="glyphicon glyphicon-resize-full"></span> <span class="sr-only">Uncrosslist {{section.name}}</a>
                                     </a>
                                 </div>        

@@ -1,5 +1,5 @@
 'use strict';
-/* global  sectionsApp, errorDisplay  */
+/* global  sectionsApp, errorDisplay, generateCurrentTimestamp  */
 
 //COURSES FACTORY - does the request for the courses controller
 sectionsApp.factory('Courses', function ($http) {
@@ -24,12 +24,13 @@ sectionsApp.factory('Courses', function ($http) {
 sectionsApp.factory('Sections', function ($http) {
   return {
     getSectionsForCourseId: function (courseId) {
-      var url = '/sectionsUtilityTool/manager/api/v1/courses/' + courseId + '/sections?per_page=100';
+      var url = '/sectionsUtilityTool/manager/api/v1/courses/' + courseId + '/sections?per_page=100&_='+ generateCurrentTimestamp();
       return $http.get(url, {cache: false}).then(
         function success(result) {
           return result;
         },
-        function error() {
+        function error(result) {
+          errorDisplay(url, result.status, 'Unable to get sections');
         }
       );
     }

@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -30,11 +32,13 @@ import org.apache.http.message.BasicNameValuePair;
 
 public class SectionsUtilityToolServlet extends HttpServlet {
 
-	private static final String CANVAS_API_GETSECTION_PER_COURSE = "canvas.api.getsection.per.course.regex";
-	private static final String CANVAS_API_GETSECTION_INFO = "canvas.api.getsection.info.regex";
 	private static Log M_log = LogFactory.getLog(SectionsUtilityToolServlet.class);
 	private static final long serialVersionUID = 7284813350014385613L;
 	
+	private static final String CANVAS_API_GETCOURSE_BY_UNIQNAME_NO_SECTIONS = "canvas.api.getcourse.by.uniqname.no.sections.regex";
+	private static final String CANVAS_API_GETALLSECTIONS_PER_COURSE = "canvas.api.getallsections.per.course.regex";
+	private static final String CANVAS_API_GETSECTION_PER_COURSE = "canvas.api.getsection.per.course.regex";
+	private static final String CANVAS_API_GETSECTION_INFO = "canvas.api.getsection.info.regex";
 	private static final String CANVAS_API_DECROSSLIST = "canvas.api.decrosslist.regex";
 	private static final String CANVAS_API_CROSSLIST = "canvas.api.crosslist.regex";
 	private static final String CANVAS_API_GETCOURSE_INFO = "canvas.api.getcourse.info.regex";
@@ -50,7 +54,6 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private String canvasURL;
 	ResourceBundle props = ResourceBundle.getBundle("sectiontool");
 
-	
 	
 	public void init() throws ServletException {
 		M_log.debug(" Servlet init(): Called");
@@ -185,6 +188,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
      * This method control canvas api request allowed. If a particular request from UI is not in the allowed list then it will not process the request 
      * and sends an error to the UI. Using regex to match the incoming request
      */
+	
 	private boolean isAllowedApiRequest(HttpServletRequest request) {
 		M_log.debug("isAllowedApiRequest(): called");
 		String url;
@@ -193,39 +197,36 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		boolean isAllowedRequest=false;
 		if(queryString!=null) {
 			url=pathInfo+"?"+queryString;
-			if(url.matches(props.getString(CANVAS_API_TERMS))) {
-				M_log.debug("The canvas api request for terms");
-				return true;
-			}else if (url.matches(props.getString(CANVAS_API_ENROLLMENT))) {
-				M_log.debug("The canvas api request for enrollment");
-				return true;
-			}else if (url.matches(props.getString(CANVAS_API_GETCOURSE_BY_UNIQNAME))) {
-				M_log.debug("The canvas api request for getting courses by uniqname");
-				return true;
-			}else if (url.matches(props.getString(CANVAS_API_RENAME_COURSE))) {
-				M_log.debug("The canvas api request for rename a course");
-				return true;
-			}else if (url.matches(props.getString(CANVAS_API_GETCOURSE_INFO))) {
-				M_log.debug("The canvas api request for getting course info");
-				return true;
-			}else if (url.matches(props.getString(CANVAS_API_GETSECTION_INFO))){
-				M_log.debug("The canvas api request for getting section info");
-				return true;
-			}else if (url.matches(props.getString(CANVAS_API_GETSECTION_PER_COURSE))) {
-				M_log.debug("The canvas api request for getting section info for a given course");
-				return true;
-			}
+			isAllowedRequest=isApiFoundIntheList(url);
 		}else {
 			url=pathInfo;
-			if(url.matches(props.getString(CANVAS_API_CROSSLIST))) {
-				M_log.debug("The canvas api request for crosslist");
-				return true;
-			}else if(url.matches(props.getString(CANVAS_API_DECROSSLIST))) {
-				M_log.debug("The canvas api request for decrosslist");
-				return true;
-			}
+			isAllowedRequest=isApiFoundIntheList(url);
+			
 		}
 		return isAllowedRequest;
+	}
+    /*
+     * This helper method iterate through the list of api's that sections tool have and if a match is found then logs associated debug message.
+     */
+	private boolean isApiFoundIntheList(String url) {
+		M_log.debug("isApiFoundIntheList(): called");
+		String prefixDebugMsg="The canvas api request ";
+		HashMap<String,String> apiListRegexWithDebugMsg= new HashMap<String,String>(){{
+			put(CANVAS_API_TERMS, "for terms");put(CANVAS_API_CROSSLIST, "for crosslist");put(CANVAS_API_RENAME_COURSE, "for rename a course");put(CANVAS_API_GETCOURSE_BY_UNIQNAME, "for getting courses by uniqname");
+			put(CANVAS_API_GETCOURSE_BY_UNIQNAME_NO_SECTIONS, "for getting courses by uniqname not including sections");put(CANVAS_API_ENROLLMENT, "for enrollment");put(CANVAS_API_GETCOURSE_INFO, "for getting course info");put(CANVAS_API_DECROSSLIST,"for decrosslist");
+			put(CANVAS_API_GETSECTION_INFO, "for getting section info");put(CANVAS_API_GETSECTION_PER_COURSE, "for getting section info for a given course");put(CANVAS_API_GETALLSECTIONS_PER_COURSE, "for getting all sections info for a given course");
+		}};
+		boolean isMatch=false;
+		Set<String> apiListRegex = apiListRegexWithDebugMsg.keySet();
+		for (String api : apiListRegex) {
+			if(url.matches(props.getString(api))) {
+				M_log.debug(prefixDebugMsg+apiListRegexWithDebugMsg.get(api));
+				isMatch= true;
+				break;
+			}
+			
+		}
+		return isMatch;
 	}
 
 	
