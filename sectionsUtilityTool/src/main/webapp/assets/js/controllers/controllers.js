@@ -1,5 +1,5 @@
 'use strict';
-/* global $,  angular, getTermArray, getCurrentTerm, errorDisplay */
+/* global $,  angular, getTermArray, _, getCurrentTerm, errorDisplay */
 
 var sectionsApp = angular.module('sectionsApp', ['sectionsFilters','ui.sortable']);
 
@@ -47,7 +47,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
  $scope.getCoursesForUniqname = function () {
     var uniqname = $.trim($('#uniqname').val());
     $scope.uniqname = uniqname;
-    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&include=sections&per_page=200&published=true&with_enrollments=true&enrollment_type=teacher&_='+ generateCurrentTimestamp();
+    var mini='/manager/api/v1/courses?as_user_id=sis_login_id:' +uniqname+ '&per_page=200&published=true&with_enrollments=true&enrollment_type=teacher&_='+ generateCurrentTimestamp();
     var url = '/sectionsUtilityTool'+mini;
     $scope.loading = true;
     Courses.getCourses(url).then(function (result) {
@@ -123,6 +123,27 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         ui.item.removeClass('grabbing');
       }
   };
+
+
+ /*User clicks on Get Sections and the sections for that course
+  gets added to the course scope*/
+  $scope.getSections = function (courseId) {
+    Sections.getSectionsForCourseId(courseId).then(function (data) {
+      if (data) {
+        //find the course object
+        var coursePos = $scope.courses.indexOf(_.findWhere($scope.courses, {id: courseId}));
+        //append a section object to the course scope
+        $scope.courses[coursePos].sections = data.data;
+        //sectionsShown = true hides the Get Sections link
+        $scope.courses[coursePos].sectionsShown = true;
+      } else {
+        //deal with this
+      }
+    });
+};
+
+
+
 }]);
 
 

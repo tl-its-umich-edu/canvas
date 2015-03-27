@@ -197,24 +197,13 @@ $(document).on('click', '.getCourseInfo', function (e) {
 
 
 $(document).on('click', '.sectionCheck', function (e) {
-    e.preventDefault();
-    var thisSection = $(this).closest('li.section');
-    var thisSectionId = thisSection.attr('data-sectionid');
-
-    $('#unCrossListInner').empty();
-    $.get('manager/api/v1/sections/' + thisSectionId, function(data) {
-      if(data.nonxlist_course_id){
-        $('#unCrossListInner').text('This section may be uncrosslisted'); 
-        $('#unCrossList').show();
-        $('#unCrossList').attr('data-section-id', thisSectionId);
-      } else {
-        $('#unCrossList').hide();
-        $('#unCrossListInner').text('This section may NOT be uncrosslisted'); 
-      }
-    })
-    .fail(function(jqXHR) {
-      $('#unCrossListInner').text('There was an error!'  + ' (' + jqXHR.status + ' ' + jqXHR.statusText + ')'); 
-    });
+  e.preventDefault();
+  var thisSection = $(this).closest('li.section');
+  var thisSectionId = thisSection.attr('data-sectionid');
+  $('#unCrossListInner').empty();
+  $('#unCrossListInner').text('Uncrosslisting will re-associate this section with the previous course.'); 
+  $('#unCrossList').show();
+  $('#unCrossList').attr('data-section-id', thisSectionId);
   return null;
 });  
 
@@ -224,6 +213,7 @@ $(document).on('click', '#unCrossList', function (e) {
   var thisSectionEl = $('.section[data-sectionid="' + thisSectionId + '"]');
 
   thisSectionEl.css('border','1px solid #000');
+  
   $.ajax({
     type: 'DELETE',
     url: 'manager/api/v1/sections/' + thisSectionId + '/crosslist'
@@ -375,8 +365,9 @@ $(document).on('click', '.openOtherInstructorModal', function (e) {
   $('#otherInstructorInnerPayload').empty();
   $('#uniqnameOther').val('');
   $('#uniqnameOtherTrigger').text('Look up courses');
+  $('li.course').removeClass('otherSectionsTarget');
+  $(this).closest('li').addClass('otherSectionsTarget');
   $('#otherInstructorModal').on('shown.bs.modal', function (event) {
-      $('li.course').removeClass('otherSectionsTarget');
       $(event.relatedTarget.originalEvent.explicitOriginalTarget).closest('li').addClass('otherSectionsTarget');
     }).on('hidden.bs.modal', function () {
         $('li.course').removeClass('otherSectionsTarget');
