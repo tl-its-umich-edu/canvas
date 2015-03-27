@@ -19,8 +19,7 @@ sectionsApp.factory('Courses', function ($http) {
     }
   };
 });
-//SECTIONS FACTORY - does the request for the sections controller - leave here as we are 
-// going to end up needing it
+//SECTIONS FACTORY - does the request for the sections controller
 sectionsApp.factory('Sections', function ($http) {
   return {
     getSectionsForCourseId: function (courseId) {

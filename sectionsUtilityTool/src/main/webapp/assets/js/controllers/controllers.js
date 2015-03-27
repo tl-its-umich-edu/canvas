@@ -7,9 +7,6 @@ sectionsApp.run(function ($rootScope) {
   $rootScope.user = $.trim($('#uniqname').val());
 });
 
-function generateCurrentTimestamp(){
-	return new Date().getTime();
-}
 
 /* TERMS CONTROLLER */
 sectionsApp.controller('termsController', ['Courses', '$rootScope', '$scope', '$http', function (Courses, $rootScope, $scope, $http) {
@@ -55,7 +52,7 @@ sectionsApp.controller('coursesController', ['Courses', 'Sections', '$rootScope'
         // the call to CAPI has returned a json with an error node
         if(uniqname) {
           // if the uniqname field had a value, report the problem (bad uniqname)
-          $scope.errorMessage = result.data.errors + uniqname;
+          $scope.errorMessage = result.data.errors + ' ' + uniqname;
           $scope.errorLookup = true;
         }
         else {

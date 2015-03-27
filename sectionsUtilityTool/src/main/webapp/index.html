@@ -66,15 +66,12 @@
 
 
               
-              <span ng-show="error" class="alert" role="alert">{{errorMessage}} </span>
-              <span ng-show="errorLookup"> Lookup in the 
-              <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</span>
-              <span ng-show="success" class="alert" role="alert">Found {{filtered.length}} courses for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a> for this term.</span><small ng-show="instructions">Drag and drop sections, then click on <strong>Update Course</strong></small>
+              <span class="alert alert-danger" ng-show="error" role="alert">{{errorMessage}}</span>
+              <small ng-show="errorLookup"> Lookup in the 
+              <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> directory</a>?</small>
+              <small ng-show="success" class="alert" role="alert">Found {{filtered.length}} courses for <a target="_blank" href="https://mcommunity.umich.edu/#search:{{uniqname}}"> {{uniqname}}</a> for this term.</small><small class="hidden-xs hidden-sm hidden-md" ng-show="instructions">Get all sections, then drag and drop & click on <strong>Update Course</strong>. See <strong>Help</strong> link above for more.</small>
             </div>
             <h4 title="SIS-ID: {{currentTerm.currentTermId}} CV-ID: {{currentTerm.currentTermCanvasId}}"> {{currentTerm.currentTermName}}
-                <!--
-                <small class="pull-right"><input type="checkbox" ng-model="filterMedSchool" id="includeMedSchool"/> <label style="font-weight:normal" for="includeMedSchool">Include Med School Terms</label></small>
-                -->
             </h4>
             <div class="alert alert-info" ng-show="courses.errors">{{courses.errors}}</div>
             <div class="coursePanel well" ng-show="success && !courses.errors">
@@ -102,7 +99,7 @@
                                     <button class="btn btn-default btn-xs getEnrollements" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseGetEnrollmentsModal" title="Get Enrollments"><span class="sr-only">Get Enrollments</span><i class="glyphicon glyphicon-user"></i></button>
                                     <button class="btn btn-default btn-xs getCourseInfo" data-courseid="{{item.id}}" data-toggle="modal" data-target="#courseInfoModal" title="Get Course Info"><span class="sr-only">Get Course Info</span><i class="glyphicon glyphicon-info-sign"></i></button>
                                     <button ng-show="item.sections.length" class="btn btn-warning btn-xs setSections" data-courseid="{{item.id}}" data-toggle="modal" data-target="#xListModal">Update Course</button>
-                                    <button class="btn btn-primary btn-xs openOtherInstructorModal" id="openOtherInstructorModal{{item.id}}" data-courseid="{{item.id}}"  data-target="#otherInstructorModal" title="Add other sections"><span class="sr-only">Add other sections</span><i class="glyphicon glyphicon-share-alt"></i></button>
+                                    <button ng-show="item.sectionsShown" class="btn btn-primary btn-xs openOtherInstructorModal" id="openOtherInstructorModal{{item.id}}" data-courseid="{{item.id}}"  data-target="#otherInstructorModal" title="Add other sections"><span class="sr-only">Add other sections</span><i class="glyphicon glyphicon-share-alt"></i></button>
 
                                 </div>
                             </div>

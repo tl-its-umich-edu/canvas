@@ -52,6 +52,14 @@ var getTermArray = function(coursesData) {
   return termArray;  
 };
 
+// provide a timestamp to add to angular GETs to invalidate cache
+// Matches jQuery parameter when cache: false - makes regexp whitelist
+// easier to manage
+var generateCurrentTimestamp = function(){
+  return new Date().getTime();
+}
+
+
 // use moment to craft a user friendly message about last recorded activity
 var calculateLastActivity = function(last_activity_at) {
   if(last_activity_at) {
@@ -304,7 +312,7 @@ $(document).on('click', '.cancelCourseNameChange', function (e) {
 });
 
 // if user hits enter while uniqname field has focus, send a click trigger to the button
-$('body').on('keydown','#uniqname', function(event) {
+$('body').off('keydown').on('keydown','#uniqname', function(event) {
   if (event.keyCode == 13) {
     $('#uniqnameTrigger').click();
   }
