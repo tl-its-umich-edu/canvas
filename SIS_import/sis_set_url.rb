@@ -10,7 +10,6 @@ require "net/http"
 require "rest-client"
 require "uri"
 require "time"
-require "cgi"
 
 ## refresh token for ESB API call
 def refreshESBToken()
@@ -87,7 +86,6 @@ end
 def setMPathwayUrl(canvasUrl, esbUrl, esbToken, termId, sectionId, courseId)
 
 	lmsUrl = canvasUrl + "/courses/" + courseId.to_s
-	lmsUrl=CGI.escape(lmsUrl)
 	#get course information
 	call_url = esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
 	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" =>lmsUrl})
