@@ -46,6 +46,7 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 	private static final String CANVAS_API_GETCOURSE_BY_UNIQNAME = "canvas.api.getcourse.by.uniqname.regex";
 	private static final String CANVAS_API_ENROLLMENT = "canvas.api.enrollment.regex";
 	private static final String CANVAS_API_TERMS = "canvas.api.terms.regex";
+	private static final String RENAME_COURSE_API_SNIPPET = "[course_code]";
 	private static final String DELETE = "DELETE";
 	private static final String POST = "POST";
 	private static final String GET = "GET";
@@ -136,11 +137,16 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 
 	private void apiConnectionLogic(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
+		String requestMethod = request.getMethod();
 		String queryString = request.getQueryString();
+		
 		String pathInfo = request.getPathInfo();
 		PrintWriter out = response.getWriter();
 		String url;
 		if(queryString!=null) {
+			if(queryString.contains(RENAME_COURSE_API_SNIPPET)) {
+				requestMethod=PUT;
+			}
 			url= canvasURL+pathInfo+"?"+queryString;
 		}else {
 			url=canvasURL+pathInfo;
@@ -149,13 +155,13 @@ public class SectionsUtilityToolServlet extends HttpServlet {
 		String loggingApiWithSessionInfo = String.format("Canvas API request with Session Id \"%s\" for URL \"%s\"", sessionId,url);
 		M_log.info(loggingApiWithSessionInfo);
 		HttpUriRequest clientRequest = null;
-		if(request.getMethod().equals(GET)) {
+		if(requestMethod.equals(GET)) {
 			clientRequest = new HttpGet(url);
-		}else if (request.getMethod().equals(POST)) {
+		}else if (requestMethod.equals(POST)) {
 			clientRequest = new HttpPost(url);
-		}else if(request.getMethod().equals(PUT)) {
+		}else if(requestMethod.equals(PUT)) {
 			clientRequest=new HttpPut(url);
-		}else if(request.getMethod().equals(DELETE)) {
+		}else if(requestMethod.equals(DELETE)) {
 			clientRequest=new HttpDelete(url);
 		}
 		HttpClient client = new DefaultHttpClient();
