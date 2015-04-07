@@ -285,7 +285,7 @@ $(document).on('click', '.postCourseNameChange', function (e) {
   var $thisCourseName = $(this).closest('li').find('.courseName');
   var position = $(e.target).closest('.course').position().top;
   $.ajax({
-    type: 'PUT',
+    type: 'POST',
     url: url
     }).done(function( msg ) {
      $('.courseTitleTextContainer').hide();
