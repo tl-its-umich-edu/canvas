@@ -11,6 +11,23 @@ require "rest-client"
 require "uri"
 require "time"
 
+# the current working directory
+@currentDirectory=""
+# the Canvas parameters
+@canvasUrl = ""
+# the Canvas access token
+@canvasToken=""
+# ESB parameters
+@esbKey=""
+@esbSecret=""
+@esbUrl=""
+@esbTokenUrl=""
+# those two cert files are needed for ESB calls
+@caRootFilePath=""
+@inCommonFilePath=""
+# the page size used for ESB API calls
+@page_size=100
+
 # variables for ESB API call throttling
 @esb_call_count = 0
 @esb_start_time = Time.now
@@ -29,7 +46,8 @@ require "time"
 def sleep_according_to_timer_and_api_call_limit(start_time, end_time, call_count, time_interval_in_seconds, allowed_call_number_during_interval)
 	# if meet max allowed call count during the time interval
 	# sleep until time expires
-	while (Time.now.to_i <  end_time.to_i && call_count > allowed_call_number_during_interval)
+	while (Time.now.to_i <=  end_time.to_i && call_count >= allowed_call_number_during_interval)
+		p "sleep till next time interval"
 		sleep(1)
 	end
 
@@ -38,6 +56,7 @@ def sleep_according_to_timer_and_api_call_limit(start_time, end_time, call_count
 		start_time = Time.now
 		end_time = start_time + time_interval_in_seconds # one minute apart
 		#rest the esb call count
+		p "reset call count"
 		call_count = 0
 	end
 
@@ -49,14 +68,14 @@ def sleep_according_to_timer_and_api_call_limit(start_time, end_time, call_count
 end
 
 ## refresh token for ESB API call
-def refreshESBToken()
-	encoded_string = Base64.strict_encode64($esbKey + ":" + $esbSecret)
+def refreshESBToken(outputFile)
+	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
 	param_hash={"grant_type"=>"client_credentials","scope"=> "PRODUCTION"}
-	json = ESB_APICall($esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
+	json = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
 	                  "Basic " + encoded_string,
 	                  "application/x-www-form-urlencoded",
 	                  "POST",
-	                  param_hash)
+	                  param_hash, outputFile)
 	if (!json.nil?)
 		return json["access_token"]
 	else
@@ -65,7 +84,7 @@ def refreshESBToken()
 end
 
 ## make Canvas API call
-def Canvas_API_call(url, params, authorization_string, json_attribute, outputFile)
+def Canvas_API_call(url, params, json_attribute, outputFile)
 	# make sure the call is within API usage quota
 	call_hash = sleep_according_to_timer_and_api_call_limit(@Canvas_start_time, @Canvas_end_time, @Canvas_call_count, @Canvas_time_interval_in_seconds, @Canvas_allowed_call_number_during_interval)
 	@Canvas_start_time = call_hash["start_time"]
@@ -74,7 +93,7 @@ def Canvas_API_call(url, params, authorization_string, json_attribute, outputFil
 
 	url = url<<"?"<<URI.encode_www_form(params)
 
-	response = actual_Canvas_API_call(url, authorization_string, outputFile)
+	response = actual_Canvas_API_call(url, outputFile)
 
 	json = parse_canvas_API_response_json(url, response, json_attribute, outputFile)
 	if (json.nil?)
@@ -89,7 +108,7 @@ def Canvas_API_call(url, params, authorization_string, json_attribute, outputFil
 		# need to make further API calls
 		# will concat the result json arrays
 		page_urls.each do |url|
-			response = actual_Canvas_API_call(url, authorization_string, outputFile)
+			response = actual_Canvas_API_call(url, outputFile)
 
 			json_paging_data = parse_canvas_API_response_json(url, response, json_attribute, outputFile)
 
@@ -107,12 +126,11 @@ def Canvas_API_call(url, params, authorization_string, json_attribute, outputFil
 end
 
 ## the get call to Canvas
-def actual_Canvas_API_call(url, authorization_string, outputFile)
+def actual_Canvas_API_call(url, outputFile)
 	@Canvas_call_count = @Canvas_call_count + 1
 	p "Canvas call #{@Canvas_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
 	outputFile.write "Canvas call #{@Canvas_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}\n"
-
-	response = RestClient.get url, {:Authorization => "Bearer #{authorization_string}",
+	response = RestClient.get url, {:Authorization => "Bearer #{@canvasToken}",
 	                                :accept => "application/json",
 	                                :verify_ssl => true}
 
@@ -196,7 +214,7 @@ def get_all_canvas_page_urls(response_headers)
 end
 
 ## make ESB API call
-def ESB_APICall(url, authorization_string, content_type, request_type, param_hash)
+def ESB_APICall(url, authorization_string, content_type, request_type, param_hash, outputFile)
 	# make sure the call is within API usage quota
 	call_hash = sleep_according_to_timer_and_api_call_limit(@esb_start_time, @esb_end_time, @esb_call_count, @esb_time_interval_in_seconds, @esb_allowed_call_number_during_interval)
 	@esb_start_time = call_hash["start_time"]
@@ -205,6 +223,7 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 
 	@esb_call_count = @esb_call_count+1
 	p "ESB call #{@esb_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} "<<url
+	outputFile.write "ESB call #{@esb_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} "<<url<<"\n"
 
 	url = URI.parse(url)
 
@@ -232,13 +251,18 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 			# if parameter hash is not null, attach them to form
 			request.set_form_data(param_hash)
 		end
+
+		p param_hash
+		# write the param into log file
+		outputFile.write param_hash
+		outputFile.write "\n"
 	end
 
 	sock = Net::HTTP.new(url.host, url.port)
 	sock.use_ssl=true
 	store = OpenSSL::X509::Store.new
-	store.add_cert(OpenSSL::X509::Certificate.new(File.read($caRootFilePath)))
-	store.add_cert(OpenSSL::X509::Certificate.new(File.read($inCommonFilePath)))
+	store.add_cert(OpenSSL::X509::Certificate.new(File.read(@caRootFilePath)))
+	store.add_cert(OpenSSL::X509::Certificate.new(File.read(@inCommonFilePath)))
 	sock.cert_store = store
 
 	#sock.set_debug_output $stdout #useful to see the raw messages going over the wire
@@ -258,20 +282,20 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 end
 
 ## the ESB PUT call to set class URL in MPathway
-def setMPathwayUrl(canvasUrl, esbUrl, esbToken, termId, sectionId, courseId)
+def setMPathwayUrl(esbToken, termId, sectionId, courseId, outputFile)
 
-	lmsUrl = canvasUrl + "/courses/" + courseId.to_s
+	lmsUrl = @canvasUrl + "/courses/" + courseId.to_s
 	#get course information
-	call_url = esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
-	return ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" =>lmsUrl})
+	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
+	return ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" =>lmsUrl}, outputFile)
 end
 
 ## get the current term info from MPathway
-def getMPathwayTerms(esbToken)
+def getMPathwayTerms(esbToken, outputFile)
 	rv = Set.new()
 	#get term information
-	call_url = $esbUrl + "/Curriculum/SOC/v1/Terms";
-	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
+	call_url = @esbUrl + "/Curriculum/SOC/v1/Terms";
+	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil, outputFile)
 	if (!result.nil?)
 		# an array returned here event
 		result["getSOCTermsResponse"]["Term"].each do |term|
@@ -289,10 +313,11 @@ end
 ## 3. iterate through all courses in each term,
 ## 4. if the course is open/available, find sections/classes in each course, set the class url in MPathway
 def processTermCourses(mPathwayTermSet, esbToken, outputFile)
+	## error message for email alert
+	error_message = ""
 
-	term_data = Canvas_API_call("#{$canvasUrl}/api/v1/accounts/1/terms",
-	                            {:per_page => $page_size},
-	                            $canvasToken,
+	term_data = Canvas_API_call("#{@canvasUrl}/api/v1/accounts/1/terms",
+	                            {:per_page => @page_size},
 															"enrollment_terms",
 															outputFile)
 	term_data.each {|term|
@@ -308,14 +333,13 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 			outputFile.write("for term SIS_ID=#{term["sis_term_id"]} and Canvas term id=#{termId}\n")
 
 			# Web Service call
-			json_data = Canvas_API_call("#{$canvasUrl}/api/v1/accounts/1/courses",
+			json_data = Canvas_API_call("#{@canvasUrl}/api/v1/accounts/1/courses",
 			                            { :enrollment_term_id => termId,
 																		:published => true,
 																		:with_enrollments => true,
 																		##:include[] => "sections",
-			                              :per_page => $page_size
+			                              :per_page => @page_size
 																	},
-			                            $canvasToken,
 																	nil,
 																	outputFile)
 			term_course_count = 0
@@ -329,9 +353,8 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 					course.each do |key, value|
 						if (key=="id")
 							courseId = value
-							sections_data = Canvas_API_call("#{$canvasUrl}/api/v1/courses/#{courseId}/sections",
-																							{:per_page => $page_size},
-																							$canvasToken,
+							sections_data = Canvas_API_call("#{@canvasUrl}/api/v1/courses/#{courseId}/sections",
+																							{:per_page => @page_size},
 																							nil,
 																							outputFile)
 							sections_data.each { |section|
@@ -349,11 +372,12 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 									## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
 									# we will use just the last 5-digit of the section id
 									sectionParsedSISID = sectionParsedSISID[4,8]
-									result_json = setMPathwayUrl($canvasUrl, $esbUrl, esbToken, sisTermId, sectionParsedSISID, courseId)
+									result_json = setMPathwayUrl(esbToken, sisTermId, sectionParsedSISID, courseId, outputFile)
 									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse"))
 										message = "set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
 									else
 										message = "set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result #{result_json.to_s}"
+										error_message = error_message.concat("\n#{message}")
 									end
 									# write into output file
 									outputFile.write(message + "\n")
@@ -367,23 +391,26 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 			}
 		end
 	}
+	return error_message
 end
 
 def update_MPathway_with_Canvas_url(esbToken, outputDirectory, outputFile)
 	upload_error = false
 
 	# get the MPathway term set
-	mPathwayTermSet = getMPathwayTerms(esbToken)
+	mPathwayTermSet = getMPathwayTerms(esbToken, outputFile)
 
 	# set URL start time
-	start_string = "set URL start time : " + Time.new.inspect
+	start_string = "set URL start time : " + Time.new.inspect + "\n"
+	p start_string
 	outputFile.write(start_string)
 
 	#call Canvas API to get course url
-	processTermCourses(mPathwayTermSet, esbToken, outputFile)
+	upload_error = processTermCourses(mPathwayTermSet, esbToken, outputFile)
 
 	# set URL stop time
-	stop_string = "set URL stop time : " + Time.new.inspect
+	stop_string = "set URL stop time : " + Time.new.inspect + "\n"
+	p stop_string
 	outputFile.write(stop_string)
   
 	return upload_error
@@ -393,24 +420,9 @@ end ## end of method definition
 ## read the command line arguments
 def read_argv
 	error = nil
-	return_hash = Hash.new
 
-	# the current working directory
-	currentDirectory=""
-	# the Canvas parameters
-	canvasUrl = ""
-	# the Canvas access token
-	canvasToken=""
-	# ESB parameters
-	esbKey=""
-	esbSecret=""
-	esbUrl=""
-	esbTokenUrl=""
-	# those two cert files are needed for ESB calls
-	caRootFilePath=""
-	inCommonFilePath=""
-	# the page size used for ESB API calls
-	page_size=100
+	# return errors
+	return_hash = Hash.new
 
 	# the command line argument count
 	count=1
@@ -433,21 +445,21 @@ def read_argv
 						return return_hash
 					end
 					token_array=env_array[0].split('=')
-					canvasToken=token_array[1]
+					@canvasToken=token_array[1]
 					url_array=env_array[1].split('=')
-					canvasUrl=url_array[1]
+					@canvasUrl=url_array[1]
 					key_array=env_array[2].split('=')
-					esbKey=key_array[1]
+					@esbKey=key_array[1]
 					secret_array=env_array[3].split('=')
-					esbSecret=secret_array[1]
+					@esbSecret=secret_array[1]
 					url_array=env_array[4].split('=')
-					esbUrl=url_array[1]
+					@esbUrl=url_array[1]
 					token_url_array=env_array[5].split('=')
-					esbTokenUrl=token_url_array[1]
+					@esbTokenUrl=token_url_array[1]
 					caRootFilePath_array=env_array[6].split('=')
-					caRootFilePath=caRootFilePath_array[1]
+					@caRootFilePath=caRootFilePath_array[1]
 					inCommonFilePath_array=env_array[7].split('=')
-					inCommonFilePath=inCommonFilePath_array[1]
+					@inCommonFilePath=inCommonFilePath_array[1]
 					break
 				end
 			end
@@ -462,14 +474,22 @@ def read_argv
 					# only have one line, and in this format:
 					# directory=<current working directory>
 					env_array = line.strip.split(',')
-					if (env_array.size != 2)
-						return_hash["error"] = "security file should have the settings in format of: directory=<current working directory>,page_size=<ESB API call page size>"
+					if (env_array.size != 6)
+						return_hash["error"] = "properties file should have the settings in format of: directory=<current working directory>,page_size=<ESB API call page size>,esb_time_interval=<ESB API call time interval in seconds>,esb_allowed_call_number=<maximum ESB API call number during the interval>,canvas_time_interval=<Canvas API call time interval in secs>,canvas_allowed_call_number=<maximum Canvas API call during the interval>"
 						return return_hash
 					end
 					diretory_array=env_array[0].split('=')
-					currentDirectory=diretory_array[1]
+					@currentDirectory=diretory_array[1]
 					page_size_array=env_array[1].split('=')
-					page_size=page_size_array[1]
+					@page_size=page_size_array[1]
+					esb_interval_array=env_array[2].split('=')
+					@esb_time_interval_in_seconds=esb_interval_array[1].to_i
+					esb_call_array=env_array[3].split('=')
+					@esb_allowed_call_number_during_interval=esb_call_array[1].to_i
+					canvas_interval_array=env_array[4].split('=')
+					@Canvas_time_interval_in_seconds=canvas_interval_array[1].to_i
+					canvas_call_array=env_array[5].split('=')
+					@Canvas_allowed_call_number_during_interval=canvas_call_array[1].to_i
 					break
 				end
 			end
@@ -481,19 +501,8 @@ def read_argv
 		count=count+1
 	end
 
-	# construct a hash for return values
-	return_hash["currentDirectory"] = currentDirectory
-	return_hash["canvasUrl"] = canvasUrl
-	return_hash["canvasToken"] = canvasToken
-	return_hash["esbKey"] = esbKey
-	return_hash["esbSecret"] = esbSecret
-	return_hash["esbUrl"] = esbUrl
-	return_hash["esbTokenUrl"] = esbTokenUrl
-	return_hash["caRootFilePath"] = caRootFilePath
-	return_hash["inCommonFilePath"] = inCommonFilePath
-	return_hash["page_size"] = page_size
+	p @canvasUrl
 	return return_hash
-
 end
 
 
@@ -510,34 +519,16 @@ return_hash = read_argv
 if return_hash.has_key? "error"
 	process_error = return_hash["error"]
 else
-		# the current working directory
-	currentDirectory = return_hash["currentDirectory"]
-	# the Canvas parameters
-	$canvasUrl = return_hash["canvasUrl"]
-	# the Canvas access token
-	$canvasToken = return_hash["canvasToken"]
-
-	# ESB parameters
-	$esbKey = return_hash["esbKey"]
-	$esbSecret = return_hash["esbSecret"]
-	$esbUrl = return_hash["esbUrl"]
-	$esbTokenUrl = return_hash["esbTokenUrl"]
-	# those two cert files are needed for ESB calls
-	$caRootFilePath = return_hash["caRootFilePath"]
-	$inCommonFilePath = return_hash["inCommonFilePath"]
-	# the page size used for ESB API calls
-	$page_size = return_hash["page_size"]
-
 	# get then log output directory
-	outputDirectory=currentDirectory + "logs/"
+	outputDirectory=@currentDirectory + "logs/"
 
-	p "canvasUrl=" + $canvasUrl
-	p "current directory: " + currentDirectory
+	p "canvasUrl=" + @canvasUrl
+	p "current directory: " + @currentDirectory
 	p "output directory: " + outputDirectory
 
-	if (Dir[currentDirectory].length != 1)
+	if (Dir[@currentDirectory].length != 1)
 		## working directory
-		process_error = "Cannot find current working directory " + currentDirectory
+		process_error = "Cannot find current working directory " + @currentDirectory
 	elsif (Dir[outputDirectory].length != 1)
 		## logs directory
 		process_error = "Cannot find logs directory " + outputDirectory
@@ -545,17 +536,18 @@ else
 		begin
 			outputFile = File.open(outputDirectory + "Canvas_set_url_#{Time.new.strftime("%Y%m%d%H%M%S")}.txt", "w")
 
-			esbToken=refreshESBToken()
+			esbToken=refreshESBToken(outputFile)
 
 			# update MPathway with Canvas urls
 			updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory, outputFile)
 
 			if (!updateError)
 				## if there is no upload error
-				outputFile.write " Sites set URLs finished"
+				p "Sites set URLs finished."
+				outputFile.write "Sites set URLs finished.\n"
 			else
 				process_error = updateError
-				outputFile.write "\n set url error ${#updateError}\n"
+				outputFile.write "\n set url error \n #{process_error}\n"
 			end
 		ensure
 			# close output file
@@ -564,7 +556,8 @@ else
 	end
 end
 
-if (process_error)
+p process_error
+if (process_error && !process_error.empty?)
 	## check first about the environment variable setting for MAILTO '
 	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 	## send email to support team with the error message
