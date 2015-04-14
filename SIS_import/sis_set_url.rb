@@ -46,9 +46,10 @@ require "time"
 def sleep_according_to_timer_and_api_call_limit(start_time, end_time, call_count, time_interval_in_seconds, allowed_call_number_during_interval)
 	# if meet max allowed call count during the time interval
 	# sleep until time expires
-	while (Time.now.to_i <=  end_time.to_i && call_count >= allowed_call_number_during_interval)
-		p "sleep till next time interval"
-		sleep(1)
+	while (Time.now.to_i <= end_time.to_i && call_count >= allowed_call_number_during_interval)
+		sleep_sec = (end_time - Time.now).to_i + 2
+		p "sleep #{sleep_sec} seconds till next time interval"
+		sleep(sleep_sec)
 	end
 
 	if (Time.now.to_i > end_time.to_i)
@@ -61,26 +62,26 @@ def sleep_according_to_timer_and_api_call_limit(start_time, end_time, call_count
 	end
 
 	# return changed values
-	return  { "start_time" => start_time,
-	          "end_time" => end_time,
-	          "call_count" => call_count
-					}
+	return {"start_time" => start_time,
+	        "end_time" => end_time,
+	        "call_count" => call_count
+	}
 end
 
 ## refresh token for ESB API call
 def refreshESBToken(outputFile)
 	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
-	param_hash={"grant_type"=>"client_credentials","scope"=> "PRODUCTION"}
+	param_hash={"grant_type" => "client_credentials", "scope" => "PRODUCTION"}
 	json = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
-	                  "Basic " + encoded_string,
-	                  "application/x-www-form-urlencoded",
-	                  "POST",
-	                  param_hash, outputFile)
+	                   "Basic " + encoded_string,
+	                   "application/x-www-form-urlencoded",
+	                   "POST",
+	                   param_hash, outputFile)
 	if (!json.nil?)
 		return json["access_token"]
-	else
-		return nil
 	end
+
+	return nil
 end
 
 ## make Canvas API call
@@ -180,7 +181,7 @@ def get_all_canvas_page_urls(response_headers)
 
 	link_header = response_headers[:link]
 	link_page_urls = link_header.split(',')
-	link_page_urls.detect{ |page_link|
+	link_page_urls.detect { |page_link|
 		if page_link.include? "rel=\"last\""
 			# this is the last link, get the page id]
 			# get the param from url string
@@ -287,7 +288,7 @@ def setMPathwayUrl(esbToken, termId, sectionId, courseId, outputFile)
 	lmsUrl = @canvasUrl + "/courses/" + courseId.to_s
 	#get course information
 	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
-	return ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" =>lmsUrl}, outputFile)
+	return ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" => lmsUrl}, outputFile)
 end
 
 ## get the current term info from MPathway
@@ -318,10 +319,10 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 
 	term_data = Canvas_API_call("#{@canvasUrl}/api/v1/accounts/1/terms",
 	                            {:per_page => @page_size},
-															"enrollment_terms",
-															outputFile)
-	term_data.each {|term|
-		if(mPathwayTermSet.include?(term["sis_term_id"]))
+	                            "enrollment_terms",
+	                            outputFile)
+	term_data.each { |term|
+		if (mPathwayTermSet.include?(term["sis_term_id"]))
 			#SIS term ID
 			sisTermId = term["sis_term_id"]
 
@@ -334,29 +335,29 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 
 			# Web Service call
 			json_data = Canvas_API_call("#{@canvasUrl}/api/v1/accounts/1/courses",
-			                            { :enrollment_term_id => termId,
-																		:published => true,
-																		:with_enrollments => true,
-																		##:include[] => "sections",
-			                              :per_page => @page_size
-																	},
-																	nil,
-																	outputFile)
+			                            {:enrollment_term_id => termId,
+			                             :published => true,
+			                             :with_enrollments => true,
+			                             ##:include[] => "sections",
+			                             :per_page => @page_size
+			                            },
+			                            nil,
+			                            outputFile)
 			term_course_count = 0
 			json_data.each { |course|
 				term_course_count = term_course_count + 1
 				p "#{termId} term_course_count=#{term_course_count}"
 				outputFile.write("#{termId} term_course_count=#{term_course_count}\n")
-				if (course.has_key?("workflow_state") && course["workflow_state"] == "available" )
+				if (course.has_key?("workflow_state") && course["workflow_state"] == "available")
 					# only set url for those published sections
 					# course is a hash
 					course.each do |key, value|
 						if (key=="id")
 							courseId = value
 							sections_data = Canvas_API_call("#{@canvasUrl}/api/v1/courses/#{courseId}/sections",
-																							{:per_page => @page_size},
-																							nil,
-																							outputFile)
+							                                {:per_page => @page_size},
+							                                nil,
+							                                outputFile)
 							sections_data.each { |section|
 								# section is a hash, we will get the sis_section_id value
 								# initialize sectionParsedSISID
@@ -371,7 +372,7 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 								if (sectionParsedSISID != nil)
 									## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
 									# we will use just the last 5-digit of the section id
-									sectionParsedSISID = sectionParsedSISID[4,8]
+									sectionParsedSISID = sectionParsedSISID[4, 8]
 									result_json = setMPathwayUrl(esbToken, sisTermId, sectionParsedSISID, courseId, outputFile)
 									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse"))
 										message = "set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
@@ -412,10 +413,12 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory, outputFile)
 	stop_string = "set URL stop time : " + Time.new.inspect + "\n"
 	p stop_string
 	outputFile.write(stop_string)
-  
+
 	return upload_error
 
-end ## end of method definition
+end
+
+## end of method definition
 
 ## read the command line arguments
 def read_argv
@@ -426,8 +429,8 @@ def read_argv
 
 	# the command line argument count
 	count=1
-# iterate through the inline arguments
-	ARGV.each do|arg|
+	# iterate through the inline arguments
+	ARGV.each do |arg|
 		if (count==1)
 			if (Dir[arg].length != 1)
 				## token file
@@ -541,7 +544,7 @@ else
 			# update MPathway with Canvas urls
 			updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory, outputFile)
 
-			if (!updateError)
+			if (!updateError || updateError.nil? || updateError.empty?)
 				## if there is no upload error
 				p "Sites set URLs finished."
 				outputFile.write "Sites set URLs finished.\n"
