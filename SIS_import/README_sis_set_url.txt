@@ -17,4 +17,4 @@ Here are the settings inside the security file, separated by comma:
 token=<Canvas API token>,server=<Canvas server>,key=<ESB key>,secret=<ESB secret>,url=<ESB server url>,token_url=<ESB token server url>,caRootFilePath=<CA root file path>,inCommonFilePath=<InCommon file path>
 
 Here are the settings inside properties file, separated by comma:
-directory=<work directory of the script results>,page_size=<Canvas API request page size>
+directory=<work directory of the script results>,page_size=<Canvas API request page size>,esb_time_interval=<ESB API call time interval in seconds>,esb_allowed_call_number=<maximum ESB API call number during the interval>,canvas_time_interval=<Canvas API call time interval in secs>,canvas_allowed_call_number=<maximum Canvas API call during the interval>
