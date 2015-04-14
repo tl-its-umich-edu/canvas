@@ -559,8 +559,10 @@ else
 	end
 end
 
-p process_error
 if (process_error && !process_error.empty?)
+
+	p process_error
+	
 	## check first about the environment variable setting for MAILTO '
 	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 	## send email to support team with the error message
