@@ -2,43 +2,42 @@
 
 @author: Kyle Dove
 
-Purpose: Download user list from Google Drive spreadsheet. Use list to call 
-Canvas and generate a zip directory that can be used to create Canvas practice 
-courses. 
+Purpose: Download users list from Google Drive. Generate CSV files in 
+directory. Zip directory to be used to create Canvas practice courses.
+
+DATE           Author               Description   
+===========    ===============      ============================================
+Mar 31 2015    Kyle Dove			TLUNIZIN-470
+									Created.
 
 '''
 
 import logging
 import time
 import csv
-import time
 import requests
 import json
 import os
 import zipfile
+from apiclient.discovery import build
+from httplib2 import Http
+from oauth2client import file, client, tools
+from apiclient import errors
+from apiclient import http
 
 def download_file(service, drive_file):
-    """Download a file's content.
-
-    Args:
-            service: Drive API service instance.
-            drive_file: Drive File instance.
-
-    Returns:
-            File's content if successful, None otherwise.
-    """
     download_url = drive_file['exportLinks']['text/csv']
-    print 'DownloadUrl: ' + download_url
+    logger.info('DownloadUrl: ' + download_url)
     if download_url:
             resp, content = service._http.request(download_url)
             if resp.status == 200:
-                    print 'Status: %s' % resp
+                    logger.info('Status: %s' % resp)
                     title = drive_file.get('title')
-                    path = './data/'+title+'.csv'
+                    path = './input.csv'
                     file = open(path, 'wb')
                     file.write(content)
             else:
-                    print 'An error occurred: %s' % resp
+                    logger.info('An error occurred: %s' % resp)
                     return None
     else:
             # The file doesn't have any content stored on Drive.
@@ -83,22 +82,42 @@ finalUsers = []
 userStrings = []
 dataSets = []
 directoryCounter = 0
+errorCount = 0
 outputDirectory = './canvas_files'
 userHeader = 'user_id,login_id,password,first_name,last_name,email,status'
 courseHeader = 'course_id,short_name,long_name,account_id,term_id,status,start_date,end_date'
 enrollmentHeader = 'course_id,user_id,role,section_id,status,associated_user_id'
 userDictionaries = []
 
-#Production Environment
-#urlPrefix = 'https://umich.instructure.com/api/v1/users/sis_login_id:'
+#Read properties file
+with open('propertiesProd.json') as data_file:    
+    data = json.load(data_file)
 
-#Beta Environment
-urlPrefix = 'https://umich.beta.instructure.com/api/v1/users/sis_login_id:'
+logger.debug('urlPrefix: ' + str(data['URL_PREFIX']))
+logger.debug('driveFile: ' + str(data['DRIVE_FILE']))
 
-#Testing Environment
-#urlPrefix = 'https://umich.test.instructure.com/api/v1/users/sis_login_id:'
-
+urlPrefix = str(data['URL_PREFIX'])
 urlPost = '/profile?access_token='
+
+#Download exceptions file
+CLIENT_SECRET = 'tl_client_secret.json'
+SCOPES = [
+	'https://www.googleapis.com/auth/drive.readonly',
+	'https://www.googleapis.com/auth/drive',
+	'https://www.googleapis.com/auth/drive.appdata',
+	'https://www.googleapis.com/auth/drive.apps.readonly',
+	'https://www.googleapis.com/auth/drive.file',
+	'https://www.googleapis.com/auth/drive.readonly'
+]
+store = file.Storage('storage.json')
+creds = store.get()
+if not creds or creds.invalid:
+    flow = client.flow_from_clientsecrets(CLIENT_SECRET, ' '.join(SCOPES))
+    creds = tools.run(flow, store)
+DRIVE = build('drive', 'v2', http=creds.authorize(Http()))
+file_Id = str(data['DRIVE_FILE'])
+gFile = DRIVE.files().get(fileId = file_Id).execute()
+download_file(DRIVE, gFile)
 
 #Get Token
 with open('token.txt') as f:
@@ -124,12 +143,12 @@ for line in lines:
 logger.info('Folder Exists: ' + str(os.path.isdir(outputDirectory)))
 
 if os.path.isdir(outputDirectory):
-	#rename folder
+	#rename
 	logger.info('Need to rename directory')
 	os.rename(outputDirectory,outputDirectory+'_'+logdate)
 	os.mkdir(outputDirectory)
 else:
-	#create folder
+	#create 
 	logger.info('Need to create the directory')
 	os.mkdir(outputDirectory)
 
@@ -146,11 +165,26 @@ for userSet in userSets:
 with open(outputDirectory + '/users.csv', 'wb') as csvfile:
 	csvfile.write(userHeader + '\n')
 	for user in finalUsers:
-		logger.info('User: ' + user)
+		logger.info("User: '" + user + "'")
+		logger.info('Stripping user white space')
+		user = user.strip()
 		url = urlPrefix + user + urlPost
 		logger.info('URL: ' + url)
 		data = json.loads(requests.get(url).text)
 		logger.info('Data: ' + str(data))
+		#If given bad input and a user profile is not returned an error JSON object will be returned instead. Print error message and continue iterating.
+		if 'errors' in data:
+			errors = data['errors']
+			for error in errors:
+				#Record error message and the user to whom it pertains
+				logger.info('Error: ' + user + ' ' + error['message'])
+			errorCount += 1
+			logger.debug('Error Count: ' + str(errorCount))
+			continue
+		#Some users from Dearborn maybe in a course. These users do not have SIS IDs and do not belong in our version of Canvas. We do not have to generate practice courses for them. Continue iterating.
+		if 'sis_user_id' not in data:
+			logger.info(user + ' is missing SIS_ID')
+			continue
 		fullName = data['sortable_name'].split(',')
 		data['firstName'] = fullName[1].strip()
 		data['lastName'] = fullName[0].strip()
@@ -195,4 +229,5 @@ zipf = zipfile.ZipFile(zipFileName, 'w')
 zipdir(outputDirectory, zipf)
 zipf.close()
 
+logger.info('Error Count: ' + str(errorCount))
 logger.info('Script Completed - Done')
