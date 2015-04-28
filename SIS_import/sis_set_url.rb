@@ -375,9 +375,9 @@ def processTermCourses(mPathwayTermSet, esbToken, outputFile)
 									sectionParsedSISID = sectionParsedSISID[4, 8]
 									result_json = setMPathwayUrl(esbToken, sisTermId, sectionParsedSISID, courseId, outputFile)
 									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse"))
-										message = "set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
+										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
 									else
-										message = "set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result #{result_json.to_s}"
+										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result #{result_json.to_s}"
 										error_message = error_message.concat("\n#{message}")
 									end
 									# write into output file
@@ -511,7 +511,7 @@ end
 
 ####################### main ########################
 # to invoke this script, use the following format
-# ruby ./SIS_update_url.rb <the_token_file_path> <the_server_name> <the_workspace_path> <the_esb_file_path>
+# ruby ./SIS_update_url.rb <the_security_file_path> <the_properties_file_path>
 ####################################################
 
 # process error, will notify user through email
@@ -562,11 +562,11 @@ end
 if (process_error && !process_error.empty?)
 
 	p process_error
-	
+
 	## check first about the environment variable setting for MAILTO '
 	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
 	## send email to support team with the error message
-	`echo #{process_error} | mail -s "#{$server} SIS Set URL Error" #{ENV['MAILTO']}`
+	`echo #{process_error} | mail -s "#{@canvasUrl} SIS Set URL Error" #{ENV['MAILTO']}`
 end
 
 
