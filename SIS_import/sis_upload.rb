@@ -4,139 +4,320 @@ require "json"
 require "fileutils"
 require "rubygems"
 require "nokogiri"
+require "digest"
+require "rest-client"
+
+## make Canvas API GET call
+def Canvas_API_GET(url)
+	begin
+		response = RestClient.get url, {:Authorization => "Bearer #{$token}",
+	                                :accept => "application/json",
+	                                :verify_ssl => true}
+		return JSON.parse(response)
+	rescue => e
+		p "#{e} for #{url}"
+		return JSON.parse(e.response)
+	end
+end
+
+## make Canvas API POST call
+def Canvas_API_POST(url, fileName)
+	begin
+		response = RestClient.post url, {:multipart => true,
+																	 :attachment => File.new(fileName, 'rb')
+																	},
+																	{:Authorization => "Bearer #{$token}",
+	                                :accept => "application/json",
+	                                :import_type => "instructure_csv",
+	                                :content_type => "application/zip",
+	                                :verify_ssl => true}
+		return JSON.parse(response)
+	rescue => e
+		p "#{e} for #{url}"
+		return JSON.parse(e.response)
+	end
+end
+
+def upload_to_canvas(fileName, outputFile, output_file_base_name)
 
 
-def upload_to_canvas(fileName, token, server, outputDirectory)
-
-	# get file names
-	currentFileBaseName = File.basename(fileName)
-	currentFileBaseNameWithoutExtension = File.basename(fileName, ".zip")
-
-
-	#set the error flag, default to be false
+	# set the error flag, default to be false
 	upload_error = false
 
-	#open the output file
+	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
+	if (prior_upload_error)
+		## check first about the environment variable setting for MAILTO '
+		return "Previous upload job has not finished yet."
+	end
+
+	# upload start time
+	outputFile.write("upload start time : " + Time.new.inspect)
+
+	# continue the current upload process
+	parsed = Canvas_API_POST("#{$server_api_url}accounts/1/sis_imports.json", fileName)
+
+	if (parsed["errors"])
+		## break and print error
+		error_array=parsed["errors"]
+		## hashmap ["message"=>"error_message"
+		upload_error = error_array[0]["message"]
+		outputFile.write("upload error: " + upload_error)
+		outputFile.write("\n")
+
+		return upload_error
+	end
+
+	job_id=parsed["id"]
+
 	begin
-		outputFile = File.open(outputDirectory + currentFileBaseNameWithoutExtension + ".txt", "w")
+		#open a separate file to log the job id
+		outputIdFile = File.open($outputDirectory + output_file_base_name + "_id.txt", "w")
+		# write the job id into the id file
+		outputIdFile.write(job_id);
+	ensure
+		outputIdFile.close unless outputIdFile == nil
+	end
 
-		# Web Service call
-		p fileName
-		p server
+	outputFile.write("the job id is: #{job_id}\n")
+	outputFile.write("here is the job #{job_id} status: \n")
 
-		json_data=`curl -H "Content-Type: application/zip" --data-binary @#{fileName} -H "Authorization: Bearer #{token}" #{server}/api/v1/accounts/1/sis_imports.json?import_type=instructure_csv`
+	begin
+		#sleep every 10 sec, before checking the status again
+		sleep($sleep);
 
-		outputFile.write("#{json_data}\n")
-		parsed = parseJson(json_data)
+		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/1/sis_imports/#{job_id}")
 
-		if (parsed["errors"])
-			## break and print error
-			error_array=parsed["errors"]
-			## hashmap ["message"=>"error_message"
-			uploadError = error_array[0]["message"]
-			outputFile.write("upload error: " + uploadError)
-			outputFile.write("\n")
-
-			return uploadError
-		end
-
-		job_id=parsed["id"]
-
-		outputFile.write("the job id is: #{job_id}\n")
-		outputFile.write("here is the job #{job_id} status: \n")
-
-		begin
-			#sleep every 10 sec, before checking the status again
-			sleep(10);
-
-			json_result=`curl '#{server}/api/v1/accounts/1/sis_imports/#{job_id}' -H "Authorization: Bearer #{token}"`
-
-			#print out the whole json result
-			outputFile.write("#{json_result}\n")
-
-			#parse the status percentage
-			parsed_result=parseJson(json_result)
+		#print out the whole json result
+		outputFile.write("#{parsed_result}\n")
 
 		if (parsed_result["errors"])
-				## break and print error
-				uploadError=parsed_result["errors"]
-				## hashmap ["message"=>"error_message"
-				outputFile.write("upload error: " + uploadError)
-				outputFile.write("\n")
-
-				break
+			## break and print error
+			if (parsed_result["errors"].is_a? Array and parsed_result["errors"][0]["message"])
+				# example error message
+				# {"errors":[{"message":"An error occurred.","error_code":"internal_server_error"}],"error_report_id":237849}
+				upload_error = parsed_result["errors"][0]["message"]
 			else
-				job_progress=parsed_result["progress"]
-				outputFile.write("processed #{job_progress}\n")
+				upload_error = parsed_result["errors"]
 			end
-		end until job_progress == 100
+			## hashmap ["message"=>"error_message"
+			outputFile.write("upload error: " + upload_error)
+			outputFile.write("\n")
 
-		if (!upload_error)
-			# print out the process warning, if any
-			if (parsed_result["processing_errors"])
-				outputFile.write("upload process errors: #{parsed_result["processing_errors"]}\n")
-			elsif (parsed_result["processing_warnings"])
-				outputFile.write("upload process warning: #{parsed_result["processing_warnings"]}\n")
-			else
-				outputFile.write("upload process finished successfully\n")
-			end
+			break
+		else
+			job_progress=parsed_result["progress"]
+			outputFile.write("processed #{job_progress}\n")
 		end
+	end until job_progress == 100
 
-	# close output file
-	ensure
-	outputFile.close unless outputFile == nil
+	if (!upload_error)
+		# print out the process warning, if any
+		if (parsed_result["processing_errors"])
+			outputFile.write("upload process errors: #{parsed_result["processing_errors"]}\n")
+		elsif (parsed_result["processing_warnings"])
+			outputFile.write("upload process warning: #{parsed_result["processing_warnings"]}\n")
+		else
+			outputFile.write("upload process finished successfully\n")
+		end
 	end
-  
+
+	# upload stop time
+	outputFile.write("upload stop time : " + Time.new.inspect)
+
 	return upload_error
 
 end ## end of method definition
 
-def parseJson(data)
-	begin
-		parsedJson = JSON.parse(data)
-	rescue JSON::ParserError => e
-		# sometimes a html document is returned, containing the following secion
-		#<div class="text">
-		#<p>
-		#<img src="https://s3.amazonaws.com/canvas-maintenance/logo.png" /> &nbsp; Instructure Canvas is currently down for maintenance.
-		#	</p>
-		#</div>
-		# try html parser, and print out the error message
-		page = Nokogiri::HTML(data)
-		error_text = page.xpath('//body/div[@class="text"]/p').text
-		error_text = error_text.gsub(/^\s+/,'')
-		error_text = error_text.gsub(/\n/,'')
-		parsedJson={"errors"=>[{"message"=>error_text}]}
+# get the prior upload process id and make Canvas API calls to see the current process status
+# return true if the process is 100% finished; false otherwise
+def prior_upload_error
+	# find all the process id files, and sort in descending order based on last modified time
+	id_log_file_path = "#{$currentDirectory}logs/*_id.txt"
+	p "id log file path is #{id_log_file_path}"
+	files = Dir.glob(id_log_file_path)
+	files = files.sort_by { |file| File.mtime(file) }.reverse
+	if (files.size == 0)
+		p "no id file found in path #{id_log_file_path}"
+		## first run, no prior cases
+		return false
+	else
+		## get the first and most recent id file
+		id_file = files[0]
+		p "found recent id file #{id_file}"
+		process_id = ''
+		File.open(id_file, 'r') do |idFile|
+			while line = idFile.gets
+				# only read the first line, which is the token value
+				process_id=line.strip
+				break
+			end
+		end
+
+		process_result = Canvas_API_GET("#{$server_api_url}accounts/1/sis_imports/#{process_id}")
+		if (process_result["errors"] && (process_result["errors"].is_a? Array))
+			p "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
+			# if the prior process lookup result in error, there is no need to block future uploads
+			return false
+		end
+		#parse the status percentage
+		progress_status = process_result["progress"]
+		if (progress_status != 100)
+			# the prior job has not been processed 100%
+			p "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
+			return true
+		else
+			# prior job finished, ready for new upload
+			return false
+		end
+
+		return true
+	end
+end
+
+def verify_checksum(base_file_path)
+	# default value
+	upload_error = false
+
+	# checksum verification
+	checksum_file_names = Dir["#{base_file_path}MD5.txt"];
+	if (checksum_file_names.length == 0)
+		## there is no *MD5.txt file
+		upload_error = "Cannot find checksum file #{base_file_path}MD5.txt."
+	elsif (checksum_file_names.length > 1)
+		## there are more than one checksum file
+		upload_error = "There are more than one checksum file. "
+	else
+		## verify checksum value
+		# 1.read checksum value from the *MD5.txt file
+		checksum = ""
+		File.open("#{base_file_path}MD5.txt", 'r') do |checksum_file|
+			while line = checksum_file.gets
+				# only read the first line, which is the checksum value
+				checksum=line.strip
+				break
+			end
+		end
+
+		# 2. generate the checksum from current file
+		new_checksum = Digest::MD5.hexdigest(File.read("#{base_file_path}.zip"))
+
+		# 3. compare two checksum values
+		if (!checksum.eql? new_checksum)
+			upload_error = "Checksum value mismatch for #{base_file_path}.zip."
+		end
 	end
 
-	# return JSON
-	return parsedJson
+	# return error if any
+	return upload_error
+end
+
+def get_settings(securityFile, propertiesFile)
+	# 1. read from security file
+	if (Dir[securityFile].length != 1)
+		## security file
+		return "Cannot find security file #{securityFile}."
+	else
+		File.open(securityFile, 'r') do |sFile|
+			while line = sFile.gets
+				# only read the first line
+				# format: token=TOKEN,server=SERVER,directory=DIRECTORY
+				env_array = line.strip.split(',')
+				if (env_array.size != 2)
+					return "security file should have the settings in format of: token=TOKEN,server=SERVER"
+				end
+				token_array=env_array[0].split('=')
+				$token=token_array[1]
+				server_array=env_array[1].split('=')
+				$server=server_array[1]
+				$server_api_url= "#{$server}/api/v1/"
+				break
+			end
+		end
+		if ($token=="")
+			return "Empty token for Canvas upload."
+		end
+	end
+
+	#2. read from properties file
+	if (Dir[propertiesFile].length != 1)
+		## properties file
+		return "Cannot find properties file #{propertiesFile}."
+	else
+		File.open(propertiesFile, 'r') do |pFile|
+			while line = pFile.gets
+				# only read the first line
+				# format: sleep=SLEEP
+				env_array = line.strip.split(',')
+				if (env_array.size != 2)
+					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP"
+				end
+				directory_array=env_array[0].split('=')
+				$currentDirectory=directory_array[1]
+				sleep_array=env_array[1].split('=')
+				$sleep=sleep_array[1].to_i
+				break
+			end
+		end
+		if (Dir[$currentDirectory].length != 1)
+			## working directory
+			return "Cannot find current working directory " + $currentDirectory + "."
+		else
+			# get the current working directory and the archive folder inside
+			$archiveDirectory=$currentDirectory + "archive/"
+			$outputDirectory=$currentDirectory + "logs/"
+
+			p "server=" + $server
+			p "current directory: " + $currentDirectory
+			p "archive directory: " + $archiveDirectory
+			p "output directory: " + $outputDirectory
+
+			if (Dir[$archiveDirectory].length != 1)
+				## archive directory
+				return "Cannot find archive directory " + $archiveDirectory + "."
+			end
+			if (Dir[$outputDirectory].length != 1)
+				## logs directory
+				return "Cannot find output directory " + $outputDirectory + "."
+			end
+		end
+	end
+
+	# all is fine
+	return false
 end
 
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
 
-# token file name
-tokenFile = ""
+# the security file name
+securityFile = ""
+# the properties file name
+propertiesFile = ""
+
 # the access token
-token = ""
+$token = ""
 # the Canvas server name
-server = ""
-# the current working directory
-currentDirectory=""
+$server = ""
+# the Canvas server api url
+$server_api_url = ""
+# the current working directory, archive directory and output directory
+$currentDirectory=""
+$archiveDirectory=""
+$outputDirectory=""
+
+# the interval in seconds between API calls to check upload process status
+$sleep = 10
 
 # the command line argument count
 count=1
 # iterate through the inline arguments
 ARGV.each do|arg|
 	if (count==1)
-		tokenFile = arg
+		#security file
+		securityFile = arg
 	elsif (count==2)
 		# the second argument should be the server name
-		server=arg
-	elsif (count==3)
-		# the third path should be the workspace path
-		currentDirectory=arg
+		propertiesFile=arg
 	else
 		# break
 	end
@@ -145,78 +326,58 @@ ARGV.each do|arg|
 	count=count+1
 end
 
-# get the current working directory and the archive folder inside
-archiveDirectory=currentDirectory + "archive/"
-outputDirectory=currentDirectory + "logs/"
+# read the settings from properties files
+upload_error = get_settings(securityFile, propertiesFile)
 
-p "server=" + server
-p "current directory: " + currentDirectory
-p "archive directory: " + archiveDirectory
-p "output directory: " + outputDirectory
+outputFile = false
+if (!upload_error)
+	#open the output file
+	begin
+		# get output file name
+		output_file_base_name = "Canvas_upload_" + Time.new.strftime("%Y%m%d%H%M%S")
+		outputFile = File.open($outputDirectory + output_file_base_name + ".txt", "w")
 
-if (Dir[tokenFile].length != 1)
-	## token file
-        uploadError = "Cannot find token file #{tokenFile}."
-else
-        File.open(tokenFile, 'r') do |tFile|
-	        while line = tFile.gets
-	          # only read the first line, which is the token value
-	                token=line.strip
-	                break
-	        end
-        end
-	if (token=="")
-		uploadError="Empty token for Canvas upload."
+		# the canvas import zip file
+		fileNames = Dir[$currentDirectory+ "Canvas_Extract_*.zip"];
+		if (fileNames.length == 0)
+			## cannot find zip file to upload
+			upload_error = "Cannot find SIS zip file."
+		elsif (fileNames.length > 1)
+			## there are more than one zip file
+			upload_error = "There are more than one SIS zip files to be uploaded."
+		elsif
+			## get the name of file to process
+			fileName=fileNames[0]
+			currentFileBaseName = File.basename(fileName, ".zip")
+
+			## checksum verification step
+			upload_error = verify_checksum($currentDirectory + currentFileBaseName)
+
+			if (!upload_error)
+				# upload the file to canvas server
+				upload_error = upload_to_canvas(fileName, outputFile, output_file_base_name)
+			end
+		end
 	end
 end
 
-if (uploadError)
-elsif (Dir[currentDirectory].length != 1)
-	## working directory
-	uploadError = "Cannot find current working directory " + currentDirectory
-elsif (Dir[archiveDirectory].length != 1)
-	## archive directory
-	uploadError = "Cannot find archive directory " + archiveDirectory
-elsif (Dir[outputDirectory].length != 1)
-	## logs directory
-	uploadError = "Cannot find logs directory " + outputDirectory
+if (upload_error)
+	## check first about the environment variable setting for MAILTO '
+	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+	p upload_error
+	## send email to support team with the error message
+	`echo #{upload_error} | mail -s "#{$server} Upload Error" #{ENV['MAILTO']}`
 else
-	# the canvas import zip file
-	fileNames = Dir[currentDirectory+ "Canvas_Extract_*.zip"];
-	if (fileNames.length == 0)
-		## cannot find zip file to upload
-		uploadError = "Cannot find SIS zip file"
-	elsif (fileNames.length > 1)
-		## there are more than one zip file
-		uploadError = "There are more than one SIS zip files to be uploaded."
-	elsif
-		## get the name of file to process
-		fileName=fileNames[0]
-		currentFileBaseName = File.basename(fileName)
-
-		# upload start time
-		p "upload start time : " + Time.new.inspect
-
-		# upload the file to canvas server
-		uploadError = upload_to_canvas(fileName, token, server, outputDirectory)
-
-
-		# upload stop time
-		p "upload stop time : " + Time.new.inspect
-	end
-end
-
-if (!uploadError)
+	# write the success message
 	## if there is no upload error
 	# move file to archive directory after processing
-	FileUtils.mv(fileName, archiveDirectory+currentFileBaseName)
-	p "SIS upload finished with " + fileName
-	exit
-else
-	## check first about the environment variable setting for MAILTO '
-	p " use the environment variable for sending out error messages #{ENV['MAILTO']}"
-	## send email to support team with the error message
-	`echo #{uploadError} | mail -s "#{server} Upload Error" #{ENV['MAILTO']}`
-	abort(uploadError)
+	FileUtils.mv(Dir.glob("#{$currentDirectory}*.zip"), $archiveDirectory)
+	FileUtils.mv(Dir.glob("#{$currentDirectory}*MD5.txt"), $archiveDirectory)
+
+	upload_success_msg = "SIS upload finished with " + fileName
+	outputFile.write(upload_success_msg)
+	p upload_success_msg
 end
 
+# close output file
+outputFile.close unless outputFile == false
