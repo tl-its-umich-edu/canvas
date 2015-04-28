@@ -1,7 +1,7 @@
 # Canvas Practice Course Generator
 
 Description: Python script for generating zip file that can be used to create 
-practice courses for students in Canvas.
+practice courses for instructors in Canvas.
 
 Installation:
 
@@ -27,7 +27,7 @@ Mac's come with Python 2.7 which includes easy_install so this should work.
 
 Input: 
 
-1. input.csv - gathered from Google Drive
+1. Canvas Practice Course Training List (Responses).csv - gathered from Google Drive
 2. propertiesProd.json -  holds custom properties
 3. storage.json - holds information to access google drive
 4. tl_client_secret.json - holds information to access google drive
@@ -36,6 +36,7 @@ Input:
 Output: 
 
 1. Directory - canvas_files_[Date]
+NOTE: This directory will be zipped and used as an input file for he SIS_import script.
 2. File - Canvas_Practice_courses_[Data].zip
 3. File - canvasFileGeneratorLog_[Date].log
 
@@ -45,22 +46,22 @@ Process:
 run.
 
 2. Download file from Google Drive - Canvas Practice Course Training List 
-(Responses) and rename it to input.csv
+(Responses) and rename it to canvas_practice_course_requests.csv
 
-3. Use input.csv to gather the list of users that need a practice course 
+3. Use canvas_practice_course_requests.csv to gather the list of users that need a practice course 
 generated.
 
 4. With this list of users, the URL from the properties file, and the Canvas 
-toekn from the properties file - make Canvas API call to gather information 
+token from the properties file - make Canvas API call to gather information 
 on specific users.
 
 5. Create a directory to be zipped in a later step.
 
 6. Generate 3 csv files necessary for generating Canvas Practice Courses:
 
-A. courses.csv
-B. enrollments.csv
-C. users.csv
+	* courses.csv
+	* enrollments.csv
+	* users.csv
 
 7. Put the three aforementioned files into the directory made in step 5.
 
