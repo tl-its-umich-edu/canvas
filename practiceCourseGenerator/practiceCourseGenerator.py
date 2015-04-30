@@ -12,9 +12,6 @@ Mar 31 2015    Kyle Dove			TLUNIZIN-470
 Apr 29 2015	   Kyle Dove 			TLUNIZIN-470
 									Added code to generate MD5 Checksum file.
 
-# command line arguments - first is output directory, second should be log directory, if directories don't exist print the syntax that is expected and exit Script
-# Assuming that the log directory and data directory exist
-
 '''
 
 import logging
@@ -25,6 +22,8 @@ import json
 import os
 import zipfile
 import hashlib
+import sys
+import shutil
 import apiclient.discovery as gDriveClient
 from httplib2 import Http
 from oauth2client import file, client, tools
@@ -39,7 +38,7 @@ def downloadFile(service, driveFile):
             if resp.status == 200:
                     logger.info('Status: %s' % resp)
                     title = driveFile.get('title')
-                    path = './data/' + title + '.csv'
+                    path = title + '.csv'
                     file = open(path, 'wb')
                     file.write(content)
                     return path
@@ -158,7 +157,7 @@ def setupLogger(logdate):
 	logger.setLevel(logging.INFO)
 
 	#create file handler
-	fh = logging.FileHandler('./data/canvasFileGeneratorLog_' + logdate + '.log')
+	fh = logging.FileHandler(logDirectory + '/canvasFileGeneratorLog_' + logdate + '.log')
 	fh.setLevel(logging.INFO)
 
 	#create console handler
@@ -176,6 +175,13 @@ def setupLogger(logdate):
 
 	return logger
 
+print 'Number of Arguments: ', len(sys.argv), 'arguments.'
+print 'Arguments List:', str(sys.argv)
+
+if len(sys.argv) is not 3:
+	print 'ERROR: Expecting format $ python practiceCourseGenerator.py dataDirectory logDirectory'
+	sys.exit(2)
+
 logdate = time.strftime("%Y%m%d%H%M")
 
 #Veraiables
@@ -185,19 +191,22 @@ users = []
 finalUsers = []
 userStrings = []
 dataSets = []
+userDictionaries = []
+
 directoryCounter = 0
 errorCount = 0
-dataDirectory = './data'
-outputDirectory = './data/canvas_files'
+
+dataDirectory = sys.argv[1]
+logDirectory = sys.argv[2]
+
+outputDirectory = dataDirectory + '/canvas_files'
+fileNameBase = dataDirectory + '/Canvas_Extract_Practice_courses_' + logdate
+
 userHeader = 'user_id,login_id,password,first_name,last_name,email,status'
 courseHeader = 'course_id,short_name,long_name,account_id,term_id,status,start_date,end_date'
 enrollmentHeader = 'course_id,user_id,role,section_id,status,associated_user_id'
-fileNameBase = './data/Canvas_Extract_Practice_courses_' + logdate
-userDictionaries = []
 
-if not os.path.isdir(dataDirectory):
-	#create 
-	os.mkdir(dataDirectory)
+
 
 logger = setupLogger(logdate)
 
@@ -275,6 +284,9 @@ zipdir(outputDirectory, zipf)
 zipf.close()
 
 generateMd5(zipFileName, fileNameBase)
+
+#delete the temporary file used for zipping
+shutil.rmtree(outputDirectory)
 
 logger.info('Error Count: ' + str(errorCount))
 logger.info('Script Completed - Done')
