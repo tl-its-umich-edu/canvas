@@ -1,11 +1,9 @@
-#!/bin/bash
+#!/bin/bash --
 
 #build.sh
 
 # Build script to assemble PracticeCourseGenerator.
 # Creates a tar containing version.txt and practiceCourseGenerator.py
-
-set -x
 
 # return a sortable timestamp as a string without a newline on the end.
 function niceTimestamp {
@@ -27,7 +25,7 @@ function makeARTIFACTSDir {
     mkdir ./ARTIFACTS
 }
 
-# make a clean directory to hold any build ARTIFACTS
+# make a clean directory for tarring project
 function makeCompressionDir {
 
     if [ -e ./practiceCourseGenerator ]; then
@@ -39,7 +37,7 @@ function makeCompressionDir {
 
 # copy py file
 function copyTarFile {
-    atStep "copy py file"
+    atStep "copy tar file"
     mv practiceCourseGenerator.tar.gz ./ARTIFACTS
 }
 
@@ -102,5 +100,4 @@ chmod a+r ./ARTIFACTS/*
 atStep "display artifacts"
 ls -l ./ARTIFACTS
 
-#echo "++++++++++++ NOTE: The unresolved specs error message seems to be harmless."
 #end

@@ -25,6 +25,7 @@ import hashlib
 import sys
 import shutil
 import apiclient.discovery as gDriveClient
+from enum import Enum
 from httplib2 import Http
 from oauth2client import file, client, tools
 from apiclient import errors
@@ -70,18 +71,18 @@ def downloadUsersFile():
 	path = downloadFile(DRIVE, gFile)
 	return path
 
-def writeCsvFile(type, outputDirectory, userDictionaries):
-	if type is 'users':
+def writeCsvFile(type, header, outputDirectory, userDictionaries):
+	if type is FileType.users:
 		with open(outputDirectory + '/users.csv', 'wb') as csvfile:
-			csvfile.write(userHeader + '\n')
+			csvfile.write(header + '\n')
 			for user in userDictionaries:
 				logger.info("User: '" + user['login_id'] + "'")
 				userString = str(user['sis_user_id']) + ',' + user['login_id'] + ',' + ',' + user['firstName'] + ',' + user['lastName'] + ',' + user['primary_email'] + ',' + 'active'
 				logger.info('User Record: ' + userString)
 				csvfile.write(userString + '\n')
-	if type is 'courses':
+	if type is FileType.courses:
 		with open(outputDirectory + '/courses.csv', 'wb') as csvfile:
-			csvfile.write(courseHeader + '\n')
+			csvfile.write(header + '\n')
 			for user in userDictionaries:
 				courseId = str(user['login_id'] + '_practice_course')
 				shortName = 'Practice Course for ' + user['firstName'] + ' ' + user['lastName']
@@ -94,9 +95,9 @@ def writeCsvFile(type, outputDirectory, userDictionaries):
 				courseString = str(courseId + ',' + shortName + ',' + longName + ',' + accountId + ',' + termId + ',' + status + ',' + startDate + ',' + endDate)
 				logger.info('Course Record: ' + courseString)
 				csvfile.write(courseString + '\n')
-	if type is 'enrollments':
+	if type is FileType.enrollments:
 		with open(outputDirectory + '/enrollments.csv', 'wb') as csvfile:
-			csvfile.write(enrollmentHeader + '\n')
+			csvfile.write(header + '\n')
 			for user in userDictionaries:
 				courseId = str(user['login_id'] + '_practice_course')
 				userId = str(user['sis_user_id'])
@@ -111,7 +112,7 @@ def zipdir(path, zip):
         for file in files:
             zip.write(os.path.join(root, file))
 
-def populateUserDictiionary(userList, urlPrefix, urlPost):
+def populateUserDictionary(userList, urlPrefix, urlPost):
 	for user in userList:
 		logger.info("User: '" + user + "'")
 		logger.info('Stripping user white space')
@@ -151,7 +152,7 @@ def generateMd5(fileName, fileNameBase):
 	with open(checkSumFile, 'wb') as writeFile:
 		writeFile.write(checkSum)
 
-def setupLogger(logdate):
+def setupLogger(logdirectory, logdate):
 	#create logger 'canvasFileGenerator'
 	logger = logging.getLogger('canvasFileGenerator')
 	logger.setLevel(logging.INFO)
@@ -175,9 +176,6 @@ def setupLogger(logdate):
 
 	return logger
 
-print 'Number of Arguments: ', len(sys.argv), 'arguments.'
-print 'Arguments List:', str(sys.argv)
-
 if len(sys.argv) is not 3:
 	print 'ERROR: Expecting format $ python practiceCourseGenerator.py dataDirectory logDirectory'
 	sys.exit(2)
@@ -193,6 +191,8 @@ userStrings = []
 dataSets = []
 userDictionaries = []
 
+FileType = Enum('FileType', 'users courses enrollments')
+
 directoryCounter = 0
 errorCount = 0
 
@@ -206,9 +206,7 @@ userHeader = 'user_id,login_id,password,first_name,last_name,email,status'
 courseHeader = 'course_id,short_name,long_name,account_id,term_id,status,start_date,end_date'
 enrollmentHeader = 'course_id,user_id,role,section_id,status,associated_user_id'
 
-
-
-logger = setupLogger(logdate)
+logger = setupLogger(logDirectory, logdate)
 
 logger.info('Script Initiated')
 
@@ -268,14 +266,14 @@ for userSet in userSets:
 		if user not in finalUsers:
 			finalUsers.append(user)
 
-userDictionaries = populateUserDictiionary(finalUsers, urlPrefix, urlPost)
+userDictionaries = populateUserDictionary(finalUsers, urlPrefix, urlPost)
 
 for user in userDictionaries:
 	logger.info('User Dictionary: ' + str(user))
 
-writeCsvFile('users', outputDirectory, userDictionaries)
-writeCsvFile('courses', outputDirectory, userDictionaries)
-writeCsvFile('enrollments', outputDirectory, userDictionaries)
+writeCsvFile(FileType.users, userHeader, outputDirectory, userDictionaries)
+writeCsvFile(FileType.courses, courseHeader, outputDirectory, userDictionaries)
+writeCsvFile(FileType.enrollments, enrollmentHeader, outputDirectory, userDictionaries)
 
 #zip it!
 zipFileName = fileNameBase + '.zip'
