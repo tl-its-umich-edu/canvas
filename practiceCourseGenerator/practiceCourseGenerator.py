@@ -152,7 +152,7 @@ def generateMd5(fileName, fileNameBase):
 	with open(checkSumFile, 'wb') as writeFile:
 		writeFile.write(checkSum)
 
-def setupLogger(logdirectory, logdate):
+def setupLogger(logDirectory, logdate):
 	#create logger 'canvasFileGenerator'
 	logger = logging.getLogger('canvasFileGenerator')
 	logger.setLevel(logging.INFO)
