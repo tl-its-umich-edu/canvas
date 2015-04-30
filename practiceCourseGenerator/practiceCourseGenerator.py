@@ -9,6 +9,11 @@ DATE           Author               Description
 ===========    ===============      ============================================
 Mar 31 2015    Kyle Dove			TLUNIZIN-470
 									Created.
+Apr 29 2015	   Kyle Dove 			TLUNIZIN-470
+									Added code to generate MD5 Checksum file.
+
+# command line arguments - first is output directory, second should be log directory, if directories don't exist print the syntax that is expected and exit Script
+# Assuming that the log directory and data directory exist
 
 '''
 
@@ -19,6 +24,7 @@ import requests
 import json
 import os
 import zipfile
+import hashlib
 import apiclient.discovery as gDriveClient
 from httplib2 import Http
 from oauth2client import file, client, tools
@@ -33,7 +39,7 @@ def downloadFile(service, driveFile):
             if resp.status == 200:
                     logger.info('Status: %s' % resp)
                     title = driveFile.get('title')
-                    path = './' + title + '.csv'
+                    path = './data/' + title + '.csv'
                     file = open(path, 'wb')
                     file.write(content)
                     return path
@@ -138,14 +144,21 @@ def populateUserDictiionary(userList, urlPrefix, urlPost):
 		userDictionaries.append(data)
 	return userDictionaries
 
+def generateMd5(fileName, fileNameBase):
+	checkSum = hashlib.md5(open(fileName, 'rb').read()).hexdigest()
+	logger.info('CheckSum for ' + str(fileName) + ': ' + str(checkSum))
+	#Write checkSum to file
+	checkSumFile = fileNameBase + 'MD5.txt'
+	with open(checkSumFile, 'wb') as writeFile:
+		writeFile.write(checkSum)
+
 def setupLogger(logdate):
 	#create logger 'canvasFileGenerator'
 	logger = logging.getLogger('canvasFileGenerator')
 	logger.setLevel(logging.INFO)
-	#logdate = time.strftime("%Y%m%d%H%M")
 
 	#create file handler
-	fh = logging.FileHandler('canvasFileGeneratorLog_' + logdate + '.log')
+	fh = logging.FileHandler('./data/canvasFileGeneratorLog_' + logdate + '.log')
 	fh.setLevel(logging.INFO)
 
 	#create console handler
@@ -164,9 +177,6 @@ def setupLogger(logdate):
 	return logger
 
 logdate = time.strftime("%Y%m%d%H%M")
-logger = setupLogger(logdate)
-
-logger.info('Script Initiated')
 
 #Veraiables
 lines = []
@@ -177,11 +187,21 @@ userStrings = []
 dataSets = []
 directoryCounter = 0
 errorCount = 0
-outputDirectory = './canvas_files'
+dataDirectory = './data'
+outputDirectory = './data/canvas_files'
 userHeader = 'user_id,login_id,password,first_name,last_name,email,status'
 courseHeader = 'course_id,short_name,long_name,account_id,term_id,status,start_date,end_date'
 enrollmentHeader = 'course_id,user_id,role,section_id,status,associated_user_id'
+fileNameBase = './data/Canvas_Extract_Practice_courses_' + logdate
 userDictionaries = []
+
+if not os.path.isdir(dataDirectory):
+	#create 
+	os.mkdir(dataDirectory)
+
+logger = setupLogger(logdate)
+
+logger.info('Script Initiated')
 
 #Read properties file
 with open('propertiesProd.json') as dataFile:    
@@ -211,7 +231,10 @@ for line in lines:
 	if line == lines[0]:
 			continue
 	logger.info('Line: ' + line)
-	parsedLine = line.split('"')
+	if '"' in line:
+		parsedLine = line.split('"')
+	else:
+		parsedLine = line.split(',')
 	userString = parsedLine[1]
 	logger.info('User String: ' + userString)
 	userSets.append(userString)
@@ -246,10 +269,12 @@ writeCsvFile('courses', outputDirectory, userDictionaries)
 writeCsvFile('enrollments', outputDirectory, userDictionaries)
 
 #zip it!
-zipFileName = 'Canvas_Practice_courses_' + logdate + '.zip'
+zipFileName = fileNameBase + '.zip'
 zipf = zipfile.ZipFile(zipFileName, 'w')
 zipdir(outputDirectory, zipf)
 zipf.close()
+
+generateMd5(zipFileName, fileNameBase)
 
 logger.info('Error Count: ' + str(errorCount))
 logger.info('Script Completed - Done')
