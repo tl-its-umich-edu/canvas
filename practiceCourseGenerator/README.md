@@ -3,27 +3,15 @@
 Description: Python script for generating zip file that can be used to create 
 practice courses for instructors in Canvas.
 
-Installation:
+## Installation:
 
-For this script to run the following needs to be installed...
+1. Install Vagrant <http://www.vagrantup.com/downloads>
+2. Start virtual server `vagrant up`
+3. Login into vertual server: `vagrant ssh`
+4. cd \vagrant
+5. Run application: `python practiceCourseGenerator.py . .`
 
-1. Python 2.7
-2. google-api-python-client
-
-Installing the google-api-python-client is simple with PIP:
-
-In a command line teminal, type the following:
-
-	pip install --upgrade google-api-python-client
-
-Of course this requires that you have PIP installed.
-
-To install PIP open a terminal, type the following:
-
-	sudo easy_install pip
-
-Mac's come with Python 2.7 which includes easy_install so this should work.
-
+## Running application
 
 Input: 
 
@@ -42,29 +30,10 @@ NOTE: This directory will be zipped and used as an input file for he SIS_import 
 
 Process:
 
-1. Create log file for record keeping regarding the success or failure of the 
-run.
-
-2. Download file from Google Drive - Canvas Practice Course Training List 
-(Responses) and rename it to canvas_practice_course_requests.csv
-
-3. Use canvas_practice_course_requests.csv to gather the list of users that need a practice course 
-generated.
-
-4. With this list of users, the URL from the properties file, and the Canvas 
-token from the properties file - make Canvas API call to gather information 
-on specific users.
-
-5. Create a directory to be zipped in a later step.
-
-6. Generate 3 csv files necessary for generating Canvas Practice Courses:
-
+1. Create input files as specified above
+2. Run application `python practiceCourseGenerator.py . .`
+3. Three csv files are generated in zip file:
 	* courses.csv
 	* enrollments.csv
 	* users.csv
-
-7. Put the three aforementioned files into the directory made in step 5.
-
-8. Zip the directory into it's own file.
-
-9. Close the log file.
+4. Upload entire zip file into Canvas (instructions tbd)
