@@ -113,6 +113,7 @@ def zipdir(path, zip):
             zip.write(os.path.join(root, file))
 
 def populateUserDictionary(userList, urlPrefix, urlPost):
+	global errorCount
 	for user in userList:
 		logger.info("User: '" + user + "'")
 		logger.info('Stripping user white space')
