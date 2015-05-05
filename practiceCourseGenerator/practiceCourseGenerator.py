@@ -35,23 +35,22 @@ def downloadFile(service, driveFile):
     downloadUrl = driveFile['exportLinks']['text/csv']
     logger.info('DownloadUrl: ' + downloadUrl)
     if downloadUrl:
-            resp, content = service._http.request(downloadUrl)
-            if resp.status == 200:
-                    logger.info('Status: %s' % resp)
-                    title = driveFile.get('title')
-                    path = title + '.csv'
-                    file = open(path, 'wb')
-                    file.write(content)
-                    return path
-            else:
-                    logger.info('An error occurred: %s' % resp)
-                    return none
+    	resp, content = service._http.request(downloadUrl)
+    	if resp.status == 200:
+    		logger.info('Status: %s' % resp)
+    		title = driveFile.get('title')
+    		path = title + '.csv'
+    		file = open(path, 'wb')
+    		file.write(content)
+    		return path
+        else:
+         	logger.info('An error occurred: %s' % resp)
+         	return None
     else:
-            # The file doesn't have any content stored on Drive.
-            return None
+    	# The file doesn't have any content stored on Drive.
+    	return None
 
-def downloadUsersFile():
-	CLIENT_SECRET = 'tl_client_secret.json'
+def downloadUsersFile(clientSecret, storageFile):
 	SCOPES = [
 		'https://www.googleapis.com/auth/drive.readonly',
 		'https://www.googleapis.com/auth/drive',
@@ -60,11 +59,11 @@ def downloadUsersFile():
 		'https://www.googleapis.com/auth/drive.file',
 		'https://www.googleapis.com/auth/drive.readonly'
 	]
-	store = file.Storage('storage.json')
+	store = file.Storage(storageFile)
 	creds = store.get()
 	if not creds or creds.invalid:
-	    flow = client.flow_from_clientsecrets(CLIENT_SECRET, ' '.join(SCOPES))
-	    creds = tools.run(flow, store)
+		flow = client.flow_from_clientsecrets(clientSecret, ' '.join(SCOPES))
+		creds = tools.run(flow, store)
 	DRIVE = gDriveClient.build('drive', 'v2', http=creds.authorize(Http()))
 	fileId = str(data['DRIVE_FILE'])
 	gFile = DRIVE.files().get(fileId = fileId).execute()
@@ -113,6 +112,7 @@ def zipdir(path, zip):
             zip.write(os.path.join(root, file))
 
 def populateUserDictionary(userList, urlPrefix, urlPost):
+	global errorCount
 	for user in userList:
 		logger.info("User: '" + user + "'")
 		logger.info('Stripping user white space')
@@ -176,8 +176,8 @@ def setupLogger(logDirectory, logdate):
 
 	return logger
 
-if len(sys.argv) is not 3:
-	print 'ERROR: Expecting format $ python practiceCourseGenerator.py dataDirectory logDirectory'
+if len(sys.argv) is not 4:
+	print 'ERROR: Expecting format $ python practiceCourseGenerator.py dataDirectory logDirectory propsDirectory'
 	sys.exit(2)
 
 logdate = time.strftime("%Y%m%d%H%M")
@@ -198,9 +198,15 @@ errorCount = 0
 
 dataDirectory = sys.argv[1]
 logDirectory = sys.argv[2]
+propsDirectory = sys.argv[3]
 
 outputDirectory = dataDirectory + '/canvas_files'
 fileNameBase = dataDirectory + '/Canvas_Extract_Practice_courses_' + logdate
+
+propertiesFile = propsDirectory + '/properties.json'
+tokenFile = propsDirectory + '/token.txt'
+clientSecret = propsDirectory + '/tl_client_secret.json'
+storageFile = propsDirectory + '/storage.json'
 
 userHeader = 'user_id,login_id,password,first_name,last_name,email,status'
 courseHeader = 'course_id,short_name,long_name,account_id,term_id,status,start_date,end_date'
@@ -211,7 +217,7 @@ logger = setupLogger(logDirectory, logdate)
 logger.info('Script Initiated')
 
 #Read properties file
-with open('propertiesProd.json') as dataFile:    
+with open(propertiesFile) as dataFile:    
     data = json.load(dataFile)
 
 logger.debug('urlPrefix: ' + str(data['URL_PREFIX']))
@@ -220,10 +226,10 @@ logger.debug('driveFile: ' + str(data['DRIVE_FILE']))
 urlPrefix = str(data['URL_PREFIX'])
 urlPost = '/profile?access_token='
 
-usersFilePath = downloadUsersFile()
+usersFilePath = downloadUsersFile(clientSecret, storageFile)
 
 #Get Token
-with open('token.txt') as f:
+with open(tokenFile) as f:
     for line in f:
     	token = line.rstrip('\n')
 

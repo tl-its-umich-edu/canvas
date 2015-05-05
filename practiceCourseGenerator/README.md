@@ -1,14 +1,22 @@
 # Canvas Practice Course Generator
 
-Description: Python script for generating zip file that can be used to create 
-practice courses for instructors in Canvas.
+Description: Python script for generating zip file that can be used to create practice courses for instructors in Canvas.
 
-## Installation:
+## Pre-requisits
+
+While Vagrant isn't required, it's the recommended to use for running this script in a pre-defined virtual image.
 
 1. Install Vagrant <http://www.vagrantup.com/downloads>
-2. Start virtual server `vagrant up`
+2. Install the ubuntu image used for running this script: `vagrant box add hashicorp/precise32`
+3. Install VirtualBox or VMWare (if not already installed)
+
+## Installation
+
+1. Create properties files from samples (umich.edu users should download from deluxe.ctools.org)
+2. Start virtual server (with default VirtualBox): `vagrant up`
+    * or with VMWare `vagrant up --provider=vmware_fusion`
 3. Login into vertual server: `vagrant ssh`
-4. cd \vagrant
+4. cd /vagrant
 5. Run application: `python practiceCourseGenerator.py . .`
 
 ## Running application
@@ -20,6 +28,11 @@ Input:
 3. storage.json - holds information to access google drive
 4. tl_client_secret.json - holds information to access google drive
 5. token.txt -  holds token to use Canvas API
+
+NOTE: The secure files can be found on Deluxe at: /usr/local/ctools/
+securityFiles/practiceCourseGenerator/
+
+There are two directories 'prod' and 'qa'
 
 Output: 
 
