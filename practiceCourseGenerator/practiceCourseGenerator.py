@@ -135,7 +135,7 @@ def populateUserDictionary(userList, urlPrefix, urlPost):
 		fullName = data['sortable_name'].split(',')
 		#Ran into issue where user did not have last name entered in Canvas.
 		if len(fullName) is not 2:
-			logger.info('Error ' + user + ' only has first or last name entered')
+			logger.info('Error ' + user + ' User name format is non-standard - ' + data['sortable_name'])
 			errorCount += 1
 			continue
 		data['firstName'] = fullName[1].strip()
