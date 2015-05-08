@@ -5,13 +5,6 @@
 Purpose: Download users list from Google Drive. Generate CSV files in 
 directory. Zip directory to be used to create Canvas practice courses.
 
-DATE           Author               Description   
-===========    ===============      ============================================
-Mar 31 2015    Kyle Dove			TLUNIZIN-470
-									Created.
-Apr 29 2015	   Kyle Dove 			TLUNIZIN-470
-									Added code to generate MD5 Checksum file.
-
 '''
 
 import logging
@@ -136,9 +129,15 @@ def populateUserDictionary(userList, urlPrefix, urlPost):
 		#SIS IDs and do not belong in our version of Canvas. We do not have 
 		#to generate practice courses for them. Continue iterating.
 		if 'sis_user_id' not in data:
-			logger.info(user + ' is missing SIS_ID')
+			logger.info('Error ' + user + ' is missing SIS_ID')
+			errorCount += 1
 			continue
 		fullName = data['sortable_name'].split(',')
+		#Ran into issue where user did not have last name entered in Canvas.
+		if len(fullName) is not 2:
+			logger.info('Error ' + user + ' only has first or last name entered')
+			errorCount += 1
+			continue
 		data['firstName'] = fullName[1].strip()
 		data['lastName'] = fullName[0].strip()
 		userDictionaries.append(data)
