@@ -1,4 +1,4 @@
-README
+#Notification Preference Report Generator
 
 Description: The following README file corresponds with the 'canvasNotificationCall.py' file. 
 When run, the script will read an admin token from a file. Then the script 
