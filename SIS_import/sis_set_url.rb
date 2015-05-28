@@ -11,6 +11,8 @@ require "rest-client"
 require "uri"
 require "time"
 
+require_relative "utils.rb"
+
 # the current working directory
 @currentDirectory=""
 # the Canvas parameters
@@ -141,7 +143,7 @@ end
 ## parse the response object into json object
 def parse_canvas_API_response_json(url, response, json_attribute, outputFile)
 	begin
-		json = JSON.parse(response)
+		json = json_parse_nil(response)
 
 		if !json_attribute.nil?
 			if json.has_key? json_attribute
@@ -275,7 +277,7 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 
 	begin
 		# return json
-		return JSON.parse(response.body)
+		return json_parse_nil(response.body)
 	rescue JSON::ParserError, TypeError => e
 		puts "Not a valid JSON ESB call url= #{url} and return body = #{response.body}"
 		return nil

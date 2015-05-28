@@ -7,16 +7,18 @@ require "nokogiri"
 require "digest"
 require "rest-client"
 
+require_relative "utils.rb"
+
 ## make Canvas API GET call
 def Canvas_API_GET(url)
 	begin
 		response = RestClient.get url, {:Authorization => "Bearer #{$token}",
 	                                :accept => "application/json",
 	                                :verify_ssl => true}
-		return JSON.parse(response)
+		return json_parse_nil(response)
 	rescue => e
 		p "#{e} for #{url}"
-		return JSON.parse(e.response)
+		return json_parse_nil(e.response)
 	end
 end
 
@@ -31,10 +33,10 @@ def Canvas_API_POST(url, fileName)
 	                                :import_type => "instructure_csv",
 	                                :content_type => "application/zip",
 	                                :verify_ssl => true}
-		return JSON.parse(response)
+		return json_parse_nil(response)
 	rescue => e
 		p "#{e} for #{url}"
-		return JSON.parse(e.response)
+		return json_parse_nil(e.response)
 	end
 end
 
