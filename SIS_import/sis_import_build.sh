@@ -13,6 +13,8 @@ if [ ! -d "artifact" ]; then
     mkdir artifact
     chmod -R 755 artifact
 fi
-echo "will generate zip file for build number: ${build_number}"
-find . -maxdepth 1 -name "*.rb" -exec tar -rf ./artifact/SIS_import_$build_number.tar {} \;
+echo "Generating zip file for build number: ${build_number}"
+## get git hex number
+gitNum=`git log -n 1 --pretty="format:%h"`
+find . -maxdepth 1 -name "*.rb" -exec tar -rf ./artifact/SIS_import_$build_number_$gitNum.tar {} \;
 
