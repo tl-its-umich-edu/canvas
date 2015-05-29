@@ -11,33 +11,23 @@ require_relative "utils.rb"
 
 ## make Canvas API GET call
 def Canvas_API_GET(url)
-	begin
-		response = RestClient.get url, {:Authorization => "Bearer #{$token}",
-	                                :accept => "application/json",
-	                                :verify_ssl => true}
-		return json_parse_nil(response)
-	rescue => e
-		p "#{e} for #{url}"
-		return json_parse_nil(e.response)
-	end
+	response = RestClient.get url, {:Authorization => "Bearer #{$token}",
+                                :accept => "application/json",
+                                :verify_ssl => true}
+	return json_parse_safe(url, response, nil)
 end
 
 ## make Canvas API POST call
 def Canvas_API_POST(url, fileName)
-	begin
-		response = RestClient.post url, {:multipart => true,
-																	 :attachment => File.new(fileName, 'rb')
-																	},
-																	{:Authorization => "Bearer #{$token}",
-	                                :accept => "application/json",
-	                                :import_type => "instructure_csv",
-	                                :content_type => "application/zip",
-	                                :verify_ssl => true}
-		return json_parse_nil(response)
-	rescue => e
-		p "#{e} for #{url}"
-		return json_parse_nil(e.response)
-	end
+	response = RestClient.post url, {:multipart => true,
+																 :attachment => File.new(fileName, 'rb')
+																},
+																{:Authorization => "Bearer #{$token}",
+                                :accept => "application/json",
+                                :import_type => "instructure_csv",
+                                :content_type => "application/zip",
+                                :verify_ssl => true}
+	return json_parse_safe(url, response, nil)
 end
 
 def upload_to_canvas(fileName, outputFile, output_file_base_name)
