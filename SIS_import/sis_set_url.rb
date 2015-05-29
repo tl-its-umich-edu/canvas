@@ -11,6 +11,8 @@ require "rest-client"
 require "uri"
 require "time"
 
+require_relative "utils.rb"
+
 # the current working directory
 @currentDirectory=""
 # the Canvas parameters
@@ -140,22 +142,17 @@ end
 
 ## parse the response object into json object
 def parse_canvas_API_response_json(url, response, json_attribute, outputFile)
-	begin
-		json = JSON.parse(response)
+	json = json_parse_safe(url, response, outputFile)
 
-		if !json_attribute.nil?
-			if json.has_key? json_attribute
-				json = json[json_attribute]
-			else
-				p " returned json result does not have attribute " + json_attribute
-				outputFile.write " returned json result does not have attribute " + json_attribute
-			end
+	if !json_attribute.nil?
+		if json.has_key? json_attribute
+			json = json[json_attribute]
+		else
+			p " returned json result does not have attribute " + json_attribute
+			outputFile.write " returned json result does not have attribute " + json_attribute
 		end
-		return json
-	rescue JSON::ParserError, TypeError => e
-		outputFile "Not a valid JSON ESB call url= #{url} and return body = #{response}"
-		return nil
 	end
+	return json
 end
 
 
@@ -273,13 +270,8 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 		response = http.request(request)
 	end
 
-	begin
-		# return json
-		return JSON.parse(response.body)
-	rescue JSON::ParserError, TypeError => e
-		puts "Not a valid JSON ESB call url= #{url} and return body = #{response.body}"
-		return nil
-	end
+	# return json
+	return json_parse_safe(url, response.body, outputFile)
 end
 
 ## the ESB PUT call to set class URL in MPathway
