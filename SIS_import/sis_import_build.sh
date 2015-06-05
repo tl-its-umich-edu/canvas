@@ -16,5 +16,6 @@ fi
 echo "Generating zip file for build number: ${build_number}"
 ## get git hex number
 gitNum=`git log -n 1 --pretty="format:%h"`
-find . -maxdepth 1 -name "*.rb" -exec tar -rf ./artifact/SIS_import_$build_number_$gitNum.tar {} \;
+printf 'github version number is %s.' $gitNum > git_version.txt
+find . -maxdepth 1 -type f \( -name "*_version.txt" -o -name "*.rb" \) -exec tar -rf ./artifact/SIS_import_$build_number_$gitNum.tar {} \;
 
