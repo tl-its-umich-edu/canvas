@@ -6,20 +6,80 @@ require "rubygems"
 require "nokogiri"
 require "digest"
 require "rest-client"
+require "zip/zip"
+require "URI"
 
 require_relative "utils.rb"
 
+# there should be two command line argument when invoking this Ruby script
+# like ruby ./SIS_upload.rb <the_token_file_path> <the_properties_file_path>
+
+# the security file name
+securityFile = ""
+# the properties file name
+propertiesFile = ""
+
+# the access token
+$token = ""
+# the Canvas server name
+$server = ""
+# the Canvas server api url
+$server_api_url = ""
+# the current working directory, archive directory and output directory
+$currentDirectory=""
+$archiveDirectory=""
+$outputDirectory=""
+
+# the interval in seconds between API calls to check upload process status
+$sleep = 10
+
+# for sandbox site creation purpose: looking for users with teacher role, with active enrollment status, both defined in the enrollment file
+TEACHER_ROLE_ARRAY = ["teacher", "ta"]
+ACTIVE_STATUS = 'active'
+ENROLLMENTS_FILE_NAME = 'enrollments.csv'
+
+# placeholder for user sandbox site title
+USERNAME="USERNAME"
+PREVIOUS_USER_SANDBOX_NAME = "A Canvas training course for #{USERNAME}"
+TARGET_USER_SANDBOX_NAME = "#{USERNAME}'s Practice Course"
+
+# Canvas account number
+ACCOUNT_NUMBER = 1
+
+# the path of Canvas API call
+API_PATH="/api/v1/"
+
 ## make Canvas API GET call
 def Canvas_API_GET(url)
-	response = RestClient.get url, {:Authorization => "Bearer #{$token}",
+	response = RestClient.get URI.escape(url), {:Authorization => "Bearer #{$token}",
                                 :accept => "application/json",
                                 :verify_ssl => true}
 	return json_parse_safe(url, response, nil)
 end
 
 ## make Canvas API POST call
-def Canvas_API_POST(url, fileName)
-	response = RestClient.post url, {:multipart => true,
+def Canvas_API_POST(url, post_params)
+	response = RestClient.post URI.escape(url), post_params,
+	                           {:Authorization => "Bearer #{$token}",
+	                            :accept => "application/json",
+	                            :content_type => "application/json",
+	                            :verify_ssl => true}
+	return json_parse_safe(url, response, nil)
+end
+
+## make Canvas API POST call
+def Canvas_API_PUT(url, post_params)
+	response = RestClient.put URI.escape(url), post_params,
+	                           {:Authorization => "Bearer #{$token}",
+	                            :accept => "application/json",
+	                            :content_type => "application/json",
+	                            :verify_ssl => true}
+	return json_parse_safe(url, response, nil)
+end
+
+## make Canvas API POST call
+def Canvas_API_IMPORT(url, fileName)
+	response = RestClient.post URI.escape(url), {:multipart => true,
 																 :attachment => File.new(fileName, 'rb')
 																},
 																{:Authorization => "Bearer #{$token}",
@@ -46,7 +106,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 	outputFile.write("upload start time : " + Time.new.inspect)
 
 	# continue the current upload process
-	parsed = Canvas_API_POST("#{$server_api_url}accounts/1/sis_imports.json", fileName)
+	parsed = Canvas_API_IMPORT("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json", fileName)
 
 	if (parsed["errors"])
 		## break and print error
@@ -77,7 +137,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 		#sleep every 10 sec, before checking the status again
 		sleep($sleep);
 
-		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/1/sis_imports/#{job_id}")
+		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{job_id}")
 
 		#print out the whole json result
 		outputFile.write("#{parsed_result}\n")
@@ -145,7 +205,8 @@ def prior_upload_error
 			end
 		end
 
-		process_result = Canvas_API_GET("#{$server_api_url}accounts/1/sis_imports/#{process_id}")
+		process_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{process_id}")
+		p process_result
 		if (process_result["errors"] && (process_result["errors"].is_a? Array))
 			p "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
 			# if the prior process lookup result in error, there is no need to block future uploads
@@ -221,7 +282,7 @@ def get_settings(securityFile, propertiesFile)
 				$token=token_array[1]
 				server_array=env_array[1].split('=')
 				$server=server_array[1]
-				$server_api_url= "#{$server}/api/v1/"
+				$server_api_url= "#{$server}#{API_PATH}"
 				break
 			end
 		end
@@ -278,27 +339,83 @@ def get_settings(securityFile, propertiesFile)
 	return false
 end
 
-# there should be two command line argument when invoking this Ruby script
-# like ruby ./SIS_upload.rb <the_token_file_path> <the_server_name> <the_workspace_path>
+#
+# The function
+#
+def create_instructor_sandbox_site(zip_file_name, outputFile)
+	Zip::ZipFile.open(zip_file_name) do |zipfile|
+		zipfile.each do |entry|
+			if entry.name == ENROLLMENTS_FILE_NAME
+				# read the enrollment file name
+				user_line_content = entry.get_input_stream.read
+				user_line_array = user_line_content.split("\n")
+				user_line_array.each {
+					|user|
+					# format of ',user_mpathway_id,role,section_id,status'
+					user_attrs = user.split(",")
+					user_mpathway_id = user_attrs[1]
+					user_role = user_attrs[2]
+					user_status = user_attrs[4]
+					if (TEACHER_ROLE_ARRAY.include? user_role and user_status == ACTIVE_STATUS)
+						# find user with teacher role and is active
 
-# the security file name
-securityFile = ""
-# the properties file name
-propertiesFile = ""
+						# find user details, mainly the sis login id
+						user_details_json = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/users?search_term=#{user_mpathway_id}")
+						# get user sis_login_id
+						user_canvas_id = user_details_json[0]["id"]
+						user_sis_login_id = user_details_json[0]["sis_login_id"]
+						outputFile.write("found user #{user_sis_login_id} with teaching role #{user_role} \n");
 
-# the access token
-$token = ""
-# the Canvas server name
-$server = ""
-# the Canvas server api url
-$server_api_url = ""
-# the current working directory, archive directory and output directory
-$currentDirectory=""
-$archiveDirectory=""
-$outputDirectory=""
+						user_sandbox_site_name = TARGET_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)
+						# see whether there is an sandbox site for this user
+						previous_user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)}")
+						if (previous_user_sandbox_site.length == 0)
+							# check again for the current naming format of user sandbox site
+							user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{user_sandbox_site_name}")
+							if (user_sandbox_site.length == 0)
+								# if there is no such sandbox site, creat one
+								result = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses",
+								                         {
+									                         "account_id"   => ACCOUNT_NUMBER,
+									                         "course[name]" => user_sandbox_site_name,
+									                         "course[course_code]" => user_sandbox_site_name
+								                         })
+								p result
+								outputFile.write("Created a sandbox site - #{user_sandbox_site_name} for User #{user_sis_login_id} \n #{result} \n");
 
-# the interval in seconds between API calls to check upload process status
-$sleep = 10
+								if (result.has_key?("id"))
+									# get the newly created course id
+									# add the instructor to the course as instructor
+									sandbox_course_id = result.fetch("id")
+									instructor_result = Canvas_API_POST("#{$server_api_url}courses/#{sandbox_course_id}/enrollments",
+									                                    {
+										                                    "enrollment[user_id]"   => user_canvas_id,
+										                                    "enrollment[type]" => "TeacherEnrollment",
+										                                    "enrollment[enrollment_state]" => "active"
+									                                    })
+									p instructor_result
+									outputFile.write("Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n");
+
+								end
+							end
+						else
+							# need to rename the previous course with new course title format
+							course_id=previous_user_sandbox_site[0]["id"]
+							# if there is no such sandbox site, creat one
+							result = Canvas_API_PUT("#{$server_api_url}courses/#{course_id}",
+							                         {
+								                         "course[name]" => user_sandbox_site_name,
+								                         "course[course_code]" => user_sandbox_site_name
+							                         })
+							outputFile.write("User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}\n");
+						end
+					end
+				}
+			end
+		end
+	end
+end
+
 
 # the command line argument count
 count=1
@@ -349,6 +466,10 @@ if (!upload_error)
 				# upload the file to canvas server
 				upload_error = upload_to_canvas(fileName, outputFile, output_file_base_name)
 			end
+
+			## create sandbox sites for instructors newly uploaded
+			## if they do not have such a site now
+			create_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", outputFile)
 		end
 	end
 end
