@@ -7,7 +7,7 @@ require "nokogiri"
 require "digest"
 require "rest-client"
 require "zip/zip"
-require "URI"
+require "uri"
 
 require_relative "utils.rb"
 
