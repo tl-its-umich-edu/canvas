@@ -30,6 +30,9 @@ $currentDirectory=""
 $archiveDirectory=""
 $outputDirectory=""
 
+# the warning message from upload process
+$upload_warnings = ""
+
 # the interval in seconds between API calls to check upload process status
 $sleep = 10
 
@@ -91,7 +94,6 @@ def Canvas_API_IMPORT(url, fileName)
 end
 
 def upload_to_canvas(fileName, outputFile, output_file_base_name)
-
 
 	# set the error flag, default to be false
 	upload_error = false
@@ -167,7 +169,42 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 		if (parsed_result["processing_errors"])
 			outputFile.write("upload process errors: #{parsed_result["processing_errors"]}\n")
 		elsif (parsed_result["processing_warnings"])
+			#parsed_result = {"created_at" =>"2015-04-27T19:00:04Z",
+			#                 "started_at"=>"2015-04-27T19:00:04Z",
+			#                 "ended_at" =>"2015-04-27T19:06:29Z",
+			#                 "updated_at"=>"2015-04-27T19:06:29Z",
+			#                 "progress"=>100,
+			#                 "id"=>429,
+			#                 "workflow_state"=>"imported_with_messages",
+			#                 "data"=>{"import_type"=>"instructure_csv",
+			#                          "supplied_batches"=>["course","section","user","enrollment"],
+			#                          "counts"=>{"accounts"=>0,
+			#                                     "terms"=>0,
+			#                                     "abstract_courses"=>0,
+			#                                     "courses"=>488,
+			#                                     "sections"=>488,
+			#                                     "xlists"=>0,
+			#                                     "users"=>606,
+			#                                     "enrollments"=>1178,
+			#                                     "groups"=>0,
+			#                                     "group_memberships"=>0,
+			#                                    "grade_publishing_results"=>0}},
+			#                 "batch_mode"=>null,
+			#                 "batch_mode_term_id"=>null,
+			#                 "override_sis_stickiness"=>null,
+			#                 "add_sis_stickiness"=>null,
+			#                 "clear_sis_stickiness"=>null,
+			#                 "diffing_data_set_identifier"=>null,
+			#                 "diffed_against_import_id"=>null,
+			#                 "processing_warnings"=>[["users.csv","No login_id given for user 67102976"],
+			#                                         ["enrollments.csv","User 67102976 didn't exist for user enrollment"],
+			#                                         ["enrollments.csv","User 67102976 didn't exist for user enrollment"],
+			#                                         ["enrollments.csv","User 67102976 didn't exist for user enrollment"]]}
+
+			# write the warning message into log file
 			outputFile.write("upload process warning: #{parsed_result["processing_warnings"]}\n")
+			# assign the warning message to upload_warnings param
+			$upload_warnings = parsed_result["processing_warnings"]
 		else
 			outputFile.write("upload process finished successfully\n")
 		end
@@ -476,11 +513,20 @@ end
 
 if (upload_error)
 	## check first about the environment variable setting for MAILTO '
-	p "Use the environment variable 'MAILTO' for sending out error messages to #{ENV['MAILTO']}"
+	p "Use the environment variable 'MAILTO' for sending out SIS upload error messages to #{ENV['MAILTO']}"
 	p upload_error
 	## send email to support team with the error message
-	`echo #{upload_error} | mail -s "#{$server} Upload Error" #{ENV['MAILTO']}`
+	`echo #{upload_error} | mail -s "#{$server} SIS Upload Error" #{ENV['MAILTO']}`
 else
+	if ($upload_warnings != "")
+		# mail the upload warning message
+		## check first about the environment variable setting for MAILTO '
+		p "Use the environment variable 'MAILTO' for sending out SIS upload warning messages to #{ENV['MAILTO']}"
+		p $upload_warnings
+		## send email to support team with the error message
+		`echo #{$upload_warnings}  | mail -s "#{$server} SIS Upload Warnings" #{ENV['MAILTO']}`
+	end
+
 	# write the success message
 	## if there is no upload error
 	# move file to archive directory after processing
