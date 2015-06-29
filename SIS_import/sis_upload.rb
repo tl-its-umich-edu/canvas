@@ -8,6 +8,7 @@ require "digest"
 require "rest-client"
 require "zip/zip"
 require "uri"
+require "addressable/uri"
 
 require_relative "utils.rb"
 
@@ -52,7 +53,7 @@ API_PATH="/api/v1/"
 ## make Canvas API GET call
 def Canvas_API_GET(url)
 	begin
-		response = RestClient.get URI.escape(url), {:Authorization => "Bearer #{$token}",
+		response = RestClient.get Addressable::URI.escape(url), {:Authorization => "Bearer #{$token}",
 	                                :accept => "application/json",
 	                                :verify_ssl => true}
 		return json_parse_safe(url, response, nil)
@@ -64,7 +65,7 @@ end
 ## make Canvas API POST call
 def Canvas_API_POST(url, post_params)
 	begin
-		response = RestClient.post URI.escape(url), post_params,
+		response = RestClient.post Addressable::URI.escape(url), post_params,
 		                           {:Authorization => "Bearer #{$token}",
 		                            :accept => "application/json",
 		                            :content_type => "application/json",
@@ -78,7 +79,7 @@ end
 ## make Canvas API POST call
 def Canvas_API_PUT(url, post_params)
 	begin
-		response = RestClient.put URI.escape(url), post_params,
+		response = RestClient.put Addressable::URI.escape(url), post_params,
 		                           {:Authorization => "Bearer #{$token}",
 		                            :accept => "application/json",
 		                            :content_type => "application/json",
@@ -92,7 +93,7 @@ end
 ## make Canvas API POST call
 def Canvas_API_IMPORT(url, fileName)
 	begin
-		response = RestClient.post URI.escape(url), {:multipart => true,
+		response = RestClient.post Addressable::URI.escape(url), {:multipart => true,
 																	 :attachment => File.new(fileName, 'rb')
 																	},
 																	{:Authorization => "Bearer #{$token}",
@@ -189,7 +190,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 	end
 
 	# upload stop time
-	outputFile.write("upload stop time : " + Time.new.inspect)
+	outputFile.write("upload stop time : " + Time.new.inspect + "\n")
 
 	return upload_error
 
