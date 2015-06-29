@@ -54,43 +54,59 @@ API_PATH="/api/v1/"
 
 ## make Canvas API GET call
 def Canvas_API_GET(url)
-	response = RestClient.get URI.escape(url), {:Authorization => "Bearer #{$token}",
-                                :accept => "application/json",
-                                :verify_ssl => true}
-	return json_parse_safe(url, response, nil)
+	begin
+		response = RestClient.get URI.escape(url), {:Authorization => "Bearer #{$token}",
+	                                :accept => "application/json",
+	                                :verify_ssl => true}
+		return json_parse_safe(url, response, nil)
+	rescue => e
+		return json_parse_safe(url, e.response, nil)
+	end
 end
 
 ## make Canvas API POST call
 def Canvas_API_POST(url, post_params)
-	response = RestClient.post URI.escape(url), post_params,
-	                           {:Authorization => "Bearer #{$token}",
-	                            :accept => "application/json",
-	                            :content_type => "application/json",
-	                            :verify_ssl => true}
-	return json_parse_safe(url, response, nil)
+	begin
+		response = RestClient.post URI.escape(url), post_params,
+		                           {:Authorization => "Bearer #{$token}",
+		                            :accept => "application/json",
+		                            :content_type => "application/json",
+		                            :verify_ssl => true}
+		return json_parse_safe(url, response, nil)
+	rescue => e
+		return json_parse_safe(url, e.response, nil)
+	end
 end
 
 ## make Canvas API POST call
 def Canvas_API_PUT(url, post_params)
-	response = RestClient.put URI.escape(url), post_params,
-	                           {:Authorization => "Bearer #{$token}",
-	                            :accept => "application/json",
-	                            :content_type => "application/json",
-	                            :verify_ssl => true}
-	return json_parse_safe(url, response, nil)
+	begin
+		response = RestClient.put URI.escape(url), post_params,
+		                           {:Authorization => "Bearer #{$token}",
+		                            :accept => "application/json",
+		                            :content_type => "application/json",
+		                            :verify_ssl => true}
+		return json_parse_safe(url, response, nil)
+	rescue => e
+		return json_parse_safe(url, e.response, nil)
+	end
 end
 
 ## make Canvas API POST call
 def Canvas_API_IMPORT(url, fileName)
-	response = RestClient.post URI.escape(url), {:multipart => true,
-																 :attachment => File.new(fileName, 'rb')
-																},
-																{:Authorization => "Bearer #{$token}",
-                                :accept => "application/json",
-                                :import_type => "instructure_csv",
-                                :content_type => "application/zip",
-                                :verify_ssl => true}
-	return json_parse_safe(url, response, nil)
+	begin
+		response = RestClient.post URI.escape(url), {:multipart => true,
+																	 :attachment => File.new(fileName, 'rb')
+																	},
+																	{:Authorization => "Bearer #{$token}",
+	                                :accept => "application/json",
+	                                :import_type => "instructure_csv",
+	                                :content_type => "application/zip",
+	                                :verify_ssl => true}
+		return json_parse_safe(url, response, nil)
+	rescue => e
+		return json_parse_safe(url, e.response, nil)
+	end
 end
 
 def upload_to_canvas(fileName, outputFile, output_file_base_name)
