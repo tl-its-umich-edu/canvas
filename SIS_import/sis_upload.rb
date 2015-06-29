@@ -50,6 +50,10 @@ ACCOUNT_NUMBER = 1
 # the path of Canvas API call
 API_PATH="/api/v1/"
 
+# Ruby URI.escape has been deprecated.
+# Addressable::URI.escape seems to be a viable solution, which offers url encoding, form encoding and normalizes URLs.
+# http://stackoverflow.com/questions/2824126/whats-the-difference-between-uri-escape-and-cgi-escape
+
 ## make Canvas API GET call
 def Canvas_API_GET(url)
 	begin
