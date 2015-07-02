@@ -6,7 +6,7 @@ def json_parse_safe(url, json, outputFile)
 		begin
 			return JSON.parse(json)
 		rescue JSON::ParserError, TypeError => e
-			puts "Not a valid JSON String #{json} for url= #{url}"
+			puts "Not a valid JSON String #{json} for url= #{url} #{e}"
 			if (!outputFile.nil?)
 				# write into output file
 				outputFile.write "Not a valid JSON String #{json} for url= #{url}"
