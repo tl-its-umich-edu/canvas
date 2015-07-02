@@ -37,6 +37,11 @@ $upload_warnings = ""
 # the interval in seconds between API calls to check upload process status
 $sleep = 10
 
+# the alert email address is read from the configuration file
+# and defaults to "canvas-sis-data-alerts@umich.edu", if not set otherwise
+$alert_email_address = "canvas-sis-data-alerts@umich.edu"
+
+
 # for sandbox site creation purpose: looking for users with teacher role, with active enrollment status, both defined in the enrollment file
 TEACHER_ROLE_ARRAY = ["teacher", "ta"]
 ACTIVE_STATUS = 'active'
@@ -121,7 +126,6 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 
 	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
 	if (prior_upload_error)
-		## check first about the environment variable setting for MAILTO '
 		return "Previous upload job has not finished yet."
 	end
 
@@ -357,15 +361,18 @@ def get_settings(securityFile, propertiesFile)
 		File.open(propertiesFile, 'r') do |pFile|
 			while line = pFile.gets
 				# only read the first line
-				# format: sleep=SLEEP
+				# format: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS
 				env_array = line.strip.split(',')
-				if (env_array.size != 2)
-					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP"
+				if (env_array.size != 3)
+					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS"
 				end
 				directory_array=env_array[0].split('=')
 				$currentDirectory=directory_array[1]
 				sleep_array=env_array[1].split('=')
 				$sleep=sleep_array[1].to_i
+				alert_email_address_array=env_array[2].split('=')
+				$alert_email_address=alert_email_address_array[1]
+				p "alert email address = #{$alert_email_address}"
 				break
 			end
 		end
@@ -533,19 +540,19 @@ if (!upload_error)
 end
 
 if (upload_error)
-	## check first about the environment variable setting for MAILTO '
-	p "Use the environment variable 'MAILTO' for sending out SIS upload error messages to #{ENV['MAILTO']}"
+	## check first about the environment variable setting for $alert_email_address '
+	p "Sending out SIS upload error messages to #{$alert_email_address}"
 	p upload_error
 	## send email to support team with the error message
-	`echo #{upload_error} | mail -s "#{$server} SIS Upload Error" #{ENV['MAILTO']}`
+	`echo #{upload_error} | mail -s "#{$server} SIS Upload Error" #{$alert_email_address}`
 else
 	if ($upload_warnings != "")
 		# mail the upload warning message
-		## check first about the environment variable setting for MAILTO '
-		p "Use the environment variable 'MAILTO' for sending out SIS upload warning messages to #{ENV['MAILTO']}"
+		## check first about the environment variable setting for $alert_email_address
+		p "Sending out SIS upload warning messages to #{$alert_email_address}"
 		p $upload_warnings
 		## send email to support team with the error message
-		`echo #{$upload_warnings}  | mail -s "#{$server} SIS Upload Warnings" #{ENV['MAILTO']}`
+		`echo #{$upload_warnings}  | mail -s "#{$server} SIS Upload Warnings" #{$alert_email_address}`
 	end
 
 	# write the success message
