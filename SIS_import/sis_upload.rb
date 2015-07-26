@@ -9,6 +9,7 @@ require "rest-client"
 require "zip/zip"
 require "uri"
 require "addressable/uri"
+require "set"
 
 require_relative "utils.rb"
 
@@ -408,6 +409,8 @@ end
 # The function
 #
 def create_instructor_sandbox_site(zip_file_name, outputFile)
+	# create a hash for all unique teachers SIS ids
+	set_teacher_sis_ids = Set.new
 	Zip::ZipFile.open(zip_file_name) do |zipfile|
 		zipfile.each do |entry|
 			if entry.name == ENROLLMENTS_FILE_NAME
@@ -429,53 +432,65 @@ def create_instructor_sandbox_site(zip_file_name, outputFile)
 						# get user sis_login_id
 						user_canvas_id = user_details_json[0]["id"]
 						user_sis_login_id = user_details_json[0]["sis_login_id"]
-						outputFile.write("found user #{user_sis_login_id} with teaching role #{user_role} \n");
-
-						user_sandbox_site_name = TARGET_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)
-						# see whether there is an sandbox site for this user
-						previous_user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)}")
-						if (previous_user_sandbox_site.length == 0)
-							# check again for the current naming format of user sandbox site
-							user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{user_sandbox_site_name}")
-							if (user_sandbox_site.length == 0)
-								# if there is no such sandbox site, creat one
-								result = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses",
-								                         {
-									                         "account_id"   => ACCOUNT_NUMBER,
-									                         "course[name]" => user_sandbox_site_name,
-									                         "course[course_code]" => user_sandbox_site_name
-								                         })
-								p result
-								outputFile.write("Created a sandbox site - #{user_sandbox_site_name} for User #{user_sis_login_id} \n #{result} \n");
-
-								if (result.has_key?("id"))
-									# get the newly created course id
-									# add the instructor to the course as instructor
-									sandbox_course_id = result.fetch("id")
-									instructor_result = Canvas_API_POST("#{$server_api_url}courses/#{sandbox_course_id}/enrollments",
-									                                    {
-										                                    "enrollment[user_id]"   => user_canvas_id,
-										                                    "enrollment[type]" => "TeacherEnrollment",
-										                                    "enrollment[enrollment_state]" => "active"
-									                                    })
-									p instructor_result
-									outputFile.write("Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n");
-
-								end
-							end
-						else
-							# need to rename the previous course with new course title format
-							course_id=previous_user_sandbox_site[0]["id"]
-							# if there is no such sandbox site, creat one
-							result = Canvas_API_PUT("#{$server_api_url}courses/#{course_id}",
-							                         {
-								                         "course[name]" => user_sandbox_site_name,
-								                         "course[course_code]" => user_sandbox_site_name
-							                         })
-							outputFile.write("User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}\n");
+						if (!set_teacher_sis_ids.include? user_sis_login_id)
+							set_teacher_sis_ids.add user_sis_login_id
 						end
 					end
 				}
+
+				outputFile.write("\n\n found total #{set_teacher_sis_ids.size} users with teaching role \n\n");
+
+				# now that we have a set of newly added teacher sis ids, we will create sandbox site for those users
+=begin
+				set_teacher_sis_ids.each {
+					|user_sis_login_id|
+					outputFile.write("found user #{user_sis_login_id} with teaching role #{user_role} \n");
+
+					user_sandbox_site_name = TARGET_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)
+					# see whether there is an sandbox site for this user
+					previous_user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)}")
+					if (previous_user_sandbox_site.length == 0)
+						# check again for the current naming format of user sandbox site
+						user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{user_sandbox_site_name}")
+						if (user_sandbox_site.length == 0)
+							# if there is no such sandbox site, creat one
+							result = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses",
+							                         {
+								                         "account_id"   => ACCOUNT_NUMBER,
+								                         "course[name]" => user_sandbox_site_name,
+								                         "course[course_code]" => user_sandbox_site_name
+							                         })
+							p result
+							outputFile.write("Created a sandbox site - #{user_sandbox_site_name} for User #{user_sis_login_id} \n #{result} \n");
+
+							if (result.has_key?("id"))
+								# get the newly created course id
+								# add the instructor to the course as instructor
+								sandbox_course_id = result.fetch("id")
+								instructor_result = Canvas_API_POST("#{$server_api_url}courses/#{sandbox_course_id}/enrollments",
+								                                    {
+									                                    "enrollment[user_id]"   => user_canvas_id,
+									                                    "enrollment[type]" => "TeacherEnrollment",
+									                                    "enrollment[enrollment_state]" => "active"
+								                                    })
+								p instructor_result
+								outputFile.write("Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n");
+
+							end
+						end
+					else
+						# need to rename the previous course with new course title format
+						course_id=previous_user_sandbox_site[0]["id"]
+						# if there is no such sandbox site, creat one
+						result = Canvas_API_PUT("#{$server_api_url}courses/#{course_id}",
+						                         {
+							                         "course[name]" => user_sandbox_site_name,
+							                         "course[course_code]" => user_sandbox_site_name
+						                         })
+						outputFile.write("User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}\n");
+					end
+				}
+=end
 			end
 		end
 	end
@@ -529,7 +544,7 @@ if (!upload_error)
 
 			if (!upload_error)
 				# upload the file to canvas server
-				upload_error = upload_to_canvas(fileName, outputFile, output_file_base_name)
+				#upload_error = upload_to_canvas(fileName, outputFile, output_file_base_name)
 			end
 
 			## create sandbox sites for instructors newly uploaded
