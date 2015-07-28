@@ -44,32 +44,6 @@ require_relative "utils.rb"
 @Canvas_end_time = @Canvas_start_time + @Canvas_time_interval_in_seconds # one minute apart
 @Canvas_allowed_call_number_during_interval = 3000
 
-# control the API call pace
-def sleep_according_to_timer_and_api_call_limit(start_time, end_time, call_count, time_interval_in_seconds, allowed_call_number_during_interval)
-	# if meet max allowed call count during the time interval
-	# sleep until time expires
-	while (Time.now.to_i <= end_time.to_i && call_count >= allowed_call_number_during_interval)
-		sleep_sec = (end_time - Time.now).to_i + 2
-		p "sleep #{sleep_sec} seconds till next time interval"
-		sleep(sleep_sec)
-	end
-
-	if (Time.now.to_i > end_time.to_i)
-		# set new time frame
-		start_time = Time.now
-		end_time = start_time + time_interval_in_seconds # one minute apart
-		#rest the esb call count
-		p "reset call count"
-		call_count = 0
-	end
-
-	# return changed values
-	return {"start_time" => start_time,
-	        "end_time" => end_time,
-	        "call_count" => call_count
-	}
-end
-
 ## refresh token for ESB API call
 def refreshESBToken(outputFile)
 	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)

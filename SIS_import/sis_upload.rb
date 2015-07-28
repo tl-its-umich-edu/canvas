@@ -59,12 +59,31 @@ ACCOUNT_NUMBER = 1
 # the path of Canvas API call
 API_PATH="/api/v1/"
 
+
+# variables for Canva API call throttling
+@Canvas_call_count = 0
+@Canvas_start_time = Time.now
+@Canvas_time_interval_in_seconds = 3600
+@Canvas_end_time = @Canvas_start_time + @Canvas_time_interval_in_seconds # one minute apart
+@Canvas_allowed_call_number_during_interval = 3000
+
+# make sure the Canvas call is within API usage quota
+def Canvas_API_CALL_check
+	call_hash = sleep_according_to_timer_and_api_call_limit(@Canvas_start_time, @Canvas_end_time, @Canvas_call_count, @Canvas_time_interval_in_seconds, @Canvas_allowed_call_number_during_interval)
+	@Canvas_start_time = call_hash["start_time"]
+	@Canvas_end_time = call_hash["end_time"]
+	@Canvas_call_count = call_hash["call_count"]
+end
+
 # Ruby URI.escape has been deprecated.
 # Addressable::URI.escape seems to be a viable solution, which offers url encoding, form encoding and normalizes URLs.
 # http://stackoverflow.com/questions/2824126/whats-the-difference-between-uri-escape-and-cgi-escape
 
 ## make Canvas API GET call
 def Canvas_API_GET(url)
+	# make sure the Canvas call is within API usage quota
+	Canvas_API_CALL_check()
+
 	begin
 		response = RestClient.get Addressable::URI.escape(url), {:Authorization => "Bearer #{$token}",
 	                                :accept => "application/json",
@@ -77,6 +96,9 @@ end
 
 ## make Canvas API POST call
 def Canvas_API_POST(url, post_params)
+	# make sure the Canvas call is within API usage quota
+	Canvas_API_CALL_check()
+
 	begin
 		response = RestClient.post Addressable::URI.escape(url), post_params,
 		                           {:Authorization => "Bearer #{$token}",
@@ -91,6 +113,9 @@ end
 
 ## make Canvas API POST call
 def Canvas_API_PUT(url, post_params)
+	# make sure the Canvas call is within API usage quota
+	Canvas_API_CALL_check()
+
 	begin
 		response = RestClient.put Addressable::URI.escape(url), post_params,
 		                           {:Authorization => "Bearer #{$token}",
@@ -105,6 +130,9 @@ end
 
 ## make Canvas API POST call
 def Canvas_API_IMPORT(url, fileName)
+	# make sure the Canvas call is within API usage quota
+	Canvas_API_CALL_check()
+
 	begin
 		response = RestClient.post Addressable::URI.escape(url), {:multipart => true,
 																	 :attachment => File.new(fileName, 'rb')
@@ -362,10 +390,10 @@ def get_settings(securityFile, propertiesFile)
 		File.open(propertiesFile, 'r') do |pFile|
 			while line = pFile.gets
 				# only read the first line
-				# format: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS
+				# format: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS,canvas_time_interval=INTERVAL_IN_SECONDS,canvas_allowed_call_number=NUMBER
 				env_array = line.strip.split(',')
-				if (env_array.size != 3)
-					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS"
+				if (env_array.size != 5)
+					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS,canvas_allowed_call_number=NUMBER"
 				end
 				directory_array=env_array[0].split('=')
 				$currentDirectory=directory_array[1]
@@ -374,6 +402,10 @@ def get_settings(securityFile, propertiesFile)
 				alert_email_address_array=env_array[2].split('=')
 				$alert_email_address=alert_email_address_array[1]
 				p "alert email address = #{$alert_email_address}"
+				canvas_interval_array=env_array[3].split('=')
+				@Canvas_time_interval_in_seconds=canvas_interval_array[1].to_i
+				canvas_call_array=env_array[4].split('=')
+				@Canvas_allowed_call_number_during_interval=canvas_call_array[1].to_i
 				break
 			end
 		end
@@ -426,26 +458,28 @@ def create_instructor_sandbox_site(zip_file_name, outputFile)
 					user_status = user_attrs[4]
 					if (TEACHER_ROLE_ARRAY.include? user_role and user_status == ACTIVE_STATUS)
 						# find user with teacher role and is active
-
-						# find user details, mainly the sis login id
-						user_details_json = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/users?search_term=#{user_mpathway_id}")
-						# get user sis_login_id
-						user_canvas_id = user_details_json[0]["id"]
-						user_sis_login_id = user_details_json[0]["sis_login_id"]
-						if (!set_teacher_sis_ids.include? user_sis_login_id)
-							set_teacher_sis_ids.add user_sis_login_id
+						if (!set_teacher_sis_ids.include? user_mpathway_id)
+							set_teacher_sis_ids.add user_mpathway_id
+							p "add user id = #{user_mpathway_id} into set"
 						end
 					end
 				}
-
-				outputFile.write("\n\n found total #{set_teacher_sis_ids.size} users with teaching role \n\n");
+				p "found total #{set_teacher_sis_ids.size} users with teaching role"
+				outputFile.write "\n\n found total #{set_teacher_sis_ids.size} users with teaching role \n\n"\
 
 				# now that we have a set of newly added teacher sis ids, we will create sandbox site for those users
-=begin
-				set_teacher_sis_ids.each {
-					|user_sis_login_id|
-					outputFile.write("found user #{user_sis_login_id} with teaching role #{user_role} \n");
 
+				# counter
+				count_teachers = 0
+				set_teacher_sis_ids.each {
+					|user_mpathway_id|
+					count_teachers = count_teachers+1
+					p "#{count_teachers}/#{set_teacher_sis_ids.size} found user #{user_mpathway_id}"
+					outputFile.write("#{count_teachers}/#{set_teacher_sis_ids.size} found user #{user_mpathway_id}")
+					# find user canvas id
+					user_details_json = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/users?search")
+					user_canvas_id = user_details_json[0]["id"]
+					user_sis_login_id = user_details_json[0]["sis_login_id"]
 					user_sandbox_site_name = TARGET_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)
 					# see whether there is an sandbox site for this user
 					previous_user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)}")
@@ -490,7 +524,6 @@ def create_instructor_sandbox_site(zip_file_name, outputFile)
 						outputFile.write("User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}\n");
 					end
 				}
-=end
 			end
 		end
 	end
