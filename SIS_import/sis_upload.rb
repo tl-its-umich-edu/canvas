@@ -65,10 +65,10 @@ ACCOUNT_NUMBER = 1
 API_PATH="/api/v1/"
 
 
-# variables for Canva API call throttling
+# variables for Canvas API call throttling
 $call_hash = {
 	"call_count" => 0,
-  "start_time" => Time.now,
+	"start_time" => Time.now,
 	"time_interval_in_seconds" => 3600,
 	"end_time" => Time.now + 3600, # one hour apart
 	"allowed_call_number_during_interval" => 3000
@@ -90,8 +90,8 @@ def Canvas_API_GET(url)
 	$logger.info "Canvas API GET #{url}"
 	begin
 		response = RestClient.get Addressable::URI.escape(url), {:Authorization => "Bearer #{$token}",
-	                                :accept => "application/json",
-	                                :verify_ssl => true}
+		                                                         :accept => "application/json",
+		                                                         :verify_ssl => true}
 		return json_parse_safe(url, response, $logger)
 	rescue => e
 		return json_parse_safe(url, e.response, $logger)
@@ -106,15 +106,15 @@ def Canvas_API_POST(url, params, fileName)
 	begin
 		if (fileName != nil)
 			# upload the SIS zip file
-			response = RestClient.post  Addressable::URI.escape(url),
-																	{:multipart => true,
-	                                :attachment => File.new(fileName, 'rb')
-																	},
-																	{:Authorization => "Bearer #{$token}",
-																	:accept => "application/json",
-																	:import_type => "instructure_csv",
-																	:content_type => "application/zip",
-																	:verify_ssl => true}
+			response = RestClient.post Addressable::URI.escape(url),
+			                           {:multipart => true,
+			                            :attachment => File.new(fileName, 'rb')
+			                           },
+			                           {:Authorization => "Bearer #{$token}",
+			                            :accept => "application/json",
+			                            :import_type => "instructure_csv",
+			                            :content_type => "application/zip",
+			                            :verify_ssl => true}
 		else
 			response = RestClient.post Addressable::URI.escape(url),
 			                           params,
@@ -136,10 +136,10 @@ def Canvas_API_PUT(url, params)
 	$logger.info "Canvas API PUT #{url}"
 	begin
 		response = RestClient.put Addressable::URI.escape(url), params,
-		                           {:Authorization => "Bearer #{$token}",
-		                            :accept => "application/json",
-		                            :content_type => "application/json",
-		                            :verify_ssl => true}
+		                          {:Authorization => "Bearer #{$token}",
+		                           :accept => "application/json",
+		                           :content_type => "application/json",
+		                           :verify_ssl => true}
 		return json_parse_safe(url, response, $logger)
 	rescue => e
 		return json_parse_safe(url, e.response, $logger)
@@ -169,7 +169,7 @@ def upload_to_canvas(fileName, output_file_base_name)
 		error_array=parsed["errors"]
 		## hashmap ["message"=>"error_message"
 		upload_error = error_array[0]["message"]
-		logger.warn "upload error: " + upload_error
+		logger.warn "upload error: #{upload_error}"
 		return upload_error
 	end
 
@@ -184,17 +184,13 @@ def upload_to_canvas(fileName, output_file_base_name)
 		outputIdFile.close unless outputIdFile == nil
 	end
 
-	$logger.info "the job id is: #{job_id}"
-	$logger.info "here is the job #{job_id} status:"
+	$logger.info "the Canvas upload job id is: #{job_id} with status:"
 
 	begin
 		#sleep every 10 sec, before checking the status again
 		sleep($sleep);
 
 		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{job_id}")
-
-		#print out the whole json result
-		$logger.info "#{parsed_result}"
 
 		if (parsed_result["errors"])
 			## break and print error
@@ -206,18 +202,19 @@ def upload_to_canvas(fileName, output_file_base_name)
 				upload_error = parsed_result["errors"]
 			end
 			## hashmap ["message"=>"error_message"
-			$logger.warn "upload error: " + upload_error
+			$logger.warn "upload error: #{upload_error}"
 
 			break
 		else
 			job_progress=parsed_result["progress"]
-			$logger.info "processed #{job_progress}"
+			$logger.info "Canvas upload job processed #{job_progress}"
 		end
 	end until job_progress == 100
 
 	if (!upload_error)
 		# print out the process warning, if any
 		if (parsed_result["processing_errors"])
+			upload_error = parsed_result["processing_errors"]
 			$logger.warn "upload process errors: #{parsed_result["processing_errors"]}"
 		elsif (parsed_result["processing_warnings"])
 			#parsed_result = {"created_at" =>"2015-04-27T19:00:04Z",
@@ -266,14 +263,16 @@ def upload_to_canvas(fileName, output_file_base_name)
 
 	return upload_error
 
-end ## end of method definition
+end
+
+## end of method definition
 
 # get the prior upload process id and make Canvas API calls to see the current process status
 # return true if the process is 100% finished; false otherwise
 def prior_upload_error
 	# find all the process id files, and sort in descending order based on last modified time
 	id_log_file_path = "#{$currentDirectory}logs/*_id.txt"
-	$logger.info"id log file path is #{id_log_file_path}"
+	$logger.info "id log file path is #{id_log_file_path}"
 	files = Dir.glob(id_log_file_path)
 	files = files.sort_by { |file| File.mtime(file) }.reverse
 	if (files.size == 0)
@@ -294,9 +293,9 @@ def prior_upload_error
 		end
 
 		process_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{process_id}")
-		$logger.info process_result
+		$logger.info "Canvas upload job #{process_id} with process status #{process_result}"
 		if (process_result["errors"] && (process_result["errors"].is_a? Array))
-			$logger.info "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
+			$logger.info "#{process_result["errors"][0]["message"]} for Canvas upload process id number #{process_id}. Continue with current upload."
 			# if the prior process lookup result in error, there is no need to block future uploads
 			return false
 		end
@@ -457,7 +456,7 @@ def get_teacher_sis_ids_set (zip_file_name)
 						# find user with teacher role and is active
 						if (!set_teacher_sis_ids.include? user_mpathway_id)
 							set_teacher_sis_ids.add user_mpathway_id
-							$logger.info "add user id = #{user_mpathway_id} into set"
+							$logger.info "add user id = #{user_mpathway_id} into teacher set"
 						end
 					end
 				}
@@ -479,12 +478,11 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_sis_login_id)
 		# if there is no such sandbox site, creat one
 		result = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses",
 		                         {
-			                         "account_id"   => ACCOUNT_NUMBER,
+			                         "account_id" => ACCOUNT_NUMBER,
 			                         "course[name]" => user_sandbox_site_name,
 			                         "course[course_code]" => user_sandbox_site_name
 		                         },
 		                         nil)
-		$logger.info result
 		$logger.info "Created a sandbox site - #{user_sandbox_site_name} for User #{user_sis_login_id} \n #{result}"
 
 		# get the newly created course id
@@ -493,12 +491,11 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_sis_login_id)
 			sandbox_course_id = result.fetch("id")
 			instructor_result = Canvas_API_POST("#{$server_api_url}courses/#{sandbox_course_id}/enrollments",
 			                                    {
-				                                    "enrollment[user_id]"   => user_canvas_id,
+				                                    "enrollment[user_id]" => user_canvas_id,
 				                                    "enrollment[type]" => "TeacherEnrollment",
 				                                    "enrollment[enrollment_state]" => "active"
 			                                    },
-																					nil)
-			$logger.info instructor_result
+			                                    nil)
 			$logger.info "Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n"
 		end
 	end
@@ -513,6 +510,7 @@ def rename_site(course_id, user_sis_login_id, user_sandbox_site_name)
 	                        })
 	$logger.info "User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}"
 end
+
 #
 # The function to read zip file input and create sandbox sites for all defined instructors
 #
@@ -553,7 +551,7 @@ end
 # the command line argument count
 count=1
 # iterate through the inline arguments
-ARGV.each do|arg|
+ARGV.each do |arg|
 	if (count==1)
 		#security file
 		securityFile = arg
@@ -594,7 +592,7 @@ begin
 			upload_error = "There are more than one SIS zip files to be uploaded."
 		elsif
 			## get the name of file to process
-			fileName=fileNames[0]
+		fileName=fileNames[0]
 			currentFileBaseName = File.basename(fileName, ".zip")
 
 			## checksum verification step
@@ -618,15 +616,15 @@ if (upload_error)
 	$logger.warn "Sending out SIS upload error messages to #{$alert_email_address}"
 	## send email to support team with the error message
 	`echo #{upload_error} | mail -s "#{$server} SIS Upload Error" #{$alert_email_address}`
-	$logger.warn upload_error
+	$logger.warn "SIS upload error #{upload_error}"
 else
 	if ($upload_warnings != "")
 		# mail the upload warning message
 		## check first about the environment variable setting for alert_email_address
-		$logger.info "Sending out SIS upload warning messages to #{$alert_email_address}"
+		$logger.warn "Sending out SIS upload warning messages to #{$alert_email_address}"
 		## send email to support team with the error message
 		`echo #{$upload_warnings}  | mail -s "#{$server} SIS Upload Warnings" #{$alert_email_address}`
-		$logger.warn $upload_warnings
+		$logger.warn "SIS upload warning #{$upload_warnings}"
 	end
 
 	# write the success message
@@ -635,8 +633,7 @@ else
 	FileUtils.mv(Dir.glob("#{$currentDirectory}*.zip"), $archiveDirectory)
 	FileUtils.mv(Dir.glob("#{$currentDirectory}*MD5.txt"), $archiveDirectory)
 
-	upload_success_msg = "SIS upload finished with " + fileName
-	$logger.info upload_success_msg
+	$logger.info "SIS upload finished with #{fileName}"
 end
 
 # close logger

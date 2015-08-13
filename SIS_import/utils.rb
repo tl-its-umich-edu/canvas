@@ -23,7 +23,7 @@ def sleep_according_to_timer_and_api_call_limit(call_hash, logger)
 	# sleep until time expires
 	while (Time.now.to_i <= call_hash['end_time'].to_i && call_hash['call_count'] >= call_hash['allowed_call_number_during_interval'])
 		sleep_sec = (call_hash['end_time'] - Time.now).to_i + 2
-		logger.info "sleep #{sleep_sec} seconds till next time interval"
+		logger.info "API call: sleep #{sleep_sec} seconds till next time interval"
 		sleep(sleep_sec)
 	end
 
