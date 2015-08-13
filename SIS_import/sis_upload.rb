@@ -10,8 +10,13 @@ require "zip/zip"
 require "uri"
 require "addressable/uri"
 require "set"
-
 require_relative "utils.rb"
+require "logger"
+
+# Create a Logger that outputs to the standard output stream, with a level of info
+# set the Logger's
+$logger = Logger.new(STDOUT)
+$logger.level = Logger::INFO
 
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_properties_file_path>
@@ -61,19 +66,17 @@ API_PATH="/api/v1/"
 
 
 # variables for Canva API call throttling
-@Canvas_call_count = 0
-@Canvas_start_time = Time.now
-@Canvas_time_interval_in_seconds = 3600
-@Canvas_end_time = @Canvas_start_time + @Canvas_time_interval_in_seconds # one minute apart
-@Canvas_allowed_call_number_during_interval = 3000
+$call_hash = {
+	"call_count" => 0,
+  "start_time" => Time.now,
+	"time_interval_in_seconds" => 3600,
+	"end_time" => Time.now + 3600, # one hour apart
+	"allowed_call_number_during_interval" => 3000
+}
 
 # make sure the Canvas call is within API usage quota
 def Canvas_API_CALL_check
-	call_hash = sleep_according_to_timer_and_api_call_limit(@Canvas_start_time, @Canvas_end_time, @Canvas_call_count, @Canvas_time_interval_in_seconds, @Canvas_allowed_call_number_during_interval)
-	@Canvas_start_time = call_hash["start_time"]
-	@Canvas_end_time = call_hash["end_time"]
-	@Canvas_call_count = call_hash["call_count"]
-	@Canvas_call_count = @Canvas_call_count+1
+	$call_hash = sleep_according_to_timer_and_api_call_limit($call_hash, $logger)
 end
 
 # Ruby URI.escape has been deprecated.
@@ -84,72 +87,66 @@ end
 def Canvas_API_GET(url)
 	# make sure the Canvas call is within API usage quota
 	Canvas_API_CALL_check()
-	p "Canvas API GET #{url}"
+	$logger.info "Canvas API GET #{url}"
 	begin
 		response = RestClient.get Addressable::URI.escape(url), {:Authorization => "Bearer #{$token}",
 	                                :accept => "application/json",
 	                                :verify_ssl => true}
-		return json_parse_safe(url, response, nil)
+		return json_parse_safe(url, response, $logger)
 	rescue => e
-		return json_parse_safe(url, e.response, nil)
+		return json_parse_safe(url, e.response, $logger)
 	end
 end
 
 ## make Canvas API POST call
-def Canvas_API_POST(url, post_params)
+def Canvas_API_POST(url, params, fileName)
 	# make sure the Canvas call is within API usage quota
 	Canvas_API_CALL_check()
-	p "Canvas API POST #{url}"
+	$logger.info "Canvas API POST #{url}"
 	begin
-		response = RestClient.post Addressable::URI.escape(url), post_params,
-		                           {:Authorization => "Bearer #{$token}",
-		                            :accept => "application/json",
-		                            :content_type => "application/json",
-		                            :verify_ssl => true}
-		return json_parse_safe(url, response, nil)
-	rescue => e
-		return json_parse_safe(url, e.response, nil)
-	end
-end
-
-## make Canvas API POST call
-def Canvas_API_PUT(url, post_params)
-	# make sure the Canvas call is within API usage quota
-	Canvas_API_CALL_check()
-	p "Canvas API PUT #{url}"
-	begin
-		response = RestClient.put Addressable::URI.escape(url), post_params,
-		                           {:Authorization => "Bearer #{$token}",
-		                            :accept => "application/json",
-		                            :content_type => "application/json",
-		                            :verify_ssl => true}
-		return json_parse_safe(url, response, nil)
-	rescue => e
-		return json_parse_safe(url, e.response, nil)
-	end
-end
-
-## make Canvas API POST call
-def Canvas_API_IMPORT(url, fileName)
-	# make sure the Canvas call is within API usage quota
-	Canvas_API_CALL_check()
-	p "Canvas API IMPORT #{url}"
-	begin
-		response = RestClient.post Addressable::URI.escape(url), {:multipart => true,
-																	 :attachment => File.new(fileName, 'rb')
+		if (fileName != nil)
+			# upload the SIS zip file
+			response = RestClient.post  Addressable::URI.escape(url),
+																	{:multipart => true,
+	                                :attachment => File.new(fileName, 'rb')
 																	},
 																	{:Authorization => "Bearer #{$token}",
-	                                :accept => "application/json",
-	                                :import_type => "instructure_csv",
-	                                :content_type => "application/zip",
-	                                :verify_ssl => true}
-		return json_parse_safe(url, response, nil)
+																	:accept => "application/json",
+																	:import_type => "instructure_csv",
+																	:content_type => "application/zip",
+																	:verify_ssl => true}
+		else
+			response = RestClient.post Addressable::URI.escape(url),
+			                           params,
+			                           {:Authorization => "Bearer #{$token}",
+			                            :accept => "application/json",
+			                            :content_type => "application/json",
+			                            :verify_ssl => true}
+		end
+		return json_parse_safe(url, response, $logger)
 	rescue => e
-		return json_parse_safe(url, e.response, nil)
+		return json_parse_safe(url, e.response, $logger)
 	end
 end
 
-def upload_to_canvas(fileName, outputFile, output_file_base_name)
+## make Canvas API PUT call
+def Canvas_API_PUT(url, params)
+	# make sure the Canvas call is within API usage quota
+	Canvas_API_CALL_check()
+	$logger.info "Canvas API PUT #{url}"
+	begin
+		response = RestClient.put Addressable::URI.escape(url), params,
+		                           {:Authorization => "Bearer #{$token}",
+		                            :accept => "application/json",
+		                            :content_type => "application/json",
+		                            :verify_ssl => true}
+		return json_parse_safe(url, response, $logger)
+	rescue => e
+		return json_parse_safe(url, e.response, $logger)
+	end
+end
+
+def upload_to_canvas(fileName, output_file_base_name)
 
 	# set the error flag, default to be false
 	upload_error = false
@@ -160,19 +157,19 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 	end
 
 	# upload start time
-	outputFile.write("upload start time : " + Time.new.inspect)
+	$logger.info "upload start time : " + Time.new.inspect
 
 	# continue the current upload process
-	parsed = Canvas_API_IMPORT("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json", fileName)
+	parsed = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json",
+	                         nil,
+	                         fileName)
 
 	if (parsed["errors"])
 		## break and print error
 		error_array=parsed["errors"]
 		## hashmap ["message"=>"error_message"
 		upload_error = error_array[0]["message"]
-		outputFile.write("upload error: " + upload_error)
-		outputFile.write("\n")
-
+		logger.warn "upload error: " + upload_error
 		return upload_error
 	end
 
@@ -187,8 +184,8 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 		outputIdFile.close unless outputIdFile == nil
 	end
 
-	outputFile.write("the job id is: #{job_id}\n")
-	outputFile.write("here is the job #{job_id} status: \n")
+	$logger.info "the job id is: #{job_id}"
+	$logger.info "here is the job #{job_id} status:"
 
 	begin
 		#sleep every 10 sec, before checking the status again
@@ -197,7 +194,7 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{job_id}")
 
 		#print out the whole json result
-		outputFile.write("#{parsed_result}\n")
+		$logger.info "#{parsed_result}"
 
 		if (parsed_result["errors"])
 			## break and print error
@@ -209,20 +206,19 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 				upload_error = parsed_result["errors"]
 			end
 			## hashmap ["message"=>"error_message"
-			outputFile.write("upload error: " + upload_error)
-			outputFile.write("\n")
+			$logger.warn "upload error: " + upload_error
 
 			break
 		else
 			job_progress=parsed_result["progress"]
-			outputFile.write("processed #{job_progress}\n")
+			$logger.info "processed #{job_progress}"
 		end
 	end until job_progress == 100
 
 	if (!upload_error)
 		# print out the process warning, if any
 		if (parsed_result["processing_errors"])
-			outputFile.write("upload process errors: #{parsed_result["processing_errors"]}\n")
+			$logger.warn "upload process errors: #{parsed_result["processing_errors"]}"
 		elsif (parsed_result["processing_warnings"])
 			#parsed_result = {"created_at" =>"2015-04-27T19:00:04Z",
 			#                 "started_at"=>"2015-04-27T19:00:04Z",
@@ -257,16 +253,16 @@ def upload_to_canvas(fileName, outputFile, output_file_base_name)
 			#                                         ["enrollments.csv","User 67102976 didn't exist for user enrollment"]]}
 
 			# write the warning message into log file
-			outputFile.write("upload process warning: #{parsed_result["processing_warnings"]}\n")
+			$logger.info "upload process warning: #{parsed_result["processing_warnings"]}"
 			# assign the warning message to upload_warnings param
 			$upload_warnings = parsed_result["processing_warnings"]
 		else
-			outputFile.write("upload process finished successfully\n")
+			$logger.info "upload process finished successfully"
 		end
 	end
 
 	# upload stop time
-	outputFile.write("upload stop time : " + Time.new.inspect + "\n")
+	$logger.info "upload stop time : " + Time.new.inspect
 
 	return upload_error
 
@@ -277,17 +273,17 @@ end ## end of method definition
 def prior_upload_error
 	# find all the process id files, and sort in descending order based on last modified time
 	id_log_file_path = "#{$currentDirectory}logs/*_id.txt"
-	p "id log file path is #{id_log_file_path}"
+	$logger.info"id log file path is #{id_log_file_path}"
 	files = Dir.glob(id_log_file_path)
 	files = files.sort_by { |file| File.mtime(file) }.reverse
 	if (files.size == 0)
-		p "no id file found in path #{id_log_file_path}"
+		$logger.warn "no id file found in path #{id_log_file_path}"
 		## first run, no prior cases
 		return false
 	else
 		## get the first and most recent id file
 		id_file = files[0]
-		p "found recent id file #{id_file}"
+		$logger.info "found recent id file #{id_file}"
 		process_id = ''
 		File.open(id_file, 'r') do |idFile|
 			while line = idFile.gets
@@ -298,9 +294,9 @@ def prior_upload_error
 		end
 
 		process_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{process_id}")
-		p process_result
+		$logger.info process_result
 		if (process_result["errors"] && (process_result["errors"].is_a? Array))
-			p "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
+			$logger.info "#{process_result["errors"][0]["message"]} for process id number #{process_id}. Continue with current upload."
 			# if the prior process lookup result in error, there is no need to block future uploads
 			return false
 		end
@@ -308,7 +304,7 @@ def prior_upload_error
 		progress_status = process_result["progress"]
 		if (progress_status != 100)
 			# the prior job has not been processed 100%
-			p "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
+			$logger.warn "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
 			return true
 		else
 			# prior job finished, ready for new upload
@@ -391,22 +387,21 @@ def get_settings(securityFile, propertiesFile)
 		File.open(propertiesFile, 'r') do |pFile|
 			while line = pFile.gets
 				# only read the first line
-				# format: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS,canvas_time_interval=INTERVAL_IN_SECONDS,canvas_allowed_call_number=NUMBER
+				# format: directory=DIRECTORY,sleep=SLEEP,canvas_time_interval=INTERVAL_IN_SECONDS,canvas_allowed_call_number=NUMBER,alert_email_address=ALERT_EMAIL_ADDRESS
 				env_array = line.strip.split(',')
 				if (env_array.size != 5)
-					return "properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP,alert_email_address=ALERT_EMAIL_ADDRESS,canvas_allowed_call_number=NUMBER"
+					return "Properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP,canvas_time_interval=INTERVAL_IN_SECONDS,canvas_allowed_call_number=NUMBER,alert_email_address=ALERT_EMAIL_ADDRESS"
 				end
 				directory_array=env_array[0].split('=')
 				$currentDirectory=directory_array[1]
 				sleep_array=env_array[1].split('=')
 				$sleep=sleep_array[1].to_i
-				alert_email_address_array=env_array[2].split('=')
+				canvas_interval_array=env_array[2].split('=')
+				$call_hash["time_interval_in_seconds"]=canvas_interval_array[1].to_i
+				canvas_call_array=env_array[3].split('=')
+				$call_hash["allowed_call_number_during_interval"]=canvas_call_array[1].to_i
+				alert_email_address_array=env_array[4].split('=')
 				$alert_email_address=alert_email_address_array[1]
-				p "alert email address = #{$alert_email_address}"
-				canvas_interval_array=env_array[3].split('=')
-				@Canvas_time_interval_in_seconds=canvas_interval_array[1].to_i
-				canvas_call_array=env_array[4].split('=')
-				@Canvas_allowed_call_number_during_interval=canvas_call_array[1].to_i
 				break
 			end
 		end
@@ -418,10 +413,10 @@ def get_settings(securityFile, propertiesFile)
 			$archiveDirectory=$currentDirectory + "archive/"
 			$outputDirectory=$currentDirectory + "logs/"
 
-			p "server=" + $server
-			p "current directory: " + $currentDirectory
-			p "archive directory: " + $archiveDirectory
-			p "output directory: " + $outputDirectory
+			$logger.info "server=" + $server
+			$logger.info "current directory: " + $currentDirectory
+			$logger.info "archive directory: " + $archiveDirectory
+			$logger.info "output directory: " + $outputDirectory
 
 			if (Dir[$archiveDirectory].length != 1)
 				## archive directory
@@ -439,9 +434,10 @@ def get_settings(securityFile, propertiesFile)
 end
 
 #
-# The function
+# read instructor information from zip file
+# return a set consists SIS id of all instructors
 #
-def create_instructor_sandbox_site(zip_file_name, outputFile)
+def get_teacher_sis_ids_set (zip_file_name)
 	# create a hash for all unique teachers SIS ids
 	set_teacher_sis_ids = Set.new
 	Zip::ZipFile.open(zip_file_name) do |zipfile|
@@ -461,76 +457,96 @@ def create_instructor_sandbox_site(zip_file_name, outputFile)
 						# find user with teacher role and is active
 						if (!set_teacher_sis_ids.include? user_mpathway_id)
 							set_teacher_sis_ids.add user_mpathway_id
-							p "add user id = #{user_mpathway_id} into set"
-						end
-					end
-				}
-				p "found total #{set_teacher_sis_ids.size} users with teaching role"
-				outputFile.write "\n\n found total #{set_teacher_sis_ids.size} users with teaching role \n\n"\
-
-				# now that we have a set of newly added teacher sis ids, we will create sandbox site for those users
-
-				# counter
-				count_teachers = 0
-				set_teacher_sis_ids.each {
-					|user_mpathway_id|
-					count_teachers = count_teachers+1
-					p "#{count_teachers}/#{set_teacher_sis_ids.size} found user #{user_mpathway_id}"
-					outputFile.write("#{count_teachers}/#{set_teacher_sis_ids.size} found user #{user_mpathway_id}\n")
-					# find user canvas id
-					user_details_json = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/users?search_term=#{user_mpathway_id}")
-					if (user_details_json.size == 1)
-						user_canvas_id = user_details_json[0]["id"]
-						user_sis_login_id = user_details_json[0]["sis_login_id"]
-						user_sandbox_site_name = TARGET_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)
-						# see whether there is an sandbox site for this user
-						previous_user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)}")
-						p "no previous site "
-						if (previous_user_sandbox_site.length == 0)
-							# check again for the current naming format of user sandbox site
-							user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{user_sandbox_site_name}")
-							if (user_sandbox_site.length == 0)
-								# if there is no such sandbox site, creat one
-								result = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses",
-								                         {
-									                         "account_id"   => ACCOUNT_NUMBER,
-									                         "course[name]" => user_sandbox_site_name,
-									                         "course[course_code]" => user_sandbox_site_name
-								                         })
-								p result
-								outputFile.write("Created a sandbox site - #{user_sandbox_site_name} for User #{user_sis_login_id} \n #{result} \n");
-
-								if (result.has_key?("id"))
-									# get the newly created course id
-									# add the instructor to the course as instructor
-									sandbox_course_id = result.fetch("id")
-									instructor_result = Canvas_API_POST("#{$server_api_url}courses/#{sandbox_course_id}/enrollments",
-									                                    {
-										                                    "enrollment[user_id]"   => user_canvas_id,
-										                                    "enrollment[type]" => "TeacherEnrollment",
-										                                    "enrollment[enrollment_state]" => "active"
-									                                    })
-									p instructor_result
-									outputFile.write("Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n");
-
-								end
-							end
-						else
-							# need to rename the previous course with new course title format
-							course_id=previous_user_sandbox_site[0]["id"]
-							# if there is no such sandbox site, creat one
-							result = Canvas_API_PUT("#{$server_api_url}courses/#{course_id}",
-							                         {
-								                         "course[name]" => user_sandbox_site_name,
-								                         "course[course_code]" => user_sandbox_site_name
-							                         })
-							outputFile.write("User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}\n");
+							$logger.info "add user id = #{user_mpathway_id} into set"
 						end
 					end
 				}
 			end
 		end
 	end
+
+	return set_teacher_sis_ids
+end
+
+def create_instructor_new_sandbox_site(user_canvas_id, user_sis_login_id)
+	# the new sandbox site name
+	user_sandbox_site_name = TARGET_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)
+
+	# check again for the current naming format of user sandbox site
+	user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{user_sandbox_site_name}")
+	if (user_sandbox_site.length == 0)
+		# create user sandbox site
+		# if there is no such sandbox site, creat one
+		result = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses",
+		                         {
+			                         "account_id"   => ACCOUNT_NUMBER,
+			                         "course[name]" => user_sandbox_site_name,
+			                         "course[course_code]" => user_sandbox_site_name
+		                         },
+		                         nil)
+		$logger.info result
+		$logger.info "Created a sandbox site - #{user_sandbox_site_name} for User #{user_sis_login_id} \n #{result}"
+
+		# get the newly created course id
+		# add the instructor to the course as instructor
+		if (result.has_key?("id"))
+			sandbox_course_id = result.fetch("id")
+			instructor_result = Canvas_API_POST("#{$server_api_url}courses/#{sandbox_course_id}/enrollments",
+			                                    {
+				                                    "enrollment[user_id]"   => user_canvas_id,
+				                                    "enrollment[type]" => "TeacherEnrollment",
+				                                    "enrollment[enrollment_state]" => "active"
+			                                    },
+																					nil)
+			$logger.info instructor_result
+			$logger.info "Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n"
+		end
+	end
+end
+
+def rename_site(course_id, user_sis_login_id, user_sandbox_site_name)
+	# if there is no such sandbox site, creat one
+	result = Canvas_API_PUT("#{$server_api_url}courses/#{course_id}",
+	                        {
+		                        "course[name]" => user_sandbox_site_name,
+		                        "course[course_code]" => user_sandbox_site_name
+	                        })
+	$logger.info "User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name}"
+end
+#
+# The function to read zip file input and create sandbox sites for all defined instructors
+#
+def create_all_instructor_sandbox_site(zip_file_name)
+	# create a hash for all unique teachers SIS ids
+	set_teacher_sis_ids = get_teacher_sis_ids_set(zip_file_name)
+	$logger.info "found total #{set_teacher_sis_ids.size} users with teaching role"
+
+	# now that we have a set of newly added teacher sis ids, we will create sandbox site for those users
+	# counter
+	count_teachers = 0
+	set_teacher_sis_ids.each {
+		|user_mpathway_id|
+		count_teachers = count_teachers+1
+		$logger.info "#{count_teachers}/#{set_teacher_sis_ids.size} found user #{user_mpathway_id}"
+		# find user canvas id
+		user_details_json = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/users?search_term=#{user_mpathway_id}")
+		if (user_details_json.size == 1)
+			# found user in Canvas
+			user_canvas_id = user_details_json[0]["id"]
+			user_sis_login_id = user_details_json[0]["sis_login_id"]
+
+			# 1. see whether there is an sandbox site for this user
+			previous_user_sandbox_site = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_sis_login_id)}")
+			if (previous_user_sandbox_site.length == 0)
+				# 2. create new sandbox site with new name format
+				create_instructor_new_sandbox_site(user_canvas_id, user_sis_login_id)
+			else
+				# 3. need to rename the previous course with new course title format
+				course_id=previous_user_sandbox_site[0]["id"]
+				rename_course_site(course_id, user_sis_login_id, user_sandbox_site_name)
+			end
+		end
+	}
 end
 
 
@@ -555,14 +571,19 @@ end
 # read the settings from properties files
 upload_error = get_settings(securityFile, propertiesFile)
 
-outputFile = false
-if (!upload_error)
-	#open the output file
-	begin
-		# get output file name
-		output_file_base_name = "Canvas_upload_" + Time.new.strftime("%Y%m%d%H%M%S")
-		outputFile = File.open($outputDirectory + output_file_base_name + ".txt", "w")
+#open the output file
+begin
+	# get output file name
+	output_file_base_name = "Canvas_upload_" + Time.new.strftime("%Y%m%d%H%M%S")
+	output_file_name = $outputDirectory + output_file_base_name + ".txt"
+	outputFile = File.open(output_file_name, "w")
+	$logger.info "log file is at #{output_file_name}"
 
+	# reset the logger output to output file
+	$logger = Logger.new(outputFile)
+	$logger.level = Logger::INFO
+
+	if (!upload_error)
 		# the canvas import zip file
 		fileNames = Dir[$currentDirectory+ "Canvas_Extract_*.zip"];
 		if (fileNames.length == 0)
@@ -581,30 +602,31 @@ if (!upload_error)
 
 			if (!upload_error)
 				# upload the file to canvas server
-				upload_error = upload_to_canvas(fileName, outputFile, output_file_base_name)
+				upload_error = upload_to_canvas(fileName, output_file_base_name)
 			end
 
 			## create sandbox sites for instructors newly uploaded
 			## if they do not have such a site now
-			create_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", outputFile)
+			create_all_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip")
 		end
 	end
 end
 
+
 if (upload_error)
 	## check first about the environment variable setting for $alert_email_address '
-	p "Sending out SIS upload error messages to #{$alert_email_address}"
-	p upload_error
+	$logger.warn "Sending out SIS upload error messages to #{$alert_email_address}"
 	## send email to support team with the error message
 	`echo #{upload_error} | mail -s "#{$server} SIS Upload Error" #{$alert_email_address}`
+	$logger.warn upload_error
 else
 	if ($upload_warnings != "")
 		# mail the upload warning message
-		## check first about the environment variable setting for $alert_email_address
-		p "Sending out SIS upload warning messages to #{$alert_email_address}"
-		p $upload_warnings
+		## check first about the environment variable setting for alert_email_address
+		$logger.info "Sending out SIS upload warning messages to #{$alert_email_address}"
 		## send email to support team with the error message
 		`echo #{$upload_warnings}  | mail -s "#{$server} SIS Upload Warnings" #{$alert_email_address}`
+		$logger.warn $upload_warnings
 	end
 
 	# write the success message
@@ -614,9 +636,8 @@ else
 	FileUtils.mv(Dir.glob("#{$currentDirectory}*MD5.txt"), $archiveDirectory)
 
 	upload_success_msg = "SIS upload finished with " + fileName
-	outputFile.write(upload_success_msg)
-	p upload_success_msg
+	$logger.info upload_success_msg
 end
 
-# close output file
-outputFile.close unless outputFile == false
+# close logger
+$logger.close
