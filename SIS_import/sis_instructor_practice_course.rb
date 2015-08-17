@@ -1,7 +1,3 @@
-# the Canvas subaccount ID for instructor practice course sites
-# defaults to be the main account id=1
-PRACTICE_COURSE_SUBACCOUNT = 1
-
 # placeholder for user sandbox site title
 USERNAME="USERNAME"
 PREVIOUS_USER_SANDBOX_NAME = "A Canvas training course for #{USERNAME}"

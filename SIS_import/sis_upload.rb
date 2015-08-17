@@ -52,6 +52,10 @@ $alert_email_address = "canvas-sis-data-alerts@umich.edu"
 # Canvas account number
 ACCOUNT_NUMBER = 1
 
+# the Canvas subaccount ID for instructor practice course sites
+# defaults to be the main account id=1
+$practice_course_subaccount = 1
+
 # the path of Canvas API call
 API_PATH="/api/v1/"
 
