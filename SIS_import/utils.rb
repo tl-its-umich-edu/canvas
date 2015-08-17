@@ -9,7 +9,7 @@ def json_parse_safe(url, json, logger)
 		begin
 			return JSON.parse(json)
 		rescue JSON::ParserError, TypeError => e
-			logger.warn "Not a valid JSON String #{json} for url= #{url}"
+			logger.warn "Not a valid JSON String #{json} for url= #{url} " + e.message
 			return nil
 		end
 	else
