@@ -378,7 +378,6 @@ def get_settings(securityFile, propertiesFile)
 		## properties file
 		return "Cannot find properties file #{propertiesFile}."
 	else
-		p propertiesFile
 		File.open(propertiesFile, 'r') do |pFile|
 			while line = pFile.gets
 				# only read the first line
@@ -476,7 +475,7 @@ begin
 			upload_error = "There are more than one SIS zip files to be uploaded."
 		elsif
 			## get the name of file to process
-		fileName=fileNames[0]
+			fileName=fileNames[0]
 			currentFileBaseName = File.basename(fileName, ".zip")
 
 			## checksum verification step
