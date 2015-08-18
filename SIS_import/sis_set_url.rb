@@ -183,7 +183,7 @@ def get_all_canvas_page_urls(response_headers)
 		end
 	}
 
-	@logger.info last_page_number
+	@logger.info " Found #{last_page_number} of pages from Canvas API call results"
 
 	# now that we have the last page number, we will construct a list of all url for each page
 	if (last_page_number > 1)
@@ -207,7 +207,7 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 	@esb_call_count = call_hash["call_count"]
 
 	@esb_call_count = @esb_call_count+1
-	@logger.info "ESB call #{@esb_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} "<<url
+	@logger.info "ESB call #{@esb_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
 
 	url = URI.parse(url)
 
@@ -235,8 +235,6 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 			# if parameter hash is not null, attach them to form
 			request.set_form_data(param_hash)
 		end
-
-		@logger.info param_hash
 	end
 
 	sock = Net::HTTP.new(url.host, url.port)
@@ -276,7 +274,6 @@ def getMPathwayTerms(esbToken)
 		# an array returned here event
 		result["getSOCTermsResponse"]["Term"].each do |term|
 			termId = term["TermCode"]
-			@logger.info termId
 			rv.add(termId.to_s)
 		end
 	end
@@ -317,7 +314,7 @@ def processTermCourses(mPathwayTermSet, esbToken)
 			term_course_count = 0
 			json_data.each { |course|
 				term_course_count = term_course_count + 1
-				@logger.info "#{termId} term_course_count=#{term_course_count}"
+				@logger.info "for term id=#{termId} term_course_count=#{term_course_count}"
 				if (course.has_key?("workflow_state") && course["workflow_state"] == "available")
 					# only set url for those published sections
 					# course is a hash
@@ -371,15 +368,13 @@ def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 	mPathwayTermSet = getMPathwayTerms(esbToken)
 
 	# set URL start time
-	start_string = "set URL start time : " + Time.new.inspect + "\n"
-	@logger.info start_string
+	@logger.info "set URL start time : #{Time.new.inspect}"
 
 	#call Canvas API to get course url
 	upload_error = processTermCourses(mPathwayTermSet, esbToken)
 
 	# set URL stop time
-	stop_string = "set URL stop time : " + Time.new.inspect + "\n"
-	@logger.info stop_string
+	@logger.info "set URL stop time : #{Time.new.inspect}"
 
 	return upload_error
 
@@ -522,22 +517,18 @@ else
 				@logger.info "Sites set URLs finished."
 			else
 				process_error = updateError
-				@logger.warn "set url error \n #{process_error}"
 			end
 		end
 	end
 end
 
 if (process_error && !process_error.empty?)
-
-	p process_error
-
 	# mail the upload warning message
 	## check first about the environment variable setting for alert_email_address
 	@logger.info "Sending out SIS upload warning messages to #{@alert_email_address}"
 	## send email to support team with the error message
 	`echo "#{process_error}" | mail -s "#{@canvasUrl} SIS Set URL Error" #{@alert_email_address}`
-	@logger.warn process_error
+	@logger.warn "set url error: #{process_error}"
 end
 
 # close logger
