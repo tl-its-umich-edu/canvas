@@ -75,6 +75,9 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login
 			                                    },
 			                                    nil)
 			logger.info "Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n"
+		else
+			# no id field, log as warning
+			logger.warn "There is no id field in the sandbox course json \n #{result}"
 		end
 	else
 		# there is already such site
