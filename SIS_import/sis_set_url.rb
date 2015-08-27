@@ -275,14 +275,17 @@ def getMPathwayTerms(esbToken)
 		# ideally the Term element should always be an Array
 		# a ServiceLink request has been created
 		# but for now, we need to
+		term_array = Array.new
 		if (result["getSOCTermsResponse"]["Term"].is_a? Array)
-			result["getSOCTermsResponse"]["Term"].each do |term|
-				termId = term["TermCode"]
-				rv.add(termId.to_s)
-			end
+			# if the return json element is of array, just assign this array over
+			term_array = result["getSOCTermsResponse"]["Term"]
 		else
-			# deal with the special case when only one item is returned - it is not returned as in an Array
-			term = result["getSOCTermsResponse"]["Term"]
+			# otherwise, if the return json element is a single object,
+			# then, add it to the array
+			term_array << result["getSOCTermsResponse"]["Term"]
+		end
+		# now this is an array type for sure
+		term_array.each do |term|
 			termId = term["TermCode"]
 			rv.add(termId.to_s)
 		end
