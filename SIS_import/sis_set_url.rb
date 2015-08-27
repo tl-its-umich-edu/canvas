@@ -100,9 +100,10 @@ def Canvas_API_call(url, params, json_attribute)
 		# there is paging involved
 		# need to make further API calls
 		# will concat the result json arrays
-		page_urls.each do |url|
-			response = actual_Canvas_API_call(url)
+		page_urls.each do |page_url|
+			response = actual_Canvas_API_call(page_url)
 
+			p response
 			json_paging_data = parse_canvas_API_response_json(url, response, json_attribute)
 
 			if (!json_paging_data.nil?)
@@ -271,8 +272,20 @@ def getMPathwayTerms(esbToken)
 	call_url = @esbUrl + "/Curriculum/SOC/v1/Terms";
 	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
 	if (!result.nil?)
-		# an array returned here event
-		result["getSOCTermsResponse"]["Term"].each do |term|
+		# ideally the Term element should always be an Array
+		# a ServiceLink request has been created
+		# but for now, we need to
+		term_array = Array.new
+		if (result["getSOCTermsResponse"]["Term"].is_a? Array)
+			# if the return json element is of array, just assign this array over
+			term_array = result["getSOCTermsResponse"]["Term"]
+		else
+			# otherwise, if the return json element is a single object,
+			# then, add it to the array
+			term_array << result["getSOCTermsResponse"]["Term"]
+		end
+		# now this is an array type for sure
+		term_array.each do |term|
 			termId = term["TermCode"]
 			rv.add(termId.to_s)
 		end
@@ -342,6 +355,11 @@ def processTermCourses(mPathwayTermSet, esbToken)
 									result_json = setMPathwayUrl(esbToken, sisTermId, sectionParsedSISID, courseId)
 									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse"))
 										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
+										# generate error message when there is a Failure status returned
+										if ("Failure".eql? result_json["setLMSURLResponse"]["Resultcode"])
+											# generate error if the
+											error_message = error_message.concat("\n#{message}")
+										end
 									else
 										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result #{result_json.to_s}"
 										error_message = error_message.concat("\n#{message}")
@@ -384,7 +402,6 @@ end
 
 ## read the command line arguments
 def read_argv
-	error = nil
 
 	# return errors
 	return_hash = Hash.new
