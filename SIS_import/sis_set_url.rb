@@ -103,7 +103,6 @@ def Canvas_API_call(url, params, json_attribute)
 		page_urls.each do |page_url|
 			response = actual_Canvas_API_call(page_url)
 
-			p response
 			json_paging_data = parse_canvas_API_response_json(url, response, json_attribute)
 
 			if (!json_paging_data.nil?)
@@ -371,7 +370,7 @@ def processTermCourses(mPathwayTermSet, esbToken)
 						end
 					end
 				else
-					@logger.info ("Course #{course["course_code"]} with SIS Course ID #{course["sis_course_id"]} is of status #{course["workflow_state"]}, will not set url for its classes. \n")
+					@logger.info "Course #{course["course_code"]} with SIS Course ID #{course["sis_course_id"]} is of status #{course["workflow_state"]}, will not set url for its classes. \n"
 				end
 			}
 		end
