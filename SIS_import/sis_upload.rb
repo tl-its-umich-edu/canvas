@@ -87,6 +87,9 @@ def Canvas_API_GET(url)
 		response = RestClient.get Addressable::URI.escape(url), {:Authorization => "Bearer #{$token}",
 		                                                         :accept => "application/json",
 		                                                         :verify_ssl => true}
+		# increase the call count by one
+		$call_hash["call_count"] = $call_hash["call_count"] + 1
+
 		return json_parse_safe(url, response, $logger)
 	rescue => e
 		return json_parse_safe(url, e.response, $logger)
@@ -118,6 +121,10 @@ def Canvas_API_POST(url, params, fileName)
 			                            :content_type => "application/json",
 			                            :verify_ssl => true}
 		end
+
+		# increase the call count by one
+		$call_hash["call_count"] = $call_hash["call_count"] + 1
+
 		return json_parse_safe(url, response, $logger)
 	rescue => e
 		return json_parse_safe(url, e.response, $logger)
@@ -135,6 +142,9 @@ def Canvas_API_PUT(url, params)
 		                           :accept => "application/json",
 		                           :content_type => "application/json",
 		                           :verify_ssl => true}
+		# increase the call count by one
+		$call_hash["call_count"] = $call_hash["call_count"] + 1
+
 		return json_parse_safe(url, response, $logger)
 	rescue => e
 		return json_parse_safe(url, e.response, $logger)

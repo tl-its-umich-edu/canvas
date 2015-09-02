@@ -79,14 +79,14 @@ end
 ## make Canvas API call
 def Canvas_API_call(url, params, json_attribute)
 	# make sure the call is within API usage quota
-	call_hash = sleep_according_to_timer_and_api_call_limit(@canvas_call_hash, @logger)
-	@Canvas_start_time = call_hash["start_time"]
-	@Canvas_end_time = call_hash["end_time"]
-	@Canvas_call_count = call_hash["call_count"]
+	@canvas_call_hash = sleep_according_to_timer_and_api_call_limit(@canvas_call_hash, @logger)
 
 	url = url<<"?"<<URI.encode_www_form(params)
 
 	response = actual_Canvas_API_call(url)
+
+	# increase the call count number by 1
+	@canvas_call_hash["call_count"] = @canvas_call_hash["call_count"] + 1
 
 	json = parse_canvas_API_response_json(url, response, json_attribute)
 	if (json.nil?)
@@ -119,8 +119,7 @@ end
 
 ## the get call to Canvas
 def actual_Canvas_API_call(url)
-	@Canvas_call_count = @Canvas_call_count + 1
-	@logger.info "Canvas call #{@Canvas_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
+	@logger.info "Canvas call #{@canvas_call_hash["call_count"]} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
 	response = RestClient.get url, {:Authorization => "Bearer #{@canvasToken}",
 	                                :accept => "application/json",
 	                                :verify_ssl => true}
@@ -201,13 +200,7 @@ end
 ## make ESB API call
 def ESB_APICall(url, authorization_string, content_type, request_type, param_hash)
 	# make sure the call is within API usage quota
-	call_hash = sleep_according_to_timer_and_api_call_limit(@esb_call_hash, @logger)
-	@esb_start_time = call_hash["start_time"]
-	@esb_end_time = call_hash["end_time"]
-	@esb_call_count = call_hash["call_count"]
-
-	@esb_call_count = @esb_call_count+1
-	@logger.info "ESB call #{@esb_call_count} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
+	@esb_call_hash = sleep_according_to_timer_and_api_call_limit(@esb_call_hash, @logger)
 
 	url = URI.parse(url)
 
@@ -250,6 +243,11 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 	sock.start do |http|
 		response = http.request(request)
 	end
+
+	@logger.info "ESB call #{@esb_call_hash['call_count']} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
+
+	# increase the call count by one
+	@esb_call_hash['call_count'] = @esb_call_hash['call_count'] +1
 
 	# return json
 	return json_parse_safe(url, response.body, @logger)
