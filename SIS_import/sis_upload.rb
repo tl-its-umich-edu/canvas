@@ -197,6 +197,11 @@ def upload_to_canvas(fileName, output_file_base_name)
 
 		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{job_id}")
 
+		# log progress and workflow_status values
+		job_progress=parsed_result["progress"]
+		workflow_state = parsed_result["workflow_state"]
+		$logger.info "Canvas upload job processed #{job_progress} with workflow_state = #{workflow_state}"
+
 		if (parsed_result["errors"])
 			## break and print error
 			if (parsed_result["errors"].is_a? Array and parsed_result["errors"][0]["message"])
@@ -208,13 +213,19 @@ def upload_to_canvas(fileName, output_file_base_name)
 			end
 			## hashmap ["message"=>"error_message"
 			$logger.warn "upload error: #{upload_error}"
-
 			break
-		else
-			job_progress=parsed_result["progress"]
-			$logger.info "Canvas upload job processed #{job_progress}"
 		end
-	end until job_progress == 100
+	end until (!workflow_state.eql?("created") && !workflow_state.eql?("importing"))
+	# "workflow_status" is a better indicator of the upload progress, instead of the "progress" field
+	# we have seen example of "progress=100" while "workflow_statue=importing"
+	# Possible value for "workflow_state":
+	# - 'created': The SIS import has been created.
+	# - 'importing': The SIS import is currently processing.
+	# - 'imported': The SIS import has completed successfully.
+	# - 'imported_with_messages': The SIS import completed with errors or warnings.
+	# - 'failed_with_messages': The SIS import failed with errors, while the import completed partially (or mostly)
+	# - 'failed': The SIS import failed and the upload process did not complete at all
+	# either 'failed_with_messages' or 'failed' would be caused usually by a corrupt SIS file or typos in the SIS.
 
 	if (!upload_error)
 		# print out the process warning, if any
