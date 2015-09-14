@@ -200,7 +200,7 @@ def upload_to_canvas(fileName, output_file_base_name)
 		# log progress and workflow_status values
 		job_progress=parsed_result["progress"]
 		workflow_state = parsed_result["workflow_state"]
-		$logger.info "Canvas upload job processed #{job_progress} with workflow_state = #{workflow_state}"
+		$logger.info "Canvas upload job id = #{job_id} processed #{job_progress} with workflow_state = #{workflow_state}"
 
 		if (parsed_result["errors"])
 			## break and print error
@@ -211,7 +211,14 @@ def upload_to_canvas(fileName, output_file_base_name)
 			else
 				upload_error = parsed_result["errors"]
 			end
-			## hashmap ["message"=>"error_message"
+		elsif (workflow_state.eql?("failed"))
+			# if status was "failed", it might not have "errors" returned, mark the upload_error with failed status
+			upload_error = "Canvas upload job id = #{job_id} failed"
+		end
+
+		if (!upload_error)
+			# log upload_error, if any
+			# and break
 			$logger.warn "upload error: #{upload_error}"
 			break
 		end
