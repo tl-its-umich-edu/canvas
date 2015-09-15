@@ -20,6 +20,10 @@ require_relative "sis_instructor_practice_course"
 $logger = Logger.new(STDOUT)
 $logger.level = Logger::INFO
 
+# set the SIS upload time limit to 1 hour.
+# consider the upload process to be timed-out when it is not done after 1 hour
+SIS_UPLOAD_TIMEOUT_SEC = 3600
+
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_properties_file_path>
 
@@ -162,7 +166,10 @@ def upload_to_canvas(fileName, output_file_base_name)
 	end
 
 	# upload start time
-	$logger.info "upload start time : " + Time.new.inspect
+	upload_start_time = Time.now
+	# upload timeout time
+	upload_timeout_time = upload_start_time + SIS_UPLOAD_TIMEOUT_SEC
+	$logger.info "upload start time : " + upload_start_time.inspect + " and will be time out at " + upload_timeout_time.inspect
 
 	# continue the current upload process
 	parsed = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json",
@@ -197,6 +204,11 @@ def upload_to_canvas(fileName, output_file_base_name)
 
 		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{job_id}")
 
+		# log progress and workflow_state values
+		job_progress=parsed_result["progress"]
+		workflow_state = parsed_result["workflow_state"]
+		$logger.info "Canvas upload job id = #{job_id} processed #{job_progress} with workflow_state = #{workflow_state}"
+
 		if (parsed_result["errors"])
 			## break and print error
 			if (parsed_result["errors"].is_a? Array and parsed_result["errors"][0]["message"])
@@ -206,15 +218,39 @@ def upload_to_canvas(fileName, output_file_base_name)
 			else
 				upload_error = parsed_result["errors"]
 			end
-			## hashmap ["message"=>"error_message"
-			$logger.warn "upload error: #{upload_error}"
-
-			break
-		else
-			job_progress=parsed_result["progress"]
-			$logger.info "Canvas upload job processed #{job_progress}"
+		elsif (workflow_state.eql? ("failed_with_messages"))
+			upload_error = parsed_result["processing_errors"]
+			$upload_warnings = parsed_result["processing_warnings"]
+		elsif (workflow_state.eql?("failed"))
+			# if status was "failed", it might not have "errors" returned, mark the upload_error with failed status
+			upload_error = "Canvas upload job id = #{job_id} failed"
 		end
-	end until job_progress == 100
+
+		if (upload_error)
+			# log upload_error, if any
+			# and break
+			$logger.error "upload error: #{upload_error}"
+			break
+		end
+	end until ((!workflow_state.eql?("created") && !workflow_state.eql?("importing")) || (Time.now > upload_timeout_time))
+	# stop when workflow_state is neither "created" nor "importing"; or stop when the upload timeout is reached
+	#
+	# "workflow_state" is a better indicator of the upload progress, instead of the "progress" field
+	# we have seen example of "progress=100" while "workflow_statue=importing"
+	# Possible value for "workflow_state":
+	# - 'created': The SIS import has been created.
+	# - 'importing': The SIS import is currently processing.
+	# - 'imported': The SIS import has completed successfully.
+	# - 'imported_with_messages': The SIS import completed with errors or warnings.
+	# - 'failed_with_messages': The SIS import failed with errors, while the import completed partially (or mostly)
+	# - 'failed': The SIS import failed and the upload process did not complete at all
+	# either 'failed_with_messages' or 'failed' would be caused usually by a corrupt SIS file or typos in the SIS.
+
+	if (!upload_error && Time.now > upload_timeout_time)
+		# write the error due to time out
+		upload_error = "Canvas upload job id = #{job_id} took too long to upload, exceeding 1 hour."
+		$logger.error "upload error: #{upload_error}"
+	end
 
 	if (!upload_error)
 		# print out the process warning, if any
@@ -298,11 +334,11 @@ def prior_upload_error
 		end
 
 		process_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{process_id}")
-		$logger.info "Canvas upload job #{process_id} with process status #{process_result}"
-		if (process_result["errors"] && (process_result["errors"].is_a? Array))
-			$logger.info "#{process_result["errors"][0]["message"]} for Canvas upload process id number #{process_id}. Continue with current upload."
-			# if the prior process lookup result in error, there is no need to block future uploads
-			return false
+		$logger.info "Prior Canvas upload job #{process_id} with process status #{process_result}"
+		if (process_result["workflow_state"].eql?("failed") || process_result["workflow_state"].eql?("failed_with_messages"))
+			# if the previous upload task is of failed or failed_with_message status, stop the current upload process
+			$logger.error "Prior Canvas upload process id number #{process_id} #{process_result["workflow_state"]} . Stop current upload."
+			return true
 		end
 		#parse the status percentage
 		progress_status = process_result["progress"]
@@ -310,12 +346,10 @@ def prior_upload_error
 			# the prior job has not been processed 100%
 			$logger.warn "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
 			return true
-		else
-			# prior job finished, ready for new upload
-			return false
 		end
 
-		return true
+		# prior job finished without error, ready for new upload
+		return false
 	end
 end
 
@@ -496,9 +530,12 @@ begin
 				upload_error = upload_to_canvas(fileName, output_file_base_name)
 			end
 
-			## create sandbox sites for instructors newly uploaded
-			## if they do not have such a site now
-			create_all_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", $logger, $server_api_url, ACCOUNT_NUMBER, $practice_course_subaccount)
+			if (!upload_error)
+				## if there is no upload error
+				## create sandbox sites for instructors newly uploaded
+				## if they do not have such a site now
+				create_all_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", $logger, $server_api_url, ACCOUNT_NUMBER, $practice_course_subaccount)
+			end
 		end
 	end
 end
