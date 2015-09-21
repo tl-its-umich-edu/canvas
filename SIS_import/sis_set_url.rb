@@ -190,7 +190,7 @@ def get_all_canvas_page_urls(response_headers)
 		# start from the second page, since we already have result of the first page
 		for page_num in 2 .. last_page_number
 			# copy the last page url params, but replace it with
-			page_url = page_url_part_one.concat(page_num.to_s).concat(page_url_part_two)
+			page_url = page_url_part_one + page_num.to_s + page_url_part_two
 			page_url_ary.push(page_url)
 		end
 	end
