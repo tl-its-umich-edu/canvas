@@ -350,7 +350,7 @@ def processTermCourses(mPathwayTermSet, esbToken)
 									# we will use just the last 5-digit of the section id
 									sectionParsedSISID = sectionParsedSISID[4, 8]
 									result_json = setMPathwayUrl(esbToken, sisTermId, sectionParsedSISID, courseId)
-									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse"))
+									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse") && result_json["setLMSURLResponse"] != nil)
 										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
 										# generate error message when there is a Failure status returned
 										if ("Failure".eql? result_json["setLMSURLResponse"]["Resultcode"])
