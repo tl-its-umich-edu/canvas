@@ -20,10 +20,6 @@ require_relative "sis_instructor_practice_course"
 $logger = Logger.new(STDOUT)
 $logger.level = Logger::INFO
 
-# set the SIS upload time limit to 1 hour.
-# consider the upload process to be timed-out when it is not done after 1 hour
-SIS_UPLOAD_TIMEOUT_SEC = 3600
-
 # there should be two command line argument when invoking this Ruby script
 # like ruby ./SIS_upload.rb <the_token_file_path> <the_properties_file_path>
 
@@ -167,9 +163,6 @@ def upload_to_canvas(fileName, output_file_base_name)
 
 	# upload start time
 	upload_start_time = Time.now
-	# upload timeout time
-	upload_timeout_time = upload_start_time + SIS_UPLOAD_TIMEOUT_SEC
-	$logger.info "upload start time : " + upload_start_time.inspect + " and will be time out at " + upload_timeout_time.inspect
 
 	# continue the current upload process
 	parsed = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json",
@@ -232,8 +225,8 @@ def upload_to_canvas(fileName, output_file_base_name)
 			$logger.error "upload error: #{upload_error}"
 			break
 		end
-	end until ((!workflow_state.eql?("created") && !workflow_state.eql?("importing")) || (Time.now > upload_timeout_time))
-	# stop when workflow_state is neither "created" nor "importing"; or stop when the upload timeout is reached
+	end until (!workflow_state.eql?("created") && !workflow_state.eql?("importing"))
+	# stop when workflow_state is neither "created" nor "importing";
 	#
 	# "workflow_state" is a better indicator of the upload progress, instead of the "progress" field
 	# we have seen example of "progress=100" while "workflow_statue=importing"
@@ -245,12 +238,6 @@ def upload_to_canvas(fileName, output_file_base_name)
 	# - 'failed_with_messages': The SIS import failed with errors, while the import completed partially (or mostly)
 	# - 'failed': The SIS import failed and the upload process did not complete at all
 	# either 'failed_with_messages' or 'failed' would be caused usually by a corrupt SIS file or typos in the SIS.
-
-	if (!upload_error && Time.now > upload_timeout_time)
-		# write the error due to time out
-		upload_error = "Canvas upload job id = #{job_id} took too long to upload, exceeding 1 hour."
-		$logger.error "upload error: #{upload_error}"
-	end
 
 	if (!upload_error)
 		# print out the process warning, if any
