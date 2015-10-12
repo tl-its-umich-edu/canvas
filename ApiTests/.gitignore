@@ -1,0 +1,3 @@
+# Have git ignore a file with real credentials.
+AUTH.sh
+# end

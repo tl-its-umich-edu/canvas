@@ -1,0 +1,4 @@
+# Canvas token for canvas admin / masquerade user.
+CANVAS_TOKEN=ItNiceToWalkInTheRain
+# ESB token for application subscribed to CanvasTLAdmin ESB API.
+ESB_TOKEN=ButYouGetWetAndCold
