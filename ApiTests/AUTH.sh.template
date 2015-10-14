@@ -1,0 +1,22 @@
+### Contains credentials for various Canvas API access channels.  Make a local copy 
+### as AUTH.sh and fill in credentials appropriate to your tests.
+### Needing to update the urls / credentials is common because aging of tokens
+### or new testing requirements.
+
+### See canvasTLAdminTest.sh to see how the values are used.
+
+# API prefix and token for a Canvas admin user (with masquerade).
+### Canvas test instance
+CANVAS_PREFIX=https://umich.test.instructure.com/api/v1
+CANVAS_TOKEN=<ChangeIsGood>
+
+
+# API prefix and token for application subscribed to CanvasTLAdmin
+# This data is for the application: "TandL Testing Application"
+# QA ESB
+#ESB_PREFIX=https://api-qa-gw.its.umich.edu/CanvasTL/Admin/v1
+
+# Prod ESB
+ESB_PREFIX=https://api-gw.it.umich.edu/CanvasTL/Admin/v1
+ESB_TOKEN=<SomethingSoCool>
+#end
