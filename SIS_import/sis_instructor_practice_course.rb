@@ -68,12 +68,12 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login
 		if (result.has_key?("id"))
 			sandbox_course_id = result.fetch("id")
 			instructor_result = Canvas_API_POST("#{server_api_url}courses/#{sandbox_course_id}/enrollments",
-			                                    {
-				                                    "enrollment[user_id]" => user_canvas_id,
-				                                    "enrollment[type]" => "TeacherEnrollment",
-				                                    "enrollment[enrollment_state]" => "active"
-			                                    },
-			                                    nil)
+											                    {
+								                            "enrollment[user_id]" => user_canvas_id,
+								                            "enrollment[type]" => "TeacherEnrollment",
+								                            "enrollment[enrollment_state]" => "active"
+								                          },
+								                          nil)
 			if (!instructor_result.nil?)
 				logger.info "Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n"
 			else
