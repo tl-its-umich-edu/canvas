@@ -51,7 +51,7 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login
 
 	# check again for the current naming format of user sandbox site
 	user_sandbox_site = Canvas_API_GET("#{server_api_url}accounts/#{practice_course_subaccount}/courses?search_term=#{user_sandbox_site_name}")
-	if (user_sandbox_site.length == 0)
+	if (!user_sandbox_site.nil? && user_sandbox_site.length == 0)
 		# create user sandbox site
 		# if there is no such sandbox site, creat one
 		result = Canvas_API_POST("#{server_api_url}accounts/#{practice_course_subaccount}/courses",
@@ -74,8 +74,12 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login
 				                                    "enrollment[enrollment_state]" => "active"
 			                                    },
 			                                    nil)
-			logger.info "Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n"
-		else
+			if (!instructor_result.nil?)
+				logger.info "Enrolled User #{user_sis_login_id} to sandbox course site - #{user_sandbox_site_name} (#{sandbox_course_id}) \n #{instructor_result} \n"
+			else
+				logger.error "Null JSON value returned for adding enrollment call #{server_api_url}courses/#{sandbox_course_id}/enrollments of user_id #{user_canvas_id}"
+			end
+	else
 			# no id field, log as warning
 			logger.warn "There is no id field in the sandbox course json \n #{result}"
 		end
@@ -92,7 +96,11 @@ def rename_site(course_id, user_sis_login_id, user_sandbox_site_name, logger)
 		                        "course[name]" => user_sandbox_site_name,
 		                        "course[course_code]" => user_sandbox_site_name
 	                        })
-	logger.info "User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name} " + result
+	if (result.nil?)
+		logger.error "Null JSON value returned for Canvas PUT call #{$server_api_url}courses/#{course_id} of course=#{user_sandbox_site_name}"
+	else
+		logger.info "User #{user_sis_login_id} has a old sandbox site #{user_sandbox_site_name}, and it is renamed to new title #{user_sandbox_site_name} " + result
+	end
 end
 
 #
@@ -112,7 +120,7 @@ def create_all_instructor_sandbox_site(zip_file_name, logger, server_api_url, ac
 		logger.info "#{count_teachers}/#{set_teacher_sis_ids.size} found user #{user_mpathway_id}"
 		# find user canvas id
 		user_details_json = Canvas_API_GET("#{server_api_url}accounts/#{account_number}/users?search_term=#{user_mpathway_id}")
-		if (user_details_json.size == 1)
+		if (!user_details_json.nil? && user_details_json.size == 1)
 			# found user in Canvas
 			user_canvas_id = user_details_json[0]["id"]
 			user_sis_login_id = user_details_json[0]["sis_login_id"]
@@ -120,7 +128,7 @@ def create_all_instructor_sandbox_site(zip_file_name, logger, server_api_url, ac
 
 			# 1. see whether there is an sandbox site for this user
 			previous_user_sandbox_site = Canvas_API_GET("#{server_api_url}accounts/#{practice_course_subaccount}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_name)}")
-			if (previous_user_sandbox_site.length == 0)
+			if (!previous_user_sandbox_site.nil? && previous_user_sandbox_site.length == 0)
 				# 2. create new sandbox site with new name format
 				create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login_id, logger, practice_course_subaccount, server_api_url)
 			else
