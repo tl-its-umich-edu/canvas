@@ -161,13 +161,13 @@ def upload_to_canvas(fileName, output_file_base_name)
 		return "Previous upload job has not finished yet."
 	end
 
-	# upload start time
-	upload_start_time = Time.now
-
 	# continue the current upload process
 	parsed = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json",
 	                         nil,
 	                         fileName)
+	if (parsed.nil?)
+		return "upload post returned null JSON value. Stop further actions."
+	end
 
 	if (parsed["errors"])
 		## break and print error
@@ -197,6 +197,11 @@ def upload_to_canvas(fileName, output_file_base_name)
 
 		parsed_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{job_id}")
 
+		## break if the returned json value is null
+		## wait till the next check status call
+		if (parsed_result.nil?)
+			break;
+		end
 		# log progress and workflow_state values
 		job_progress=parsed_result["progress"]
 		workflow_state = parsed_result["workflow_state"]
@@ -321,6 +326,11 @@ def prior_upload_error
 		end
 
 		process_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{process_id}")
+		if (process_result.nil?)
+			## cannot find status info for prior upload job
+			## return false, and ready for new upload
+			return false
+		end
 		$logger.info "Prior Canvas upload job #{process_id} with process status #{process_result}"
 		if (process_result["workflow_state"].eql?("failed") || process_result["workflow_state"].eql?("failed_with_messages"))
 			# if the previous upload task is of failed or failed_with_message status, stop the current upload process

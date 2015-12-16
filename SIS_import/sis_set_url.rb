@@ -73,6 +73,7 @@ def refreshESBToken
 		return json["access_token"]
 	end
 
+	@logger.error "Null JSON value for refreshESBToken call."
 	return nil
 end
 
@@ -91,6 +92,7 @@ def Canvas_API_call(url, params, json_attribute)
 	json = parse_canvas_API_response_json(url, response, json_attribute)
 	if (json.nil?)
 		# return if error
+		@logger.error "Null response JSON value for Canvas API call " + url
 		return nil
 	end
 
@@ -523,14 +525,18 @@ else
 
 			esbToken=refreshESBToken()
 
-			# update MPathway with Canvas urls
-			updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory)
+			if (!esbToken.nil?)
+				# update MPathway with Canvas urls
+				updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory)
 
-			if (!updateError || updateError.nil? || updateError.empty?)
-				## if there is no upload error
-				@logger.info "Sites set URLs finished."
+				if (!updateError || updateError.nil? || updateError.empty?)
+					## if there is no upload error
+					@logger.info "Sites set URLs finished."
+				else
+					process_error = updateError
+				end
 			else
-				process_error = updateError
+				process_error = "Null value for refreshed ESB token. Stop updating MPathway with Canvas URLs."
 			end
 		end
 	end

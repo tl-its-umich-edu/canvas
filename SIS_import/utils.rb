@@ -13,6 +13,11 @@ def json_parse_safe(url, json, logger)
 			return nil
 		end
 	else
+		if (json.nil?)
+			logger.error "Unable to parse JSON String for #{url}: null json"
+		else
+			logger.error "Unable to parse JSON String for #{url}: JSON = #{json}"
+		end
 		return nil
 	end
 end
