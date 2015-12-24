@@ -34,7 +34,7 @@ require "logger"
 @esbTokenUrl=""
 # ESB token and valid time
 @esbToken=nil
-@esbTokenStartTime=""
+@esbTokenStartTime=nil
 # ESB token is valid for 60 minutes;
 # here we set the valid time to be 50 minutes, leave enough margin for token refreshing
 @esbTokenValidTime=3000
