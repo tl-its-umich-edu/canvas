@@ -32,6 +32,13 @@ require "logger"
 @esbSecret=""
 @esbUrl=""
 @esbTokenUrl=""
+# ESB token and valid time
+@esbToken=nil
+@esbTokenStartTime=nil
+# ESB token is valid for 60 minutes;
+# here we set the valid time to be 50 minutes, leave enough margin for token refreshing
+@esbTokenValidTime=3000
+
 # those two cert files are needed for ESB calls
 @caRootFilePath=""
 @inCommonFilePath=""
@@ -61,20 +68,30 @@ require "logger"
 @alert_email_address = "canvas-sis-data-alerts@umich.edu"
 
 ## refresh token for ESB API call
-def refreshESBToken
-	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
-	param_hash={"grant_type" => "client_credentials", "scope" => "PRODUCTION"}
-	json = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
-	                   "Basic " + encoded_string,
-	                   "application/x-www-form-urlencoded",
-	                   "POST",
-	                   param_hash)
-	if (!json.nil?)
-		return json["access_token"]
+def getESBToken
+	if (@esbToken.nil? || (Time.now.to_i - @esbTokenStartTime.to_i) > @esbTokenValidTime)
+		# get a new esbToken when starting or when the esb token expired
+		encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
+		param_hash={"grant_type" => "client_credentials", "scope" => "PRODUCTION"}
+		json = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
+		                   "Basic " + encoded_string,
+		                   "application/x-www-form-urlencoded",
+		                   "POST",
+		                   param_hash)
+		if (!json.nil?)
+			@logger.info "ESB token refreshed at " + Time.now.to_s
+			@esbToken = json["access_token"]
+			@esbTokenStartTime = Time.now
+		else
+			@logger.error "Null JSON value for ESB refresh token call."
+		end
 	end
-
-	@logger.error "Null JSON value for refreshESBToken call."
-	return nil
+	if (@esbToken.nil?)
+		# return empty string instead of nil
+		return "";
+	else
+		return @esbToken
+	end
 end
 
 ## make Canvas API call
@@ -256,20 +273,20 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 end
 
 ## the ESB PUT call to set class URL in MPathway
-def setMPathwayUrl(esbToken, termId, sectionId, courseId)
+def setMPathwayUrl(termId, sectionId, courseId)
 
 	lmsUrl = @canvasUrl + "/courses/" + courseId.to_s
 	#get course information
 	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
-	return ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "PUT", {"lmsURL" => lmsUrl})
+	return ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "PUT", {"lmsURL" => lmsUrl})
 end
 
 ## get the current term info from MPathway
-def getMPathwayTerms(esbToken)
+def getMPathwayTerms()
 	rv = Set.new()
 	#get term information
 	call_url = @esbUrl + "/Curriculum/SOC/v1/Terms";
-	result= ESB_APICall(call_url, "Bearer " + esbToken, "application/json", "GET", nil)
+	result= ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "GET", nil)
 	if (!result.nil?)
 		# ideally the Term element should always be an Array
 		# a ServiceLink request has been created
@@ -297,7 +314,7 @@ end
 ## 2. compare the term list with MPathway term list, take the terms which are in both sets
 ## 3. iterate through all courses in each term,
 ## 4. if the course is open/available, find sections/classes in each course, set the class url in MPathway
-def processTermCourses(mPathwayTermSet, esbToken)
+def processTermCourses(mPathwayTermSet)
 	## error message for email alert
 	error_message = ""
 
@@ -351,7 +368,7 @@ def processTermCourses(mPathwayTermSet, esbToken)
 									## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
 									# we will use just the last 5-digit of the section id
 									sectionParsedSISID = sectionParsedSISID[4, 8]
-									result_json = setMPathwayUrl(esbToken, sisTermId, sectionParsedSISID, courseId)
+									result_json = setMPathwayUrl(sisTermId, sectionParsedSISID, courseId)
 									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse") && result_json["setLMSURLResponse"] != nil)
 										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
 										# generate error message when there is a Failure status returned
@@ -378,17 +395,17 @@ def processTermCourses(mPathwayTermSet, esbToken)
 	return error_message
 end
 
-def update_MPathway_with_Canvas_url(esbToken, outputDirectory)
+def update_MPathway_with_Canvas_url(outputDirectory)
 	upload_error = false
 
 	# get the MPathway term set
-	mPathwayTermSet = getMPathwayTerms(esbToken)
+	mPathwayTermSet = getMPathwayTerms()
 
 	# set URL start time
 	@logger.info "set URL start time : #{Time.new.inspect}"
 
 	#call Canvas API to get course url
-	upload_error = processTermCourses(mPathwayTermSet, esbToken)
+	upload_error = processTermCourses(mPathwayTermSet)
 
 	# set URL stop time
 	@logger.info "set URL stop time : #{Time.new.inspect}"
@@ -523,20 +540,14 @@ else
 			@logger = Logger.new(outputFile)
 			@logger.level = Logger::INFO
 
-			esbToken=refreshESBToken()
+			# update MPathway with Canvas urls
+			updateError = update_MPathway_with_Canvas_url(outputDirectory)
 
-			if (!esbToken.nil?)
-				# update MPathway with Canvas urls
-				updateError = update_MPathway_with_Canvas_url(esbToken, outputDirectory)
-
-				if (!updateError || updateError.nil? || updateError.empty?)
-					## if there is no upload error
-					@logger.info "Sites set URLs finished."
-				else
-					process_error = updateError
-				end
+			if (!updateError || updateError.nil? || updateError.empty?)
+				## if there is no upload error
+				@logger.info "Sites set URLs finished."
 			else
-				process_error = "Null value for refreshed ESB token. Stop updating MPathway with Canvas URLs."
+				process_error = updateError
 			end
 		end
 	end
