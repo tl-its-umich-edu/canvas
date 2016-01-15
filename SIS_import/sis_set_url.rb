@@ -32,12 +32,8 @@ require "logger"
 @esbSecret=""
 @esbUrl=""
 @esbTokenUrl=""
-# ESB token and valid time
+# ESB token
 @esbToken=nil
-@esbTokenStartTime=nil
-# ESB token is valid for 60 minutes;
-# here we set the valid time to be 50 minutes, leave enough margin for token refreshing
-@esbTokenValidTime=3000
 
 # those two cert files are needed for ESB calls
 @caRootFilePath=""
@@ -69,28 +65,34 @@ require "logger"
 
 ## refresh token for ESB API call
 def getESBToken
-	if (@esbToken.nil? || (Time.now.to_i - @esbTokenStartTime.to_i) > @esbTokenValidTime)
-		# get a new esbToken when starting or when the esb token expired
-		encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
-		param_hash={"grant_type" => "client_credentials", "scope" => "PRODUCTION"}
-		json = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
-		                   "Basic " + encoded_string,
-		                   "application/x-www-form-urlencoded",
-		                   "POST",
-		                   param_hash)
-		if (!json.nil?)
-			@logger.info "ESB token refreshed at " + Time.now.to_s
-			@esbToken = json["access_token"]
-			@esbTokenStartTime = Time.now
-		else
-			@logger.error "Null JSON value for ESB refresh token call."
-		end
+	if (@esbToken.nil?)
+		## get new ESB token
+		refreshESBToken();
 	end
 	if (@esbToken.nil?)
 		# return empty string instead of nil
 		return "";
 	else
 		return @esbToken
+	end
+end
+
+
+# get a new esbToken
+def refreshESBToken()
+	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
+	param_hash={"grant_type" => "client_credentials", "scope" => "PRODUCTION"}
+	responseBody = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
+	                   "Basic " + encoded_string,
+	                   "application/x-www-form-urlencoded",
+	                   "POST",
+	                   param_hash)
+	json = json_parse_safe(@esbTokenUrl, responseBody, @logger)
+	if (!json.nil?)
+		@esbToken = json["access_token"]
+		@logger.info "ESB token refreshed at " + Time.now.to_s
+	else
+		@logger.error "Null JSON value for ESB refresh token call."
 	end
 end
 
@@ -236,8 +238,7 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 	end
 	request.add_field("Authorization", authorization_string)
 	request.add_field("Content-Type", content_type)
-	request.add_field("Accept", "*/*")
-
+	request.add_field("Accept", "application/json")
 
 	if (!param_hash.nil?)
 		if (request_type == "PUT")
@@ -268,8 +269,20 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 	# increase the call count by one
 	@esb_call_hash['call_count'] = @esb_call_hash['call_count'] +1
 
-	# return json
-	return json_parse_safe(url, response.body, @logger)
+	return response.body
+end
+
+## checks the result of ESB API call
+## renew ESB token if necessary, and retry the failed call due to expired token
+## return parsed JSON
+def parse_ESB_API_CALL_RESPONSE(responseBody, url, content_type, request_type, param_hash)
+	if (responseBody.include? "Invalid Credentials")
+		#renew token
+		refreshESBToken();
+		## retry the failed call due to expired token
+		responseBody = ESB_APICall(url, "Bearer " + getESBToken(), content_type, request_type, param_hash)
+	end
+	return json_parse_safe(url, responseBody, @logger)
 end
 
 ## the ESB PUT call to set class URL in MPathway
@@ -278,7 +291,8 @@ def setMPathwayUrl(termId, sectionId, courseId)
 	lmsUrl = @canvasUrl + "/courses/" + courseId.to_s
 	#get course information
 	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
-	return ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "PUT", {"lmsURL" => lmsUrl})
+	responseBody = ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "PUT", {"lmsURL" => lmsUrl})
+	return parse_ESB_API_CALL_RESPONSE(responseBody, call_url, "application/json", "PUT", {"lmsURL" => lmsUrl})
 end
 
 ## get the current term info from MPathway
@@ -286,7 +300,8 @@ def getMPathwayTerms()
 	rv = Set.new()
 	#get term information
 	call_url = @esbUrl + "/Curriculum/SOC/v1/Terms";
-	result= ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "GET", nil)
+	responseBody= ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "GET", nil)
+	result = parse_ESB_API_CALL_RESPONSE(responseBody, call_url, "application/json", "GET", nil)
 	if (!result.nil?)
 		# ideally the Term element should always be an Array
 		# a ServiceLink request has been created
