@@ -1,6 +1,6 @@
 # Canvas Practice Course Generator
 
-Description: Python script for generating zip file that can be used to create practice courses for instructors in Canvas.
+Description: Python script for generating zip file that can be used to create practice courses for instructors in Canvas. The list of instructors is harvested from a google form/file.
 
 ## Pre-requisits
 
@@ -17,36 +17,22 @@ While Vagrant isn't required, it's the recommended to use for running this scrip
     * or with VMWare `vagrant up --provider=vmware_fusion`
 3. Login into vertual server: `vagrant ssh`
 4. cd /vagrant
-5. Run application: `python practiceCourseGenerator.py . .`
 
 ## Running application
 
-Input: 
+The following configuration files are required. Secure copies (prod and qa) can be found on deluxe (/usr/local/ctools/securityFiles/practiceCourseGenerator/).
 
-1. Canvas Practice Course Training List (Responses).csv - gathered from Google Drive
-2. propertiesProd.json -  holds custom properties
-3. storage.json - holds information to access google drive
-4. tl_client_secret.json - holds information to access google drive
-5. token.txt -  holds token to use Canvas API
+1. properties.json -  holds custom properties
+2. storage.json - holds information to access google drive
+3. tl_client_secret.json - holds information to access google drive
+4. token.txt -  holds token to use Canvas API
 
-NOTE: The secure files can be found on Deluxe at: /usr/local/ctools/
-securityFiles/practiceCourseGenerator/
+The application take 3 arguments, which identifies the location of the data, logs, and configuration file directories. The list of users is taken from a google file.
 
-There are two directories 'prod' and 'qa'
-
-Output: 
-
-1. Directory - canvas_files_[Date]
-NOTE: This directory will be zipped and used as an input file for he SIS_import script.
-2. File - Canvas_Practice_courses_[Data].zip
-3. File - canvasFileGeneratorLog_[Date].log
-
-Process:
-
-1. Create input files as specified above
-2. Run application `python practiceCourseGenerator.py . .`
-3. Three csv files are generated in zip file:
-	* courses.csv
-	* enrollments.csv
-	* users.csv
-4. Upload entire zip file into Canvas (instructions tbd)
+2. Run the application: `python practiceCourseGenerator.py . . .`
+2. The outputs include:
+    * Canvas_Extract_Practice_courses MD5 
+    * Canvas_Extract_Practice_courses zip file (courses, enrollments, users)
+    * canvasFileGeneratorLog log file
+    * Canvas Practice Course Training List (Responses).csv
+3. Upload the Canvas_Extract_Practice_courses_[]DATE].zip file into Canvas using Admin -> SIS Import
