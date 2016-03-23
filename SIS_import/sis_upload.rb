@@ -332,6 +332,17 @@ def prior_upload_error
 			return false
 		end
 		$logger.info "Prior Canvas upload job #{process_id} with process status #{process_result}"
+		if (process_result["errors"].is_a?(Array) &&
+			process_result["errors"][0] &&
+			process_result["errors"][0]["message"] &&
+			process_result["errors"][0]["message"].include?("The specified resource does not exist."))
+
+			# if the error message is "The specified resource does not exist."
+			# it is due to the data sync process from Canvas Prod server to Non-prod servers
+			# ignore this error and proceed with SIS upload
+			$logger.info "Due to Canvas data sync process, SIS upload job id #{process_id} does not exist. Proceed with new SIS upload."
+			return false
+		end
 		if (process_result["workflow_state"].eql?("failed") || process_result["workflow_state"].eql?("failed_with_messages"))
 			# if the previous upload task is of failed or failed_with_message status, stop the current upload process
 			$logger.error "Prior Canvas upload process id number #{process_id} #{process_result["workflow_state"]} . Stop current upload."
