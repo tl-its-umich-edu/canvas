@@ -233,8 +233,10 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 			request = Net::HTTP::Get.new(url.path)
 		when "PUT"
 			request = Net::HTTP::Put.new(url.path)
+		when "DELETE"
+			request = Net::HTTP::Delete.new(url.path)
 		else
-			puts "wrong request type" + request_type
+			@logger.error "wrong request type #{request_type} for #{url}"
 	end
 	request.add_field("Authorization", authorization_string)
 	request.add_field("Content-Type", content_type)
@@ -305,6 +307,43 @@ def setMPathwayUrl(termId, sectionId, courseId)
 	return parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "PUT", {"lmsURL" => lmsUrl})
 end
 
+## the ESB PUT call to set class URL in MPathway
+def deleteUrlForUnpublishedSections(termId, setSectionPublished)
+	#get all sections with LMSURL
+	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/ClassesWithLMSURL";
+	response = ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "GET", {})
+	result = parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "GET", nil)
+	if (result.nil?)
+		@logger.error "There are no MPathway sections with LMSURL set"
+		return
+	end
+	@logger.info(response.body)
+	sectionString = result['ClassNumberData']
+
+	# splite the comma separated SIS IDs, into set
+	sectionArray = sectionString.split(",")
+	sectionWithUrlSet = sectionArray.to_set
+	@logger.info "1. There are #{sectionWithUrlSet.size} sections with LMSURL in MPathway for the term #{termId}"
+	@logger.info sectionWithUrlSet
+
+	# log the total published sections in Canvas
+	@logger.info "2. There are #{setSectionPublished.size} sections with published courses in Canvas for the term #{termId}"
+	@logger.info setSectionPublished
+
+	# find out the diff, and LMSURL needs to be removed from those sections
+	sectionWithUrlSet = sectionWithUrlSet.subtract(setSectionPublished)
+	@logger.info "3. There are #{sectionWithUrlSet.size} UNPUBLISHED sections with LMSURL for the term #{termId}, where LMSURL needs to be removed:"
+	@logger.info sectionWithUrlSet
+
+	# iterate through the set and delete the url
+	sectionWithUrlSet.each do |sectionId|
+		call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL"
+		@logger.info call_url
+		response = ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "DELETE", {})
+		@logger.info(response.body)
+	end
+end
+
 ## get the current term info from MPathway
 def getMPathwayTerms()
 	rv = Set.new()
@@ -366,6 +405,10 @@ def processTermCourses(mPathwayTermSet)
 			                            },
 			                            nil)
 			term_course_count = 0
+
+			## new set of MPathway section ids associated with published Canvas courses in given term
+			setSectionPublished = Set.new
+
 			json_data.each { |course|
 				term_course_count = term_course_count + 1
 				@logger.info "for term id=#{termId} term_course_count=#{term_course_count}"
@@ -393,6 +436,10 @@ def processTermCourses(mPathwayTermSet)
 									## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
 									# we will use just the last 5-digit of the section id
 									sectionParsedSISID = sectionParsedSISID[4, 8]
+
+									# add the section sis id into the set
+									setSectionPublished.add(sectionParsedSISID);
+
 									result_json = setMPathwayUrl(sisTermId, sectionParsedSISID, courseId)
 									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse") && result_json["setLMSURLResponse"] != nil)
 										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
@@ -415,7 +462,12 @@ def processTermCourses(mPathwayTermSet)
 					@logger.info "Course #{course["course_code"]} with SIS Course ID #{course["sis_course_id"]} is of status #{course["workflow_state"]}, will not set url for its classes. \n"
 				end
 			}
-		end
+
+			# now compare the published section ids set (SetA) with existing MPathways sections with urls (SetB)
+			# for any SetB item not in SetA, it means the section is no longer published in Canvas, and hence need to remove it Canvas url
+			deleteUrlForUnpublishedSections(sisTermId, setSectionPublished);
+
+		end # term loop
 	}
 	return error_message
 end
