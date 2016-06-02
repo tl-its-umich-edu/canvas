@@ -8,4 +8,3 @@ Various scripts that augment Canvas or provide integrations with other ITS syste
 * practiceCourseGenerator - create practice canvas courses for specified users
 
 * ApiTests - test scripts against the Canvas API
-* AutoCreateGroups - abandoned project
