@@ -432,28 +432,33 @@ def processTermCourses(mPathwayTermSet)
 										break
 									end
 								end
-								if (sectionParsedSISID != nil)
-									## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
-									# we will use just the last 5-digit of the section id
-									sectionParsedSISID = sectionParsedSISID[4, 8]
+								if (sectionParsedSISID != nil )
+									if (!sectionParsedSISID.match(/^\d+$/) || sectionParsedSISID.length != 9)
+										@logger.warn "#{sectionParsedSISID} is not of 9-digit format for SIS section id"
+									else
+										@logger.info "section id #{sectionParsedSISID}"
+										## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
+										# we will use just the last 5-digit of the section id
+										sectionParsedSISID = sectionParsedSISID[4, 8]
 
-									# add the section sis id into the set
-									setSectionPublished.add(sectionParsedSISID);
+										# add the section sis id into the set
+										setSectionPublished.add(sectionParsedSISID);
 
-									result_json = setMPathwayUrl(sisTermId, sectionParsedSISID, courseId)
-									if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse") && result_json["setLMSURLResponse"] != nil)
-										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
-										# generate error message when there is a Failure status returned
-										if ("Failure".eql? result_json["setLMSURLResponse"]["Resultcode"])
-											# generate error if the
+										result_json = setMPathwayUrl(sisTermId, sectionParsedSISID, courseId)
+										if (!result_json.nil? && (result_json.has_key? "setLMSURLResponse") && result_json["setLMSURLResponse"] != nil)
+											message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result status=#{result_json["setLMSURLResponse"]["Resultcode"]} and result message=#{result_json["setLMSURLResponse"]["ResultMessage"]}"
+											# generate error message when there is a Failure status returned
+											if ("Failure".eql? result_json["setLMSURLResponse"]["Resultcode"])
+												# generate error if the
+												error_message = error_message.concat("\n#{message}")
+											end
+										else
+											message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result #{result_json.to_s}"
 											error_message = error_message.concat("\n#{message}")
 										end
-									else
-										message = Time.new.inspect + " set url result for section id=#{sectionParsedSISID} with Canvas courseId=#{courseId}: result #{result_json.to_s}"
-										error_message = error_message.concat("\n#{message}")
+										# write into output file
+										@logger.info message
 									end
-									# write into output file
-									@logger.info message
 								end
 							}
 						end
