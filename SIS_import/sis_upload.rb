@@ -529,6 +529,7 @@ begin
 			## get the name of file to process
 			fileName=fileNames[0]
 			currentFileBaseName = File.basename(fileName, ".zip")
+			$logger.info "Process file #{currentFileBaseName}.zip"
 
 			## checksum verification step
 			upload_error = verify_checksum($currentDirectory + currentFileBaseName)
@@ -568,8 +569,8 @@ else
 	# write the success message
 	## if there is no upload error
 	# move file to archive directory after processing
-	FileUtils.mv(Dir.glob("#{$currentDirectory}*.zip"), $archiveDirectory)
-	FileUtils.mv(Dir.glob("#{$currentDirectory}*MD5.txt"), $archiveDirectory)
+	FileUtils.mv(Dir.glob("#{$currentDirectory}#{currentFileBaseName}.zip"), $archiveDirectory)
+	FileUtils.mv(Dir.glob("#{$currentDirectory}#{currentFileBaseName}MD5.txt"), $archiveDirectory)
 
 	$logger.info "SIS upload finished with #{fileName}"
 end
