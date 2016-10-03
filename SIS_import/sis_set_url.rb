@@ -389,7 +389,7 @@ def processSectionData(courseId, error_message, section, setSectionPublished, si
 			# if the section id is not in 9-digit format
 			# log the error and skip the following set URL call for this section
 			@logger.warn "#{sectionParsedSISID} is not of 9-digit format for SIS section id"
-			return
+			return error_message
 		end
 		@logger.info "section id #{sectionParsedSISID}"
 		## sis_section_id is 9-digit: <4-digit term id><5-digit section id>
