@@ -20,7 +20,10 @@ you will need to install Python 2.7 on your local machine.
 
 4.	Modify the token.txt file to contain the token of the admin user you plan on using for the script.
 
-5.	Create a file called users.txt in the same directory as the test.py file.
+5.	Create a file called users.txt in the same directory as the test.py file.  Follow these steps to create that file:
+	a.  Login to umich.instructure.com as an administrator and run a provisioning report for the current term for the following files (enrollments, courses, sections)
+	b.  Unzip this file to the same directory as the getStudentsFromPublishedCourses.py script.
+	c.  Run the getStudentsFromPublishedCourses.py script.  This will generate the users.txt file.
 
 6.	Modify the users.txt file to contain the sisIDs of the users you wish to query in the following format:
 
