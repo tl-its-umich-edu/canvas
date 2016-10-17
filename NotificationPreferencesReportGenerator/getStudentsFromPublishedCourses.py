@@ -3,28 +3,6 @@
 from datetime import datetime
 import csv
 
-'''
-def parse_users(emplid):
-
-	with open("./enrollments.csv", 'r') as users
-		userReader = csv.reader(users)
-		next(userReader, None) # skip headers
-		for row in userReader:
-			userEmplid = row[1]
-			userUniqname = row[2]
-			userFirstname = row[3]
-			userLastname = row[4]
-			userEmail = row[9]
-
-			if emplid == userEmplid:
-				print userEmplid + " \n"
-				print userUniqname + " \n"
-				print userFirstname + " \n"
-				print userLastname + " \n"
-				print userEmail + " \n"
-				return userEmplid, userUniqname, userFirstname, userLastname, userEmail
-'''
-
 # We need to find all student enrollments for a given section.
 # So, we cannot exit the matching loop on the first try,
 # unlike the user file.
@@ -37,12 +15,11 @@ def parse_enrollments(sectionId):
 			emplid = row[3]
 			role = row[4]
 			enrollSectionId = row[7]
-			#print emplid + "\n"
 		
 			if sectionId == enrollSectionId:
 				if role == "student":
+					#useful for debugging if this point was reached.
 					#print "Calling parse users. \n"
-					#umid, uniqname, firstname, lastname, email = parse_users(emplid)
 		
 					try:
 						names_file.write(emplid + "\n")
@@ -62,9 +39,9 @@ def parse_sections(courseId):
 		for row in sectionReader:
 			sectionId = row[1]
 			sectionCourseId = row[3]
-			#print sectionCourseId + "\n"
 		
 			if courseId == sectionCourseId:
+				#useful for debugging if this point was reached.			
 				#print "Passing the section id to the enrollments function."
 				parse_enrollments(sectionId)
 
@@ -72,7 +49,6 @@ def parse_sections(courseId):
 def parse_courses():
 
 	courseCounter = 1
-#	activeCourses = 0
 
 	with open('courses.csv', 'r') as courses:
 		courseReader = csv.reader(courses)
@@ -82,8 +58,8 @@ def parse_courses():
 			courseStatus = row[8]
 
 			if courseStatus == "active":
-#				print "I am sending the id to the parse_sections function."
-#				activeCourses += 1
+				#useful for debugging if this point was reached.
+				#print "I am sending the id to the parse_sections function."
 				parse_sections(courseId)
 		
 			courseCounter += 1
@@ -91,24 +67,26 @@ def parse_courses():
 			if courseCounter % 100 == 0:
 				print "I have processed " + str(courseCounter) + " courses."
 
-#	print "Active courses: " + str(activeCourses)
 
 def dedupe_list():
 	seq = names_file.readlines()
 	seen = set()
 	seen_add = seen.add
-#	print seq
 	return [x for x in seq if not (x in seen or seen_add(x))]
 
 
 # This script takes a list of courses and
-# generates a list of students that are enrolled 
-# with their name and uniqname.
+# generates a list of emplids for enrolled students.
 print "started at: " + str(datetime.now()) + "\n"
-names_file = open("./student_names.csv", 'w')
+
+# name of temporary output file is temp_emplids.csv.
+# we will de-dupe this a few lines down for our final output file.
+names_file = open("./temp_emplids.csv", 'w')
 parse_courses()
 names_file.close
 print "ended at: " + str(datetime.now()) + "\n"
-names_file = open("./student_names.csv", 'r')
-uniqnames_file = open("./uniqnames.csv", 'w')
+names_file = open("./temp_emplids.csv", 'r')
+
+# the name of our final output file is student_emplids.csv.
+uniqnames_file = open("./student_emplids.csv", 'w')
 uniqnames_file.writelines(dedupe_list())
