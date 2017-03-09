@@ -320,6 +320,12 @@ def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 	@logger.info(response.body)
 	sectionString = result['ClassNumberData']
 
+	# check whether sectionString attribute is null
+	if (sectionString.nil?)
+		@logger.error "There are no sectionString value with result value " + result
+		return
+	end
+
 	# splite the comma separated SIS IDs, into set
 	sectionArray = sectionString.split(",")
 	sectionWithUrlSet = sectionArray.to_set
