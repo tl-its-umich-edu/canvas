@@ -14,6 +14,7 @@ require "time"
 require_relative "utils.rb"
 
 require "logger"
+require "openssl"
 
 # Create a Logger
 # defaults to output to the standard output stream, until reset to output to configured output file
@@ -32,8 +33,6 @@ require "logger"
 @esbSecret=""
 @esbUrl=""
 @esbTokenUrl=""
-# ESB token
-@esbToken=nil
 
 # those two cert files are needed for ESB calls
 @caRootFilePath=""
@@ -58,32 +57,61 @@ require "logger"
 	"end_time" => Time.now + 3600, # one hour apart
 	"allowed_call_number_during_interval" => 3000
 }
+# Terms and get/put/delete Sections in a Course ESB calls have separate tokens scoped to below strings
+@CurriculumAdminScope="curriculumadmin"
+@CurriculumScope="umscheduleofclasses"
+
+@esb_api_scope_to_token_hash={
+    @CurriculumAdminScope => nil,
+    @CurriculumScope =>nil
+}
 
 # the alert email address is read from the configuration file
 # and defaults to "canvas-sis-data-alerts@umich.edu", if not set otherwise
 @alert_email_address = "canvas-sis-data-alerts@umich.edu"
 
+
 ## refresh token for ESB API call
-def getESBToken
-	if (@esbToken.nil?)
-		## get new ESB token
-		refreshESBToken();
-	end
-	if (@esbToken.nil?)
-		# return empty string instead of nil
-		return "";
-	else
-		return @esbToken
-	end
+def getESBToken(scope,token_renewal_needed)
+  @esb_api_scope_to_token_hash.each do |key, value|
+    @logger.debug "#{key}: #{value}"
+  end
+  if !token_renewal_needed
+    # Token is still good and can be reused for the particular scope api call
+    @esb_api_scope_to_token_hash.each do |esb_token_key, esb_token_for_scope|
+      if esb_token_key === scope
+        if !esb_token_for_scope.nil?
+          @logger.info "ESB token taken from esb_api_scope_to_token_hash ending with  " + esb_token_for_scope[-5,5] + "... for scope "+esb_token_key
+          return esb_token_for_scope
+        end
+      end
+    end
+  end
+  # getting the token for the very first time or when token expires after 1 hour.
+  @esbToken=refreshESBToken(scope);
+  if !@esbToken.nil?
+    @esb_api_scope_to_token_hash[scope]=@esbToken
+    @logger.info "new esb Token ending with  " + @esbToken[-5,5] + "...created for the scope " +scope
+  end
+
+  if (@esbToken.nil?)
+    # return empty string instead of nil
+    return "";
+  else
+    return @esbToken
+  end
 end
 
 
 # get a new esbToken
-def refreshESBToken()
+# with the ESB new IBM Api Manager each or a family of API call is scoped to a string and will have separate token for that API set.
+# sis script has 2 different scopes for the ESB calls it is using, so getting different token for each is essential and determined by the scope.
+# for simple use case how token,scope is tied up please refer to the examples in /test directory
+def refreshESBToken(scope)
+  @esbToken=nil
 	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
-	param_hash={"grant_type" => "client_credentials", "scope" => "PRODUCTION"}
-	response = ESB_APICall(@esbTokenUrl + "/token?grant_type=client_credentials&scope=PRODUCTION",
-	                   "Basic " + encoded_string,
+	param_hash={"grant_type" => "client_credentials", "scope" => scope}
+	response = ESB_APICall(@esbTokenUrl + "/token","Basic " + encoded_string, false,
 	                   "application/x-www-form-urlencoded",
 	                   "POST",
 	                   param_hash)
@@ -93,7 +121,8 @@ def refreshESBToken()
 		@logger.info "ESB token refreshed at " + Time.now.to_s + " with new token " + @esbToken[0..4] + "..."
 	else
 		@logger.error "Null JSON value for ESB refresh token call."
-	end
+  end
+  return @esbToken
 end
 
 ## make Canvas API call
@@ -219,7 +248,7 @@ def get_all_canvas_page_urls(response_headers)
 end
 
 ## make ESB API call
-def ESB_APICall(url, authorization_string, content_type, request_type, param_hash)
+def ESB_APICall(url, authorization_string, ibm_client_id, content_type, request_type, param_hash)
 	# make sure the call is within API usage quota
 	@esb_call_hash = sleep_according_to_timer_and_api_call_limit(@esb_call_hash, @logger)
 
@@ -241,6 +270,9 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 	request.add_field("Authorization", authorization_string)
 	request.add_field("Content-Type", content_type)
 	request.add_field("Accept", "application/json")
+    if(ibm_client_id)
+      request.add_field("x-ibm-client-id", @esbKey)
+    end
 
 	if (!param_hash.nil?)
 		if (request_type == "PUT")
@@ -250,7 +282,7 @@ def ESB_APICall(url, authorization_string, content_type, request_type, param_has
 			# if parameter hash is not null, attach them to form
 			request.set_form_data(param_hash)
 		end
-	end
+  end
 
 	sock = Net::HTTP.new(url.host, url.port)
 	sock.use_ssl=true
@@ -277,16 +309,16 @@ end
 
 ## checks the result of ESB API call
 ## renew ESB token if necessary, and retry the failed call due to expired token
-## return parsed JSON
-def parse_ESB_API_CALL_RESPONSE(response, url, content_type, request_type, param_hash)
+## return parsed JSON. for simple use case how token,scope is tied up please refer to the examples in /test directory
+def parse_ESB_API_CALL_RESPONSE(response, url, content_type, request_type, param_hash,scope)
 	if (response.code == "401")
 		## failed request
 		@logger.info "token expired see below:"
 		@logger.info response.body
 		#renew token
-		refreshESBToken();
+		refreshESBToken(scope);
 		## retry the failed call due to expired token
-		response = ESB_APICall(url, "Bearer " + getESBToken(), content_type, request_type, param_hash)
+		response = ESB_APICall(url, "Bearer " + getESBToken(scope,true), true, content_type, request_type, param_hash)
 	end
 	if (response.code == "401")
 		## still failed with bad token
@@ -302,17 +334,17 @@ def setMPathwayUrl(termId, sectionId, courseId)
 
 	lmsUrl = @canvasUrl + "/courses/" + courseId.to_s
 	#get course information
-	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
-	response = ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "PUT", {"lmsURL" => lmsUrl})
-	return parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "PUT", {"lmsURL" => lmsUrl})
+	call_url = @esbUrl + "/aa/CurriculumAdmin/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
+	response = ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumAdminScope,false), true,"application/json", "PUT", {"lmsURL" => lmsUrl})
+	return parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "PUT", {"lmsURL" => lmsUrl},@CurriculumAdminScope)
 end
 
 ## the ESB PUT call to set class URL in MPathway
 def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 	#get all sections with LMSURL
-	call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/ClassesWithLMSURL";
-	response = ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "GET", {})
-	result = parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "GET", nil)
+	call_url = @esbUrl + "/aa/CurriculumAdmin/Terms/#{termId}/ClassesWithLMSURL";
+	response = ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumAdminScope,false), true,"application/json", "GET", {})
+	result = parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "GET", nil,@CurriculumAdminScope)
 	if (result.nil?)
 		@logger.error "There are no MPathway sections with LMSURL set"
 		return
@@ -343,9 +375,9 @@ def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 
 	# iterate through the set and delete the url
 	sectionWithUrlSet.each do |sectionId|
-		call_url = @esbUrl + "/CurriculumAdmin/v1/Terms/#{termId}/Classes/#{sectionId}/LMSURL"
+		call_url = @esbUrl + "/aa/CurriculumAdmin/Terms/#{termId}/Classes/#{sectionId}/LMSURL"
 		@logger.info call_url
-		response = ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "DELETE", {})
+		response = ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumAdminScope,false), true,"application/json", "DELETE", {})
 		@logger.info(response.body)
 	end
 end
@@ -354,9 +386,9 @@ end
 def getMPathwayTerms()
 	rv = Set.new()
 	#get term information
-	call_url = @esbUrl + "/Curriculum/SOC/v1/Terms";
-	response= ESB_APICall(call_url, "Bearer " + getESBToken(), "application/json", "GET", nil)
-	result = parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "GET", nil)
+	call_url = @esbUrl + "/Curriculum/SOC/Terms";
+	response= ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumScope,false), true,"application/json", "GET", nil)
+	result = parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "GET", nil,@CurriculumScope)
 	if (!result.nil?)
 		# ideally the Term element should always be an Array
 		# a ServiceLink request has been created
