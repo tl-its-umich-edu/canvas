@@ -123,12 +123,12 @@ def create_all_instructor_sandbox_site(zip_file_name, logger, server_api_url, ac
 		if (!user_details_json.nil? && user_details_json.size == 1)
 			# found user in Canvas
 			user_canvas_id = user_details_json[0]["id"]
-			user_sis_login_id = user_details_json[0]["sis_login_id"]
+			user_sis_login_id = user_details_json[0]["login_id"]
 			user_name = user_details_json[0]["name"]
 
 			# 1. see whether there is an sandbox site for this user
 			previous_user_sandbox_site = Canvas_API_GET("#{server_api_url}accounts/#{practice_course_subaccount}/courses?search_term=#{PREVIOUS_USER_SANDBOX_NAME.gsub(USERNAME, user_name)}")
-			if (!previous_user_sandbox_site.nil? && previous_user_sandbox_site.length == 0)
+			if (previous_user_sandbox_site.nil? || previous_user_sandbox_site.length == 0)
 				# 2. create new sandbox site with new name format
 				create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login_id, logger, practice_course_subaccount, server_api_url)
 			else

@@ -5,21 +5,24 @@ def json_parse_safe(url, json, logger)
 	# The top-level structure of a JSON document is an array or object,
 	# and the shortest representations of those are [] and {}, respectively.
 	# So valid non-empty json should have two octet
-	if json && json.length >= 2
+	if (json.nil?)
+		logger.error "Unable to parse JSON String for #{url}: null json"
+		return nil
+	elsif json.length < 2
+		logger.error "Unable to parse JSON String for #{url}: #{json}"
+		return nil
+	elsif json == "[]"
+		logger.error "Unable to parse JSON String for #{url}: []"
+		return nil
+	else
 		begin
 			return JSON.parse(json)
 		rescue JSON::ParserError, TypeError => e
 			logger.warn "Not a valid JSON String #{json} for url= #{url} " + e.message
 			return nil
 		end
-	else
-		if (json.nil?)
-			logger.error "Unable to parse JSON String for #{url}: null json"
-		else
-			logger.error "Unable to parse JSON String for #{url}: JSON = #{json}"
-		end
-		return nil
 	end
+	return nil
 end
 
 # control the API call pace
