@@ -354,7 +354,7 @@ def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 
 	# check whether sectionString attribute is null
 	if (sectionString.nil?)
-		@logger.error "There are no sectionString value with result value " + result
+		@logger.error "There is no sectionString value with result value " + response.body
 		return
 	end
 
@@ -511,6 +511,11 @@ def processTermCourses(mPathwayTermSet)
 			                             :per_page => @page_size
 			                            },
 			                            nil)
+            if (json_data.nil?)
+                @logger.info "There is no published course for term id = #{termId}"
+                next
+            end
+
 			term_course_count = 0
 
 			## new set of MPathway section ids associated with published Canvas courses in given term
