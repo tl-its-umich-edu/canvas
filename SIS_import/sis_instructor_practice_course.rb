@@ -12,7 +12,7 @@ ENROLLMENTS_FILE_NAME = 'enrollments.csv'
 # read instructor information from zip file
 # return a set consists SIS id of all instructors
 #
-def get_teacher_sis_ids_set (zip_file_name, logger)
+def get_teacher_sis_ids_set(zip_file_name, logger)
 	# create a hash for all unique teachers SIS ids
 	set_teacher_sis_ids = Set.new
 	Zip::ZipFile.open(zip_file_name) do |zipfile|
@@ -79,7 +79,7 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login
 			else
 				logger.error "Null JSON value returned for adding enrollment call #{server_api_url}courses/#{sandbox_course_id}/enrollments of user_id #{user_canvas_id}"
 			end
-	else
+		else
 			# no id field, log as warning
 			logger.warn "There is no id field in the sandbox course json \n #{result}"
 		end
