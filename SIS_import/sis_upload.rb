@@ -111,7 +111,7 @@ def Canvas_API_POST(url, params, fileName)
 			                           {:Authorization => "Bearer #{$token}",
 			                            :accept => "application/json",
 			                            :import_type => "instructure_csv",
-			                            :content_type => "application/zip",
+			                            :content_type => "multipart/form-data;",
 			                            :verify_ssl => true}
 		else
 			response = RestClient.post Addressable::URI.escape(url),
