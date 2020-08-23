@@ -91,7 +91,7 @@ def getESBToken(scope,token_renewal_needed)
   @esbToken=refreshESBToken(scope);
   if !@esbToken.nil?
     @esb_api_scope_to_token_hash[scope]=@esbToken
-    @logger.info "new esb Token ending with  " + @esbToken[-5,5] + "...created for the scope " +scope
+    @logger.info "new esb Token ending with #{@esbToken[-5,5]}...created for the scope #{scope}"
   end
 
   if (@esbToken.nil?)
@@ -108,7 +108,7 @@ end
 # sis script has 2 different scopes for the ESB calls it is using, so getting different token for each is essential and determined by the scope.
 # for simple use case how token,scope is tied up please refer to the examples in /test directory
 def refreshESBToken(scope)
-  @esbToken=nil
+  	@esbToken=nil
 	encoded_string = Base64.strict_encode64(@esbKey + ":" + @esbSecret)
 	param_hash={"grant_type" => "client_credentials", "scope" => scope}
 	response = ESB_APICall(@esbTokenUrl + "/token","Basic " + encoded_string, false,
@@ -121,8 +121,8 @@ def refreshESBToken(scope)
 		@logger.info "ESB token refreshed at " + Time.now.to_s + " with new token " + @esbToken[0..4] + "..."
 	else
 		@logger.error "Null JSON value for ESB refresh token call."
-  end
-  return @esbToken
+	end
+	return @esbToken
 end
 
 ## make Canvas API call
@@ -282,7 +282,7 @@ def ESB_APICall(url, authorization_string, ibm_client_id, content_type, request_
 			# if parameter hash is not null, attach them to form
 			request.set_form_data(param_hash)
 		end
-  end
+  	end
 
 	sock = Net::HTTP.new(url.host, url.port)
 	sock.use_ssl=true
@@ -301,7 +301,7 @@ def ESB_APICall(url, authorization_string, ibm_client_id, content_type, request_
 	@logger.info "ESB call #{@esb_call_hash['call_count']} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
 
 	# increase the call count by one
-	@esb_call_hash['call_count'] = @esb_call_hash['call_count'] +1
+	@esb_call_hash['call_count'] += 1
 
 	@logger.info "ESB call status " + response.code
 	return response

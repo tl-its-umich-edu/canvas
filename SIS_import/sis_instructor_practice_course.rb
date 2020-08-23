@@ -51,12 +51,11 @@ def create_instructor_new_sandbox_site(user_canvas_id, user_name, user_sis_login
 
 	# check again for the current naming format of user sandbox site
 	user_sandbox_site = Canvas_API_GET("#{server_api_url}accounts/#{practice_course_subaccount}/courses?search_term=#{user_sandbox_site_name}")
-	if (!user_sandbox_site.nil? && user_sandbox_site.length == 0)
+	if (user_sandbox_site.nil? || user_sandbox_site.length == 0 || user_sandbox_site.empty?)
 		# create user sandbox site
 		# if there is no such sandbox site, creat one
 		result = Canvas_API_POST("#{server_api_url}accounts/#{practice_course_subaccount}/courses",
 		                         {
-			                         "account_id" => practice_course_subaccount,
 			                         "course[name]" => user_sandbox_site_name,
 			                         "course[course_code]" => user_sandbox_site_course_code
 		                         },

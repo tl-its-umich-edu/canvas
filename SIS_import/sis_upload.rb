@@ -118,7 +118,7 @@ def Canvas_API_POST(url, params, fileName)
 			                           params,
 			                           {:Authorization => "Bearer #{$token}",
 			                            :accept => "application/json",
-			                            :content_type => "application/json",
+			                            :content_type => "application/x-www-form-urlencoded",
 			                            :verify_ssl => true}
 		end
 
