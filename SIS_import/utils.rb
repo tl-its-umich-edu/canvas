@@ -14,6 +14,9 @@ def json_parse_safe(url, json, logger)
 	elsif json == "[]"
 		logger.error "Unable to parse JSON String for #{url}: []"
 		return nil
+	elsif json == 'while(1);[]'
+		logger.error "Unable to parse JSON String for #{url}: while(1);[]"
+		return nil
 	else
 		begin
 			return JSON.parse(json)
