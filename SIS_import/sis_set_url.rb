@@ -34,9 +34,6 @@ require "openssl"
 @esbUrl=""
 @esbTokenUrl=""
 
-# those two cert files are needed for ESB calls
-@caRootFilePath=""
-@inCommonFilePath=""
 # the page size used for ESB API calls
 @page_size=100
 
@@ -267,12 +264,18 @@ def ESB_APICall(url, authorization_string, ibm_client_id, content_type, request_
 		else
 			@logger.error "wrong request type #{request_type} for #{url}"
 	end
+
+	http = Net::HTTP.new(url.host, url.port)
+	http.use_ssl = true
+	http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+
 	request.add_field("Authorization", authorization_string)
 	request.add_field("Content-Type", content_type)
 	request.add_field("Accept", "application/json")
-    if(ibm_client_id)
-      request.add_field("x-ibm-client-id", @esbKey)
-    end
+
+	if(ibm_client_id)
+		request.add_field("x-ibm-client-id", @esbKey)
+	end
 
 	if (!param_hash.nil?)
 		if (request_type == "PUT")
@@ -283,20 +286,8 @@ def ESB_APICall(url, authorization_string, ibm_client_id, content_type, request_
 			request.set_form_data(param_hash)
 		end
   	end
-
-	sock = Net::HTTP.new(url.host, url.port)
-	sock.use_ssl=true
-	store = OpenSSL::X509::Store.new
-	store.add_cert(OpenSSL::X509::Certificate.new(File.read(@caRootFilePath)))
-	store.add_cert(OpenSSL::X509::Certificate.new(File.read(@inCommonFilePath)))
-	sock.cert_store = store
-
-	#sock.set_debug_output $stdout #useful to see the raw messages going over the wire
-	sock.read_timeout = 60
-	sock.open_timeout = 60
-	sock.start do |http|
-		response = http.request(request)
-	end
+	
+	response = http.request(request)
 
 	@logger.info "ESB call #{@esb_call_hash['call_count']} #{Time.new.strftime("%Y%m%d%H%M%S")} #{url}"
 
@@ -575,11 +566,10 @@ def read_argv
 			File.open(arg, 'r') do |securityFile|
 				while line = securityFile.gets
 					# only have one line, and in this format:
-					# Canvas_token=<Canvas token>,Canvas_server=<Canvas server url>,ESB_key=<ESB key>,ESB_secret=<ESB secret>,ESB_URL=<ESB URL>,
-					# ESB_TOKEN_URL=<ESB token server URL>,CA_root_cert_path=<CA root FILE PATH>,InCommon_cert_path=<InCommon cert path>
+					# Canvas_token=<Canvas token>,Canvas_server=<Canvas server url>,ESB_key=<ESB key>,ESB_secret=<ESB secret>,ESB_URL=<ESB URL>,ESB_TOKEN_URL=<ESB token server URL>
 					env_array = line.strip.split(',')
-					if (env_array.size != 8)
-						return_hash["error"] = "security file should have the settings in format of: Canvas_token=<Canvas token>,Canvas_server=<Canvas server url>,ESB_key=<ESB key>,ESB_secret=<ESB secret>,ESB_URL=<ESB URL>,ESB_TOKEN_URL=<ESB token server URL>,CA_root_cert_path=<CA root FILE PATH>,InCommon_cert_path=<InCommon cert path>"
+					if (env_array.size != 6)
+						return_hash["error"] = "security file should have the settings in format of: Canvas_token=<Canvas token>,Canvas_server=<Canvas server url>,ESB_key=<ESB key>,ESB_secret=<ESB secret>,ESB_URL=<ESB URL>,ESB_TOKEN_URL=<ESB token server URL>"
 						return return_hash
 					end
 					token_array=env_array[0].split('=')
@@ -594,10 +584,6 @@ def read_argv
 					@esbUrl=url_array[1]
 					token_url_array=env_array[5].split('=')
 					@esbTokenUrl=token_url_array[1]
-					caRootFilePath_array=env_array[6].split('=')
-					@caRootFilePath=caRootFilePath_array[1]
-					inCommonFilePath_array=env_array[7].split('=')
-					@inCommonFilePath=inCommonFilePath_array[1]
 					break
 				end
 			end
