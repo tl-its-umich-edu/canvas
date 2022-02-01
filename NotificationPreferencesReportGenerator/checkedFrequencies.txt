@@ -1,4 +1,0 @@
-immediately
-daily
-weekly
-never
