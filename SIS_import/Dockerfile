@@ -15,5 +15,5 @@ RUN find . | grep ".rb$" | xargs ruby -c
 # while running the docker file somehow the docker enviroment ask for below gems so place them in the Gemfile
 # gem "therubyracer", :platforms => :ruby
 # gem "execjs"
-# the 2nd and 3rd arguments are the security and property files and these needs to be placed at the same level as the sis_set_url.rd
-ENTRYPOINT ["./sis_set_url.rb","sis_set_url.canvastest.security","sis_set_url.canvastest.properties"]
+# ENTRYPOINT ["./sis_set_url.rb"]
+ENTRYPOINT [ "./sis_upload.rb" ]

@@ -12,6 +12,7 @@ require "addressable/uri"
 require "set"
 require_relative "utils.rb"
 require "logger"
+require "dotenv"
 
 require_relative "sis_instructor_practice_course"
 
@@ -34,10 +35,9 @@ $token = ""
 $server = ""
 # the Canvas server api url
 $server_api_url = ""
-# the current working directory, archive directory and output directory
+# the current working directory, archive directory
 $currentDirectory=""
 $archiveDirectory=""
-$outputDirectory=""
 
 # the warning message from upload process
 $upload_warnings = ""
@@ -151,7 +151,7 @@ def Canvas_API_PUT(url, params)
 	end
 end
 
-def upload_to_canvas(fileName, output_file_base_name)
+def upload_to_canvas(fileName)
 
 	# set the error flag, default to be false
 	upload_error = false
@@ -179,15 +179,6 @@ def upload_to_canvas(fileName, output_file_base_name)
 	end
 
 	job_id=parsed["id"]
-
-	begin
-		#open a separate file to log the job id
-		outputIdFile = File.open($outputDirectory + output_file_base_name + "_id.txt", "w")
-		# write the job id into the id file
-		outputIdFile.write(job_id);
-	ensure
-		outputIdFile.close unless outputIdFile == nil
-	end
 
 	$logger.info "the Canvas upload job id is: #{job_id} with status:"
 
@@ -398,153 +389,58 @@ def verify_checksum(base_file_path)
 	return upload_error
 end
 
-def get_settings(securityFile, propertiesFile)
-	# 1. read from security file
-	if (Dir[securityFile].length != 1)
-		## security file
-		return "Cannot find security file #{securityFile}."
-	else
-		File.open(securityFile, 'r') do |sFile|
-			while line = sFile.gets
-				# only read the first line
-				# format: token=TOKEN,server=SERVER,directory=DIRECTORY
-				env_array = line.strip.split(',')
-				if (env_array.size != 2)
-					return "security file should have the settings in format of: token=TOKEN,server=SERVER"
-				end
-				token_array=env_array[0].split('=')
-				$token=token_array[1]
-				server_array=env_array[1].split('=')
-				$server=server_array[1]
-				$server_api_url= "#{$server}#{API_PATH}"
-				break
-			end
-		end
-		if ($token=="")
-			return "Empty token for Canvas upload."
-		end
-	end
+def get_settings()
+	Dotenv.load
+	$token=ENV['canvas_token']
+	$server=ENV['canvas_url']
+	$server_api_url= "#{$server}#{API_PATH}"
+	$sleep=ENV['sleep'].to_i
+	$call_hash["time_interval_in_seconds"]=ENV['canvas_time_interval'].to_i
+	$call_hash["allowed_call_number_during_interval"]=ENV['canvas_allowed_call_number'].to_i
+	$alert_email_address=ENV['alert_email_address']
+	$practice_course_subaccount=ENV['practice_course_subaccount']
+	
+	$archiveDirectory="TODO"
 
-	#2. read from properties file
-	if (Dir[propertiesFile].length != 1)
-		## properties file
-		return "Cannot find properties file #{propertiesFile}."
-	else
-		File.open(propertiesFile, 'r') do |pFile|
-			while line = pFile.gets
-				# only read the first line
-				# format: directory=DIRECTORY,sleep=SLEEP,canvas_time_interval=INTERVAL_IN_SECONDS,canvas_allowed_call_number=NUMBER,alert_email_address=ALERT_EMAIL_ADDRESS,practice_course_subaccount=PRACTICE_COURSE_SUBACCOUNT
-				env_array = line.strip.split(',')
-				if (env_array.size != 6)
-					return "Properties file should have the settings in format of: directory=DIRECTORY,sleep=SLEEP,canvas_time_interval=INTERVAL_IN_SECONDS,canvas_allowed_call_number=NUMBER,alert_email_address=ALERT_EMAIL_ADDRESS,practice_course_subaccount=PRACTICE_COURSE_SUBACCOUNT"
-				end
-				directory_array=env_array[0].split('=')
-				$currentDirectory=directory_array[1]
-				sleep_array=env_array[1].split('=')
-				$sleep=sleep_array[1].to_i
-				canvas_interval_array=env_array[2].split('=')
-				$call_hash["time_interval_in_seconds"]=canvas_interval_array[1].to_i
-				canvas_call_array=env_array[3].split('=')
-				$call_hash["allowed_call_number_during_interval"]=canvas_call_array[1].to_i
-				alert_email_address_array=env_array[4].split('=')
-				$alert_email_address=alert_email_address_array[1]
-				practice_course_subaccount_array=env_array[5].split('=')
-				$practice_course_subaccount=practice_course_subaccount_array[1]
-				break
-			end
-		end
-		if (Dir[$currentDirectory].length != 1)
-			## working directory
-			return "Cannot find current working directory " + $currentDirectory + "."
-		else
-			# get the current working directory and the archive folder inside
-			$archiveDirectory=$currentDirectory + "archive/"
-			$outputDirectory=$currentDirectory + "logs/"
-
-			$logger.info "server=" + $server
-			$logger.info "current directory: " + $currentDirectory
-			$logger.info "archive directory: " + $archiveDirectory
-			$logger.info "output directory: " + $outputDirectory
-			$logger.info "alert email address: " + $alert_email_address
-			$logger.info "practice course subaccount: " + $practice_course_subaccount
-
-			if (Dir[$archiveDirectory].length != 1)
-				## archive directory
-				return "Cannot find archive directory " + $archiveDirectory + "."
-			end
-			if (Dir[$outputDirectory].length != 1)
-				## logs directory
-				return "Cannot find output directory " + $outputDirectory + "."
-			end
-		end
-	end
-
-	# all is fine
-	return false
+	$logger.info "server=" + $server
+	$logger.info "current directory: " + $currentDirectory
+	$logger.info "archive directory: " + $archiveDirectory
+	$logger.info "alert email address: " + $alert_email_address
+	$logger.info "practice course subaccount: " + $practice_course_subaccount
 end
 
-# the command line argument count
-count=1
-# iterate through the inline arguments
-ARGV.each do |arg|
-	if (count==1)
-		#security file
-		securityFile = arg
-	elsif (count==2)
-		# the second argument should be the server name
-		propertiesFile=arg
-	else
-		# break
-	end
-
-	#increase count
-	count=count+1
-end
-
-# read the settings from properties files
-upload_error = get_settings(securityFile, propertiesFile)
+# get env settings
+get_settings()
 
 #open the output file
 begin
-	# get output file name
-	output_file_base_name = "Canvas_upload_" + Time.new.strftime("%Y%m%d%H%M%S")
-	output_file_name = $outputDirectory + output_file_base_name + ".txt"
-	outputFile = File.open(output_file_name, "w")
-	$logger.info "log file is at #{output_file_name}"
+	# the canvas import zip file
+	fileNames = Dir[$currentDirectory+ "Canvas_Extract_*.zip"];
+	if (fileNames.length == 0)
+		## cannot find zip file to upload
+		upload_error = "Cannot find SIS zip file."
+	elsif (fileNames.length > 1)
+		## there are more than one zip file
+		upload_error = "There are more than one SIS zip files to be uploaded."
+	elsif
+		## get the name of file to process
+		fileName=fileNames[0]
+		currentFileBaseName = File.basename(fileName, ".zip")
+		$logger.info "Process file #{currentFileBaseName}.zip"
 
-	# reset the logger output to output file
-	$logger = Logger.new(outputFile)
-	$logger.level = Logger::INFO
+		## checksum verification step
+		upload_error = verify_checksum($currentDirectory + currentFileBaseName)
 
-	if (!upload_error)
-		# the canvas import zip file
-		fileNames = Dir[$currentDirectory+ "Canvas_Extract_*.zip"];
-		if (fileNames.length == 0)
-			## cannot find zip file to upload
-			upload_error = "Cannot find SIS zip file."
-		elsif (fileNames.length > 1)
-			## there are more than one zip file
-			upload_error = "There are more than one SIS zip files to be uploaded."
-		elsif
-			## get the name of file to process
-			fileName=fileNames[0]
-			currentFileBaseName = File.basename(fileName, ".zip")
-			$logger.info "Process file #{currentFileBaseName}.zip"
+		if (!upload_error)
+			# upload the file to canvas server
+			upload_error = upload_to_canvas(fileName)
+		end
 
-			## checksum verification step
-			upload_error = verify_checksum($currentDirectory + currentFileBaseName)
-
-			if (!upload_error)
-				# upload the file to canvas server
-				upload_error = upload_to_canvas(fileName, output_file_base_name)
-			end
-
-			if (!upload_error)
-				## if there is no upload error
-				## create sandbox sites for instructors newly uploaded
-				## if they do not have such a site now
-				create_all_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", $logger, $server_api_url, ACCOUNT_NUMBER, $practice_course_subaccount)
-			end
+		if (!upload_error)
+			## if there is no upload error
+			## create sandbox sites for instructors newly uploaded
+			## if they do not have such a site now
+			create_all_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", $logger, $server_api_url, ACCOUNT_NUMBER, $practice_course_subaccount)
 		end
 	end
 end
@@ -572,7 +468,7 @@ else
 	FileUtils.mv(Dir.glob("#{$currentDirectory}#{currentFileBaseName}.zip"), $archiveDirectory)
 	FileUtils.mv(Dir.glob("#{$currentDirectory}#{currentFileBaseName}MD5.txt"), $archiveDirectory)
 
-	$logger.info "SIS upload finished with #{fileName}"
+	$logger.info "SIS upload finished."
 end
 
 # close logger
