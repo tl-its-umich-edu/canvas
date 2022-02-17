@@ -9,3 +9,4 @@ gem 'zip-zip' # will load compatibility for old rubyzip API.
 gem "addressable"
 gem "execjs"
 gem "therubyracer"
+gem "dotenv"

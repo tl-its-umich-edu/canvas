@@ -16,14 +16,14 @@ require_relative "utils.rb"
 require "logger"
 require "openssl"
 
+require "dotenv"
+
 # Create a Logger
 # defaults to output to the standard output stream, until reset to output to configured output file
 # with a level of info
 @logger = Logger.new(STDOUT)
 @logger.level = Logger::INFO
 
-# the current working directory
-@currentDirectory=""
 # the Canvas parameters
 @canvasUrl = ""
 # the Canvas access token
@@ -526,7 +526,7 @@ def processTermCourses(mPathwayTermSet)
 	return error_message
 end
 
-def update_MPathway_with_Canvas_url(outputDirectory)
+def update_MPathway_with_Canvas_url()
 	upload_error = false
 
 	# get the MPathway term set
@@ -549,84 +549,21 @@ end
 
 ## read the command line arguments
 def read_argv
+	Dotenv.load
+	@logger.info(ENV)
 
-	# return errors
-	return_hash = Hash.new
-
-	# the command line argument count
-	count=1
-	# iterate through the inline arguments
-	ARGV.each do |arg|
-		if (count==1)
-			if (Dir[arg].length != 1)
-				## token file
-				return_hash["error"] = "Cannot find security file " + arg
-				return return_hash
-			end
-			File.open(arg, 'r') do |securityFile|
-				while line = securityFile.gets
-					# only have one line, and in this format:
-					# Canvas_token=<Canvas token>,Canvas_server=<Canvas server url>,ESB_key=<ESB key>,ESB_secret=<ESB secret>,ESB_URL=<ESB URL>,ESB_TOKEN_URL=<ESB token server URL>
-					env_array = line.strip.split(',')
-					if (env_array.size != 6)
-						return_hash["error"] = "security file should have the settings in format of: Canvas_token=<Canvas token>,Canvas_server=<Canvas server url>,ESB_key=<ESB key>,ESB_secret=<ESB secret>,ESB_URL=<ESB URL>,ESB_TOKEN_URL=<ESB token server URL>"
-						return return_hash
-					end
-					token_array=env_array[0].split('=')
-					@canvasToken=token_array[1]
-					url_array=env_array[1].split('=')
-					@canvasUrl=url_array[1]
-					key_array=env_array[2].split('=')
-					@esbKey=key_array[1]
-					secret_array=env_array[3].split('=')
-					@esbSecret=secret_array[1]
-					url_array=env_array[4].split('=')
-					@esbUrl=url_array[1]
-					token_url_array=env_array[5].split('=')
-					@esbTokenUrl=token_url_array[1]
-					break
-				end
-			end
-		elsif (count==2)
-			if (Dir[arg].length != 1)
-				## token file
-				return_hash["error"] = "Cannot find properties file " + arg
-				return return_hash
-			end
-			File.open(arg, 'r') do |propertiesFile|
-				while line = propertiesFile.gets
-					# only have one line, and in this format:
-					# directory=<current working directory>,page_size=<ESB API call page size>,esb_time_interval=<ESB API call time interval in seconds>,esb_allowed_call_number=<maximum ESB API call number during the interval>,canvas_time_interval=<Canvas API call time interval in secs>,canvas_allowed_call_number=<maximum Canvas API call during the interval>,alert_email_address=ALERT_EMAIL_ADDRESS
-					env_array = line.strip.split(',')
-					if (env_array.size != 7)
-						return_hash["error"] = "Properties file should have the settings in format of: directory=<current working directory>,page_size=<ESB API call page size>,esb_time_interval=<ESB API call time interval in seconds>,esb_allowed_call_number=<maximum ESB API call number during the interval>,canvas_time_interval=<Canvas API call time interval in secs>,canvas_allowed_call_number=<maximum Canvas API call during the interval>,alert_email_address=<alert email address>"
-						return return_hash
-					end
-					diretory_array=env_array[0].split('=')
-					@currentDirectory=diretory_array[1]
-					page_size_array=env_array[1].split('=')
-					@page_size=page_size_array[1]
-					esb_interval_array=env_array[2].split('=')
-					@esb_call_hash["time_interval_in_seconds"]=esb_interval_array[1].to_i
-					esb_call_array=env_array[3].split('=')
-					@esb_call_hash["allowed_call_number_during_interval"]=esb_call_array[1].to_i
-					canvas_interval_array=env_array[4].split('=')
-					@canvas_call_hash["time_interval_in_seconds"]=canvas_interval_array[1].to_i
-					canvas_call_array=env_array[5].split('=')
-					@canvas_call_hash["allowed_call_number_during_interval"]=canvas_call_array[1].to_i
-					alert_email_address_array=env_array[6].split('=')
-					@alert_email_address=alert_email_address_array[1]
-					break
-				end
-			end
-		else
-			# break
-		end
-
-		#increase count
-		count=count+1
-	end
-	return return_hash
+	@canvasToken=ENV['canvas_token']
+	@canvasUrl=ENV['canvas_url']
+	@esbKey=ENV['esb_key']
+	@esbSecret=ENV['esb_secret']
+	@esbUrl=ENV['esb_url']
+	@esbTokenUrl=ENV['esb_token_url']
+	@page_size=ENV['page_size']
+	@esb_call_hash["time_interval_in_seconds"]=ENV['esb_time_interval'].to_i
+	@esb_call_hash["allowed_call_number_during_interval"]=ENV['esb_allowed_call_number'].to_i
+	@canvas_call_hash["time_interval_in_seconds"]=ENV['canvas_time_interval'].to_i
+	@canvas_call_hash["allowed_call_number_during_interval"]=ENV['canvas_allowed_call_number'].to_i
+	@alert_email_address=ENV['alert_email_address']
 end
 
 
@@ -639,43 +576,20 @@ end
 process_error = nil
 
 # init from command line arguments
-return_hash = read_argv
-if return_hash.has_key? "error"
-	process_error = return_hash["error"]
-else
-	# get then log output directory
-	outputDirectory=@currentDirectory + "logs/"
+read_argv
 
-	@logger.info "canvasUrl=" + @canvasUrl
-	@logger.info "current directory: " + @currentDirectory
-	@logger.info "output directory: " + outputDirectory
+@logger.info "canvasUrl=" + @canvasUrl
 
-	if (Dir[@currentDirectory].length != 1)
-		## working directory
-		process_error = "Cannot find current working directory " + @currentDirectory
-	elsif (Dir[outputDirectory].length != 1)
-		## logs directory
-		process_error = "Cannot find logs directory " + outputDirectory
+begin
+
+	# update MPathway with Canvas urls
+	updateError = update_MPathway_with_Canvas_url()
+
+	if (!updateError || updateError.nil? || updateError.empty?)
+		## if there is no upload error
+		@logger.info "Sites set URLs finished."
 	else
-		begin
-			outputFileName = outputDirectory + "Canvas_set_url_#{Time.new.strftime("%Y%m%d%H%M%S")}.txt"
-			outputFile = File.open(outputFileName, "w")
-			@logger.info "log file is at #{outputFileName}"
-
-			# reset the logger output to output file
-			@logger = Logger.new(outputFile)
-			@logger.level = Logger::INFO
-
-			# update MPathway with Canvas urls
-			updateError = update_MPathway_with_Canvas_url(outputDirectory)
-
-			if (!updateError || updateError.nil? || updateError.empty?)
-				## if there is no upload error
-				@logger.info "Sites set URLs finished."
-			else
-				process_error = updateError
-			end
-		end
+		process_error = updateError
 	end
 end
 
@@ -687,8 +601,5 @@ if (process_error && !process_error.empty?)
 	`echo "#{process_error}" | mail -s "#{@canvasUrl} SIS Set URL Error" #{@alert_email_address}`
 	@logger.warn "set url error: #{process_error}"
 end
-
-# close logger
-@logger.close
 
 
