@@ -156,11 +156,6 @@ def upload_to_canvas(fileName)
 	# set the error flag, default to be false
 	upload_error = false
 
-	# prior to upload current zip file, make an attempt to check the prior upload, whether it is finished successfully
-	if (prior_upload_error)
-		return "Previous upload job has not finished yet."
-	end
-
 	# continue the current upload process
 	parsed = Canvas_API_POST("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports.json",
 	                         nil,
@@ -289,69 +284,6 @@ def upload_to_canvas(fileName)
 
 end
 
-## end of method definition
-
-# get the prior upload process id and make Canvas API calls to see the current process status
-# return true if the process is 100% finished; false otherwise
-def prior_upload_error
-	# find all the process id files, and sort in descending order based on last modified time
-	id_log_file_path = "#{$currentDirectory}logs/*_id.txt"
-	$logger.info "id log file path is #{id_log_file_path}"
-	files = Dir.glob(id_log_file_path)
-	files = files.sort_by { |file| File.mtime(file) }.reverse
-	if (files.size == 0)
-		$logger.warn "no id file found in path #{id_log_file_path}"
-		## first run, no prior cases
-		return false
-	else
-		## get the first and most recent id file
-		id_file = files[0]
-		$logger.info "found recent id file #{id_file}"
-		process_id = ''
-		File.open(id_file, 'r') do |idFile|
-			while line = idFile.gets
-				# only read the first line, which is the token value
-				process_id=line.strip
-				break
-			end
-		end
-
-		process_result = Canvas_API_GET("#{$server_api_url}accounts/#{ACCOUNT_NUMBER}/sis_imports/#{process_id}")
-		if (process_result.nil?)
-			## cannot find status info for prior upload job
-			## return false, and ready for new upload
-			return false
-		end
-		$logger.info "Prior Canvas upload job #{process_id} with process status #{process_result}"
-		if (process_result["errors"].is_a?(Array) &&
-			process_result["errors"][0] &&
-			process_result["errors"][0]["message"] &&
-			process_result["errors"][0]["message"].include?("The specified resource does not exist."))
-
-			# if the error message is "The specified resource does not exist."
-			# it is due to the data sync process from Canvas Prod server to Non-prod servers
-			# ignore this error and proceed with SIS upload
-			$logger.info "Due to Canvas data sync process, SIS upload job id #{process_id} does not exist. Proceed with new SIS upload."
-			return false
-		end
-		if (process_result["workflow_state"].eql?("failed") || process_result["workflow_state"].eql?("failed_with_messages"))
-			# if the previous upload task is of failed or failed_with_message status, stop the current upload process
-			$logger.error "Prior Canvas upload process id number #{process_id} #{process_result["workflow_state"]} . Stop current upload."
-			return true
-		end
-		#parse the status percentage
-		progress_status = process_result["progress"]
-		if (progress_status != 100)
-			# the prior job has not been processed 100%
-			$logger.warn "Prior upload process percent is #{process_id} has not finished yet. That progress status is #{progress_status}"
-			return true
-		end
-
-		# prior job finished without error, ready for new upload
-		return false
-	end
-end
-
 def verify_checksum(base_file_path)
 	# default value
 	upload_error = false
@@ -391,6 +323,7 @@ end
 
 def get_settings()
 	Dotenv.load
+	$currentDirectory=ENV['current_directory']
 	$token=ENV['canvas_token']
 	$server=ENV['canvas_url']
 	$server_api_url= "#{$server}#{API_PATH}"
@@ -415,7 +348,9 @@ get_settings()
 #open the output file
 begin
 	# the canvas import zip file
-	fileNames = Dir[$currentDirectory+ "Canvas_Extract_*.zip"];
+	$currentDataDirectory = $currentDirectory + "data/"
+	$logger.info($currentDataDirectory)
+	fileNames = Dir[$currentDataDirectory+ "Canvas_Extract_*.zip"];
 	if (fileNames.length == 0)
 		## cannot find zip file to upload
 		upload_error = "Cannot find SIS zip file."
@@ -429,7 +364,7 @@ begin
 		$logger.info "Process file #{currentFileBaseName}.zip"
 
 		## checksum verification step
-		upload_error = verify_checksum($currentDirectory + currentFileBaseName)
+		upload_error = verify_checksum($currentDataDirectory + currentFileBaseName)
 
 		if (!upload_error)
 			# upload the file to canvas server
@@ -440,7 +375,7 @@ begin
 			## if there is no upload error
 			## create sandbox sites for instructors newly uploaded
 			## if they do not have such a site now
-			create_all_instructor_sandbox_site($currentDirectory + currentFileBaseName + ".zip", $logger, $server_api_url, ACCOUNT_NUMBER, $practice_course_subaccount)
+			create_all_instructor_sandbox_site($currentDataDirectory + currentFileBaseName + ".zip", $logger, $server_api_url, ACCOUNT_NUMBER, $practice_course_subaccount)
 		end
 	end
 end
@@ -463,11 +398,6 @@ else
 	end
 
 	# write the success message
-	## if there is no upload error
-	# move file to archive directory after processing
-	FileUtils.mv(Dir.glob("#{$currentDirectory}#{currentFileBaseName}.zip"), $archiveDirectory)
-	FileUtils.mv(Dir.glob("#{$currentDirectory}#{currentFileBaseName}MD5.txt"), $archiveDirectory)
-
 	$logger.info "SIS upload finished."
 end
 

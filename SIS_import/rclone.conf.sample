@@ -1,0 +1,13 @@
+[sftp]
+type = sftp
+host = ftpprod.dsc.umich.edu
+user = 
+pass = 
+
+[aws]
+type = s3
+provider = AWS
+access_key_id = 
+secret_access_key = 
+region = us-east-2
+location_constraint = us-east-2
