@@ -12,11 +12,18 @@ rclone -vv --config ./rclone.conf --exclude '.*' copy sftp:/OUTBOUND/ /usr/src/a
 ## 2. start with the sis_upload.rb
 ruby /usr/src/app/sis_upload.rb
 
-## 3. archive the SIS zip file to AWS
-rclone copy --config ./rclone.conf --no-traverse --exclude '.*' /usr/src/app/data aws:umich-tl-sis/archive
+if $? == 'success'
+then
+    ##3. archive the SIS zip file to AWS
+    rclone copy --config ./rclone.conf --no-traverse --exclude '.*' /usr/src/app/data aws:umich-tl-sis/archive
 
-## 4. remove the SIS zip file from SFTP server
-rclone -vv --config ./rclone.conf delete sftp:/OUTBOUND/
+    ## 4. remove the SIS zip file from SFTP server
+    rclone -vv --config ./rclone.conf delete sftp:/OUTBOUND/
+    
+    ## SIS set url script
+    ruby /usr/src/app/sis_set_url.rb
 
-## SIS set url script
-ruby /usr/src/app/sis_set_url.rb
+else
+    echo "ERROR: There was a problem in SIS upload process. Please check the details in log file. "
+fi
+

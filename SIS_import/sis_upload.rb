@@ -368,10 +368,8 @@ begin
 
 		if (!upload_error)
 			# upload the file to canvas server
-			upload_error = upload_to_canvas(fileName)
-		end
+			upload_to_canvas(fileName)
 
-		if (!upload_error)
 			## if there is no upload error
 			## create sandbox sites for instructors newly uploaded
 			## if they do not have such a site now
@@ -380,26 +378,21 @@ begin
 	end
 end
 
-
 if (upload_error)
-	## check first about the environment variable setting for $alert_email_address '
-	$logger.warn "Sending out SIS upload error messages to #{$alert_email_address}"
-	## send email to support team with the error message
-	`echo #{upload_error} | mail -s "#{$server} SIS Upload Error" #{$alert_email_address}`
 	$logger.warn "SIS upload error #{upload_error}"
-else
-	if ($upload_warnings != "")
-		# mail the upload warning message
-		## check first about the environment variable setting for alert_email_address
-		$logger.warn "Sending out SIS upload warning messages to #{$alert_email_address}"
-		## send email to support team with the error message
-		`echo #{$upload_warnings}  | mail -s "#{$server} SIS Upload Warnings" #{$alert_email_address}`
-		$logger.warn "SIS upload warning #{$upload_warnings}"
-	end
 
+	# close logger
+	$logger.close
+	
+	# pass the "failure" code
+	exit(upload_error)
+else
 	# write the success message
 	$logger.info "SIS upload finished."
-end
 
-# close logger
-$logger.close
+	# close logger
+	$logger.close
+
+	# pass the "success" code
+	exit('success')
+end
