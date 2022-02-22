@@ -368,7 +368,10 @@ begin
 
 		if (!upload_error)
 			# upload the file to canvas server
-			upload_to_canvas(fileName)
+			json_result = upload_to_canvas(fileName)
+
+			# log the return json from SIS upload
+			$logger.info "#{json_result}"
 
 			## if there is no upload error
 			## create sandbox sites for instructors newly uploaded
@@ -385,7 +388,7 @@ if (upload_error)
 	$logger.close
 	
 	# pass the "failure" code
-	exit(upload_error)
+	exit(1)
 else
 	# write the success message
 	$logger.info "SIS upload finished."
@@ -394,5 +397,5 @@ else
 	$logger.close
 
 	# pass the "success" code
-	exit('success')
+	exit(0)
 end
