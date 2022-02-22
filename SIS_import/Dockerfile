@@ -1,19 +1,24 @@
 # This file mostly used for local testing and development.
-FROM ruby:2.6
+FROM ruby:2.7
 ENV app /usr/src/app
 RUN mkdir $app
 WORKDIR $app
+
 # Precache Bundle
 COPY Gemfile* /tmp
 WORKDIR /tmp
+RUN bundle update --bundler
 RUN bundle install
 WORKDIR $app
 ADD . $app
 
+RUN apt-get update && \
+    apt-get install rclone -y && \
+    apt-get upgrade -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
+
 # Quick check syntax
 RUN find . | grep ".rb$" | xargs ruby -c
-# while running the docker file somehow the docker enviroment ask for below gems so place them in the Gemfile
-# gem "therubyracer", :platforms => :ruby
-# gem "execjs"
-# ENTRYPOINT ["./sis_set_url.rb"]
-ENTRYPOINT [ "./sis_upload.rb" ]
+
+ENTRYPOINT [ "./rclone_setup.sh" ]
