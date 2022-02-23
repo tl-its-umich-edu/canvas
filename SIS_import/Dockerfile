@@ -5,7 +5,7 @@ RUN mkdir $app
 WORKDIR $app
 
 # Precache Bundle
-COPY Gemfile* /tmp
+COPY Gemfile* /tmp/
 WORKDIR /tmp
 RUN bundle update --bundler
 RUN bundle install
