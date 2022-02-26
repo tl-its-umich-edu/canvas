@@ -5,6 +5,7 @@ GEM
       public_suffix (>= 2.0.2, < 5.0)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
+    dotenv (2.7.6)
     execjs (2.7.0)
     http-accept (1.7.0)
     http-cookie (1.0.3)
@@ -13,11 +14,13 @@ GEM
     mime-types (3.3)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2019.1009)
-    mini_portile2 (2.4.0)
+    mini_portile2 (2.8.0)
     netrc (0.11.0)
-    nokogiri (1.10.8)
-      mini_portile2 (~> 2.4.0)
+    nokogiri (1.13.2)
+      mini_portile2 (~> 2.8.0)
+      racc (~> 1.4)
     public_suffix (4.0.1)
+    racc (1.6.0)
     ref (2.0.0)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
@@ -41,6 +44,7 @@ PLATFORMS
 
 DEPENDENCIES
   addressable
+  dotenv
   execjs
   nokogiri
   rest-client
