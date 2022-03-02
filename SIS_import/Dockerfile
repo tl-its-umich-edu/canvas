@@ -21,4 +21,7 @@ RUN apt-get update && \
 # Quick check syntax
 RUN find . | grep ".rb$" | xargs ruby -c
 
+RUN chown -R root:root /usr/src/app/data
+RUN chmod g+rw /usr/src/app/data
+
 ENTRYPOINT [ "./rclone_setup.sh" ]
