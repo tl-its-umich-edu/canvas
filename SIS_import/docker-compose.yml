@@ -10,3 +10,7 @@ services:
     volumes:
       - ${HOME}/secrets/sis:/app/config/secrets
     container_name: sis
+    
+    user: 1001320000:10000
+    group_add:
+      - 0
