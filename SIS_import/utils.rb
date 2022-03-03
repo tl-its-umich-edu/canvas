@@ -6,16 +6,16 @@ def json_parse_safe(url, json, logger)
 	# and the shortest representations of those are [] and {}, respectively.
 	# So valid non-empty json should have two octet
 	if (json.nil?)
-		logger.error "Unable to parse JSON String for #{url}: null json"
+		logger.warn "Unable to parse JSON String for #{url}: null json"
 		return nil
 	elsif json.length < 2
-		logger.error "Unable to parse JSON String for #{url}: #{json}"
+		logger.warn "Unable to parse JSON String for #{url}: #{json}"
 		return nil
 	elsif json == "[]"
-		logger.error "Unable to parse JSON String for #{url}: []"
+		logger.warn "Unable to parse JSON String for #{url}: []"
 		return nil
 	elsif json == 'while(1);[]'
-		logger.error "Unable to parse JSON String for #{url}: while(1);[]"
+		logger.warn "Unable to parse JSON String for #{url}: while(1);[]"
 		return nil
 	else
 		begin
