@@ -1,8 +1,19 @@
 # This file mostly used for local testing and development.
-FROM ruby:2.7
+FROM ruby:2.7-slim
 ENV app /usr/src/app
 RUN mkdir $app
 WORKDIR $app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends build-essential curl
+
+# Rclone in Debian isn't the latest
+# Download latest from https://rclone.org/downloads/
+ENV RCLONE_VERSION=1.57.0
+
+RUN curl -sLO https://downloads.rclone.org/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.deb && \ 
+    dpkg -i rclone-v${RCLONE_VERSION}-linux-amd64.deb && \
+    rm rclone-v${RCLONE_VERSION}-linux-amd64.deb
 
 # Precache Bundle
 COPY Gemfile* /tmp/
@@ -12,9 +23,7 @@ RUN bundle install
 WORKDIR $app
 ADD . $app
 
-RUN apt-get update && \
-    apt-get install rclone -y && \
-    apt-get upgrade -y && \
+RUN apt-get upgrade -y && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
