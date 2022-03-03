@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash -x 
 
 RCLONE_OPTS="--config /app/config/secrets/rclone.conf --cache-dir /tmp/.cache/rclone/"
 

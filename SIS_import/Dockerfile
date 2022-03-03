@@ -9,11 +9,11 @@ RUN apt-get update && \
 
 # Rclone in Debian isn't the latest
 # Download latest from https://rclone.org/downloads/
-ENV RCLONE_VERSION=1.57.0
+ENV RCLONE_VER=v1.57.0
 
-RUN curl -sLO https://downloads.rclone.org/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.deb && \ 
-    dpkg -i rclone-v${RCLONE_VERSION}-linux-amd64.deb && \
-    rm rclone-v${RCLONE_VERSION}-linux-amd64.deb
+RUN curl -sLO https://downloads.rclone.org/${RCLONE_VER}/rclone-${RCLONE_VER}-linux-amd64.deb && \ 
+    dpkg -i rclone-${RCLONE_VER}-linux-amd64.deb && \
+    rm rclone-${RCLONE_VER}-linux-amd64.deb
 
 # Precache Bundle
 COPY Gemfile* /tmp/
