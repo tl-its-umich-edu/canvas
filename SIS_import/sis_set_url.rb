@@ -572,9 +572,6 @@ end
 # ruby ./SIS_update_url.rb <the_security_file_path> <the_properties_file_path>
 ####################################################
 
-# process error, will notify user through email
-process_error = nil
-
 # init from command line arguments
 read_argv
 
