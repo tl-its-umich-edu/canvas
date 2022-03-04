@@ -137,7 +137,7 @@ def Canvas_API_call(url, params, json_attribute)
 	json = parse_canvas_API_response_json(url, response, json_attribute)
 	if (json.nil?)
 		# return if error
-		@logger.error "Null response JSON value for Canvas API call " + url
+		@logger.warn "Null response JSON value for Canvas API call " + url
 		return nil
 	end
 
@@ -345,7 +345,7 @@ def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 
 	# check whether sectionString attribute is null
 	if (sectionString.nil?)
-		@logger.error "There is no sectionString value with result value " + response.body
+		@logger.warn "There is no sectionString value with result value " + response.body
 		return
 	end
 
@@ -585,21 +585,11 @@ begin
 	# update MPathway with Canvas urls
 	updateError = update_MPathway_with_Canvas_url()
 
-	if (!updateError || updateError.nil? || updateError.empty?)
-		## if there is no upload error
-		@logger.info "Sites set URLs finished."
-	else
-		process_error = updateError
+	if (updateError && updateError.nil? && updateError.empty?)
+		## if there is upload error
+		@logger.warn(updateError)
 	end
-end
-
-if (process_error && !process_error.empty?)
-	# mail the upload warning message
-	## check first about the environment variable setting for alert_email_address
-	@logger.info "Sending out SIS upload warning messages to #{@alert_email_address}"
-	## send email to support team with the error message
-	`echo "#{process_error}" | mail -s "#{@canvasUrl} SIS Set URL Error" #{@alert_email_address}`
-	@logger.warn "set url error: #{process_error}"
+	@logger.info "Sites set URLs finished."
 end
 
 
