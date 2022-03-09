@@ -35,9 +35,8 @@ $token = ""
 $server = ""
 # the Canvas server api url
 $server_api_url = ""
-# the current working directory, archive directory
+# the current working directory
 $currentDirectory=""
-$archiveDirectory=""
 
 # the warning message from upload process
 $upload_warnings = ""
@@ -323,21 +322,18 @@ end
 
 def get_settings()
 	Dotenv.load
-	$currentDirectory=ENV['current_directory']
-	$token=ENV['canvas_token']
-	$server=ENV['canvas_url']
+	$currentDirectory=ENV['CURRENT_DIRECTORY']
+	$token=ENV['CANVAS_TOKEN']
+	$server=ENV['CANVAS_URL']
 	$server_api_url= "#{$server}#{API_PATH}"
-	$sleep=ENV['sleep'].to_i
-	$call_hash["time_interval_in_seconds"]=ENV['canvas_time_interval'].to_i
-	$call_hash["allowed_call_number_during_interval"]=ENV['canvas_allowed_call_number'].to_i
-	$alert_email_address=ENV['alert_email_address']
-	$practice_course_subaccount=ENV['practice_course_subaccount']
+	$sleep=ENV['SLEEP'].to_i
+	$call_hash["time_interval_in_seconds"]=ENV['CANVAS_TIME_INTERVAL'].to_i
+	$call_hash["allowed_call_number_during_interval"]=ENV['CANVAS_ALLOWED_CALL_NUMBER'].to_i
+	$alert_email_address=ENV['ALERT_EMAIL_ADDRESS']
+	$practice_course_subaccount=ENV['PRACTICE_COURSE_SUBACCOUNT']
 	
-	$archiveDirectory="TODO"
-
 	$logger.info "server=" + $server
 	$logger.info "current directory: " + $currentDirectory
-	$logger.info "archive directory: " + $archiveDirectory
 	$logger.info "alert email address: " + $alert_email_address
 	$logger.info "practice course subaccount: " + $practice_course_subaccount
 end
