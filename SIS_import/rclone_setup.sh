@@ -1,10 +1,12 @@
 #!/bin/bash -x 
 
-if [ -z "${aws_s3_bucket}" ]; then
-    echo "set to default"
+if [ -z "${AWS_S3_BUCKET}" ]; then
     aws_s3_bucket="umich-tl-sis"
+    echo "aws_s3_bucket set to default value of umich-tl-sis"
+else
+    aws_s3_bucket = ${AWS_S3_BUCKET}
+    echo "aws_s3_bucket set to value of ${AWS_S3_BUCKET}"
 fi
-echo "${aws_s3_bucket}"
 
 RCLONE_OPTS="--config /app/config/secrets/rclone.conf --cache-dir /tmp/.cache/rclone/"
 

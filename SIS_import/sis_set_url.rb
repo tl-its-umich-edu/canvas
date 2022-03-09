@@ -552,18 +552,18 @@ def read_argv
 	Dotenv.load
 	@logger.info(ENV)
 
-	@canvasToken=ENV['canvas_token']
-	@canvasUrl=ENV['canvas_url']
-	@esbKey=ENV['esb_key']
-	@esbSecret=ENV['esb_secret']
-	@esbUrl=ENV['esb_url']
-	@esbTokenUrl=ENV['esb_token_url']
-	@page_size=ENV['page_size']
-	@esb_call_hash["time_interval_in_seconds"]=ENV['esb_time_interval'].to_i
-	@esb_call_hash["allowed_call_number_during_interval"]=ENV['esb_allowed_call_number'].to_i
-	@canvas_call_hash["time_interval_in_seconds"]=ENV['canvas_time_interval'].to_i
-	@canvas_call_hash["allowed_call_number_during_interval"]=ENV['canvas_allowed_call_number'].to_i
-	@alert_email_address=ENV['alert_email_address']
+	@canvasToken=ENV['CANVAS_TOKEN']
+	@canvasUrl=ENV['CANVAS_URL']
+	@esbKey=ENV['ESB_KEY']
+	@esbSecret=ENV['ESB_SECRET']
+	@esbUrl=ENV['ESB_URL']
+	@esbTokenUrl=ENV['ESB_TOKEN_URL']
+	@page_size=ENV['PAGE_SIZE']
+	@esb_call_hash["time_interval_in_seconds"]=ENV['ESB_TIME_INTERVAL'].to_i
+	@esb_call_hash["allowed_call_number_during_interval"]=ENV['ESB_ALLOWED_CALL_NUMBER'].to_i
+	@canvas_call_hash["time_interval_in_seconds"]=ENV['CANVAS_TIME_INTERVAL'].to_i
+	@canvas_call_hash["allowed_call_number_during_interval"]=ENV['CANVAS_ALLOWED_CALL_NUMBER'].to_i
+	@alert_email_address=ENV['ALERT_EMAIL_ADDRESS']
 end
 
 
