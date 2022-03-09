@@ -1,12 +1,10 @@
 #!/bin/bash -x 
 
 if [ -z "${AWS_S3_BUCKET}" ]; then
-    aws_s3_bucket="umich-tl-sis"
+    AWS_S3_BUCKET="umich-tl-sis"
     echo "aws_s3_bucket set to default value of umich-tl-sis"
-else
-    aws_s3_bucket = ${AWS_S3_BUCKET}
-    echo "aws_s3_bucket set to value of ${AWS_S3_BUCKET}"
 fi
+echo "AWS_S3_BUCKET set to ${AWS_S3_BUCKET}"
 
 RCLONE_OPTS="--config /app/config/secrets/rclone.conf --cache-dir /tmp/.cache/rclone/"
 
@@ -26,7 +24,7 @@ ruby /usr/src/app/sis_upload.rb
 if [ $? -eq 0 ] 
 then
     ##3. archive the SIS zip file to AWS
-    rclone copy ${RCLONE_OPTS} --no-traverse --exclude '.*' /usr/src/app/data aws:${aws_s3_bucket}/archive
+    rclone copy ${RCLONE_OPTS} --no-traverse --exclude '.*' /usr/src/app/data aws:${AWS_S3_BUCKET}/archive
 
     ## 4. remove the SIS zip file from SFTP server
     rclone -vv ${RCLONE_OPTS} delete sftp:/OUTBOUND/
