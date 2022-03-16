@@ -350,7 +350,12 @@ def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 	end
 
 	# splite the comma separated SIS IDs, into set
-	sectionArray = sectionString.split(",")
+	@logger.info sectionString
+	if (sectionString.is_a? String and sectionString.include? ",")
+		sectionArray = sectionString.split(",")
+	else
+		sectionArray = [sectionString]
+	end
 	sectionWithUrlSet = sectionArray.to_set
 	@logger.info "1. There are #{sectionWithUrlSet.size} sections with LMSURL in MPathway for the term #{termId}"
 	@logger.info sectionWithUrlSet
