@@ -11,9 +11,7 @@ RUN apt-get update && \
 # Download latest from https://rclone.org/downloads/
 ENV RCLONE_VER=v1.57.0
 
-RUN curl -sLO https://downloads.rclone.org/${RCLONE_VER}/rclone-${RCLONE_VER}-linux-amd64.deb && \ 
-    dpkg -i rclone-${RCLONE_VER}-linux-amd64.deb && \
-    rm rclone-${RCLONE_VER}-linux-amd64.deb
+RUN apt install rclone -y
 
 # Precache Bundle
 COPY Gemfile* /tmp/
@@ -33,5 +31,7 @@ RUN find . | grep ".rb$" | xargs ruby -c
 RUN mkdir /usr/src/app/data
 RUN chown -R root:root /usr/src/app/data
 RUN chmod g+rw /usr/src/app/data
+
+ENV PROCESS=sis_set_url
 
 ENTRYPOINT [ "./rclone_setup.sh" ]
