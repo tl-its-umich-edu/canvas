@@ -4,7 +4,6 @@ require "json"
 require "fileutils"
 require "nokogiri"
 
-require "uglifier"
 require "base64"
 require "net/http"
 require "rest-client"
@@ -142,23 +141,26 @@ def Canvas_API_call(url, params, json_attribute)
 	end
 
 	# array of page urls if any
-	page_urls = get_all_canvas_page_urls(response.headers)
-	if (!page_urls.nil?)
+	next_canvas_page_url = get_next_canvas_page_url(response.headers)
+	while !(next_canvas_page_url.nil?)
+		# get to next page
+		@logger.info "Next API page url: " + next_canvas_page_url
+
 		# there is paging involved
 		# need to make further API calls
 		# will concat the result json arrays
-		page_urls.each do |page_url|
-			response = actual_Canvas_API_call(page_url)
+		response = actual_Canvas_API_call(next_canvas_page_url)
 
-			json_paging_data = parse_canvas_API_response_json(url, response, json_attribute)
+		json_paging_data = parse_canvas_API_response_json(url, response, json_attribute)
 
-			if (!json_paging_data.nil?)
-				# merge in all element in the paging data array
-				json_paging_data.each do |json_paging_data_element|
-					json.push json_paging_data_element
-				end
+		if (!json_paging_data.nil?)
+			# merge in all element in the paging data array
+			json_paging_data.each do |json_paging_data_element|
+				json.push json_paging_data_element
 			end
 		end
+
+		next_canvas_page_url = get_next_canvas_page_url(response.headers)
 	end
 
 	return json
@@ -189,7 +191,7 @@ def parse_canvas_API_response_json(url, response, json_attribute)
 end
 
 
-def get_all_canvas_page_urls(response_headers)
+def get_next_canvas_page_url(response_headers)
 	# https://canvas.instructure.com/doc/api/file.pagination.html
 	# Pagination information is provided in the Link header, e.g.
 	# :link =>"
@@ -203,45 +205,24 @@ def get_all_canvas_page_urls(response_headers)
 	end
 
 	# default last page number to be 1
-	last_page_number = 1
-	# page url part one
-	page_url_part_one = nil
-	# page url part two
-	page_url_part_two = nil
+	next_page_url = nil
 
 	link_header = response_headers[:link]
+
 	link_page_urls = link_header.split(',')
 	link_page_urls.detect { |page_link|
-		if page_link.include? "rel=\"last\""
-			# this is the last link, get the page id]
+		if page_link.include? "rel=\"next\""
 			# get the param from url string
-			last_page_url_array= page_link.split(';')
-			last_page_url = last_page_url_array[0]
-			last_page_url = last_page_url.gsub("<", "")
-			last_page_url = last_page_url.gsub(">", "")
-			## the url string before the page= param
-			page_url_part_one = last_page_url[0, last_page_url.index("page=")];
-			## the url after page= param, should start with the page number
-			page_url_part_two = last_page_url.gsub(page_url_part_one.concat("page="), "");
-			## get the last page number
-			last_page_number = page_url_part_two[0, page_url_part_two.index('&')].to_i
-			page_url_part_two = page_url_part_two[page_url_part_two.index('&'), page_url_part_two.length - page_url_part_two.index('&')]
+			next_page_url_array= page_link.split(';')
+			next_page_url = next_page_url_array[0]
+			next_page_url = next_page_url.gsub("<", "")
+			next_page_url = next_page_url.gsub(">", "")
 		end
 	}
+	
+	# return next_page_url
+	return next_page_url
 
-	@logger.info " Found #{last_page_number} of pages from Canvas API call results"
-
-	# now that we have the last page number, we will construct a list of all url for each page
-	if (last_page_number > 1)
-		page_url_ary = Array.new
-		# start from the second page, since we already have result of the first page
-		for page_num in 2 .. last_page_number
-			# copy the last page url params, but replace it with
-			page_url = page_url_part_one + page_num.to_s + page_url_part_two
-			page_url_ary.push(page_url)
-		end
-	end
-	return page_url_ary
 end
 
 ## make ESB API call
