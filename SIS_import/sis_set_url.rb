@@ -4,7 +4,6 @@ require "json"
 require "fileutils"
 require "nokogiri"
 
-require "uglifier"
 require "base64"
 require "net/http"
 require "rest-client"

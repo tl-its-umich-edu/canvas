@@ -19,7 +19,7 @@ You can run the scripts locally without installing the dependencies manually by 
     cp .env_example .env
     ```
 2. Update the `.env` with configuration values
-3. Set the ENTRYPOINT setting in `Dockerfile` to the proper Ruby script
+3. Set the PROCESS setting in `Dockerfile` to the proper Ruby script
 4. Build image: 
     ```
     docker compose build
