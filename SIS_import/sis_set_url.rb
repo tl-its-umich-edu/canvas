@@ -220,7 +220,6 @@ def get_next_canvas_page_url(response_headers)
 		end
 	}
 	
-	# return next_page_url
 	return next_page_url
 
 end
