@@ -11,7 +11,9 @@ RUN apt-get update && \
 # Download latest from https://rclone.org/downloads/
 ENV RCLONE_VER=v1.57.0
 
-RUN apt install rclone -y
+RUN curl -sLO https://downloads.rclone.org/${RCLONE_VER}/rclone-${RCLONE_VER}-linux-amd64.deb && \ 
+    dpkg -i --force-architecture rclone-${RCLONE_VER}-linux-amd64.deb && \
+    rm rclone-${RCLONE_VER}-linux-amd64.deb
 
 # Precache Bundle
 COPY Gemfile* /tmp/
