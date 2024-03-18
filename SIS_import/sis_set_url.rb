@@ -305,7 +305,7 @@ def setMPathwayUrl(termId, sectionId, courseId)
 
 	lmsUrl = @canvasUrl + "/courses/" + courseId.to_s
 	#get course information
-	call_url = @esbUrl_curriculumAdmin + "/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
+	call_url = @esbUrl + "/aa/CurriculumAdmin/v2/Terms/#{termId}/Classes/#{sectionId}/LMSURL";
 	response = ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumAdminScope,false), true,"application/json", "PUT", {"lmsURL" => lmsUrl})
 	return parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "PUT", {"lmsURL" => lmsUrl},@CurriculumAdminScope)
 end
@@ -313,7 +313,7 @@ end
 ## the ESB PUT call to set class URL in MPathway
 def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 	#get all sections with LMSURL
-	call_url = @esbUrl_curriculumAdmin + "/Terms/#{termId}/ClassesWithLMSURL";
+	call_url = @esbUrl + "/aa/CurriculumAdmin/v2/Terms/#{termId}/ClassesWithLMSURL";
 	response = ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumAdminScope,false), true,"application/json", "GET", {})
 	result = parse_ESB_API_CALL_RESPONSE(response, call_url, "application/json", "GET", nil,@CurriculumAdminScope)
 	if (result.nil?)
@@ -348,7 +348,7 @@ def deleteUrlForUnpublishedSections(termId, setSectionPublished)
 
 	# iterate through the set and delete the url
 	sectionWithUrlSet.each do |sectionId|
-		call_url = @esbUrl_curriculumAdmin + "/Terms/#{termId}/Classes/#{sectionId}/LMSURL"
+		call_url = @esbUrl + "/aa/CurriculumAdmin/v2/Terms/#{termId}/Classes/#{sectionId}/LMSURL"
 		@logger.info call_url
 		response = ESB_APICall(call_url, "Bearer " + getESBToken(@CurriculumAdminScope,false), true,"application/json", "DELETE", {})
 		@logger.info(response.body)
@@ -539,8 +539,6 @@ def read_argv
 	@esbKey=ENV['ESB_KEY']
 	@esbSecret=ENV['ESB_SECRET']
 	@esbUrl=ENV['ESB_URL']
-	#ESB API call urls for CurriculumAdmin
-	@esbUrl_curriculumAdmin=@esbUrl + "/aa/CurriculumAdmin/v2"
 	@esbTokenUrl=ENV['ESB_TOKEN_URL']
 	@page_size=ENV['PAGE_SIZE']
 	@esb_call_hash["time_interval_in_seconds"]=ENV['ESB_TIME_INTERVAL'].to_i
