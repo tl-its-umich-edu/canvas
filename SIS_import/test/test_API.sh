@@ -41,7 +41,7 @@ function getTerms {
 function getClassesForGivenTerm {
 
 curl --request GET \
-         --url "${URL_PREFIX}/aa/CurriculumAdmin/Terms/${TERM_ID}/ClassesWithLMSURL" \
+         --url "${URL_PREFIX}/aa/CurriculumAdmin/v2/Terms/${TERM_ID}/ClassesWithLMSURL" \
          --header 'accept: application/json' \
          --header "Authorization: Bearer ${ACCESS_TOKEN}" \
          --header "x-ibm-client-id: ${IBM_CLIENT_ID}"
